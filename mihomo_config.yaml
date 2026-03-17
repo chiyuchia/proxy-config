@@ -92,7 +92,6 @@ proxy-groups:
     type: select
     proxies:
       - '🚀 节点选择'
-      - '🏠 家宽节点'
       - '🇭🇰 香港节点'
       - '🇺🇲 美国节点'
       - '🇸🇬 狮城节点'
