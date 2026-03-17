@@ -1,0 +1,504 @@
+# ==========================================
+# 全局配置 (General)
+# ==========================================
+mixed-port: 7890                 # 混合端口，同时支持 HTTP 和 SOCKS5
+allow-lan: true                  # 允许局域网设备(如手机/iPad)连接此代理
+bind-address: '*'                # 监听所有网络接口
+mode: rule
+log-level: info                  # 日志级别：打印重要连接信息，不影响性能
+ipv6: false                     # 是否允许内核接受 IPv6 流量
+find-process-mode: always        # 始终追踪发起网络连接的具体进程名
+unified-delay: true              # 使用真实 HTTP 响应时间作为测速延迟，而不是虚假的 TCP 握手时间
+tcp-concurrent: true             # 并发连接域名的所有 IP，极大提升首次加载速度
+
+# ==========================================
+# 防泄露与 DNS 分流设置 (DNS)
+# ==========================================
+dns:
+  enable: true                   # 开启内置 DNS 服务器
+  ipv6: false                    # 关闭 IPv6 解析，防止本地宽带 IPv6 导致流量直连泄露
+  enhanced-mode: fake-ip         # 开启 Fake-IP 伪装模式，彻底杜绝本地 DNS 泄露
+  fake-ip-range: 198.18.0.1/16   # 伪装 IP 的生成网段 (内网保留网段)
+  fake-ip-filter:                # Fake-IP 白名单：以下域名返回真实 IP
+    - '*.lan'                    # 局域网设备
+    - '*.local'                  # 本地网络设备
+    - 'time.*.com'               # 时间同步服务器
+    - 'ntp.*.com'                # 网络时间协议服务器
+    - '+.market.xiaomi.com'      # 小米应用商店(特定网络需求)
+    - 'localhost.ptlogin2.qq.com' # 腾讯系软件快捷登录必备回环域名
+    - '+.334837632.xyz'          # V2Tun 节点域名
+    - '+.07c06051-81fd-4aa4-a94e-a0860315df8f.org' # oixCloud Edge/落地域名
+    - '+.22b74943-12ad-47f4-b705-f2defb6ffea0.org' # oixCloud IEPL 域名
+    - '+.nat.qq.pw'                # 自建节点域名
+    - '+.us-nj.122870.xyz'         # 家宽节点域名
+  use-hosts: true                # 尊重操作系统的 /etc/hosts 记录
+  default-nameserver:            # 启动 DNS：仅用于解析下方 DoH 链接本身的真实 IP
+    - 119.29.29.29
+    - 223.5.5.5
+  nameserver-policy:             # DNS 分流策略：精准匹配国内域名
+    'geosite:cn':                # 只要是中国域名，就直接发给国内腾讯/阿里 DoH 解析 (极速直连)
+      - 'https://doh.pub/dns-query'
+      - 'https://dns.alidns.com/dns-query'
+  nameserver:                    # 默认 DNS：解析非国内域名 (强制通过代理节点走，防污染)
+    - 'https://1.1.1.1/dns-query#🚀 节点选择'
+    - 'https://8.8.8.8/dns-query#🚀 节点选择'
+  proxy-server-nameserver:       # 代理节点专用 DNS：始终直连解析，避免 TUN + Fake-IP 循环
+    - 'https://doh.pub/dns-query'
+    - 'https://dns.alidns.com/dns-query'
+
+# ==========================================
+# 域名嗅探 (Sniffer)
+# ==========================================
+sniffer:
+  enable: true                   # 开启流量嗅探，应对软件直接通过纯 IP 发起连接的情况
+  force-dns-mapping: true        # 强制将嗅探到的域名与 Fake-IP 对应，防止分流规则失效
+  parse-pure-ip: true            # 强行解析纯 IP 请求，尝试从中提取真实域名
+  sniff:                         # 指定嗅探的协议与端口
+    HTTP:
+      ports:
+        - 80
+        - 443
+    TLS:
+      ports:
+        - 443
+  skip-domain:                   # 嗅探白名单：排除特定域名的嗅探
+    - '+.push.apple.com'         # 放行苹果推送服务，防止消息通知断连或收不到
+
+# ==========================================
+# 全局接管设置 (TUN 模式)
+# ==========================================
+tun:
+  enable: true                   # 开启虚拟网卡，实现所有流量的全局接管
+  stack: mixed                   # TCP 用系统栈，UDP 用 gVisor 栈，兼顾性能与兼容
+  dns-hijack:
+    - any:53                     # 强制劫持系统 53 端口的所有传统 DNS 请求，送入内置 DNS 处理
+  mtu: 1500                      # 虚拟网卡最大传输单元，标准 1500
+
+proxy-groups:
+  - name: '🚀 节点选择'
+    type: select
+    proxies:
+      - '🇭🇰 香港节点'
+      - '🏠 家宽节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '🛡️ 前置节点'
+    type: select
+    include-all: true
+    filter: ".*"
+
+  - name: '💬 Ai平台'
+    type: select
+    proxies:
+      - '🏠 家宽节点'
+      - '🚀 节点选择'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+
+  - name: '🎥 奈飞视频'
+    type: select
+    proxies:
+      - '🇸🇬 狮城节点'
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+      - '🛡️ 前置节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '📹 油管视频'
+    type: select
+    proxies:
+      - '🇺🇲 美国节点'
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '📲 电报消息'
+    type: select
+    proxies:
+      - '🇸🇬 狮城节点'
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '🐙 Github'
+    type: select
+    proxies:
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '🍎 Apple'
+    type: select
+    proxies:
+      - DIRECT
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+  - name: 'Ⓜ️ Microsoft'
+    type: select
+    proxies:
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '📢 Google'
+    type: select
+    proxies:
+      - '🏠 家宽节点'
+      - '🚀 节点选择'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '📺 国内媒体'
+    type: select
+    proxies:
+      - DIRECT
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '🌍 国外媒体'
+    type: select
+    proxies:
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+      - DIRECT
+      - '🛡️ 前置节点'
+
+  - name: '🎮 游戏平台'
+    type: select
+    proxies:
+      - '🚀 节点选择'
+      - DIRECT
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '💰 加密货币'
+    type: select
+    proxies:
+      - '🇸🇬 狮城节点'
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+      - '🛡️ 前置节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '🐟 漏网之鱼'
+    type: select
+    proxies:
+      - '🚀 节点选择'
+      - '🏠 家宽节点'
+      - '🇭🇰 香港节点'
+      - '🇺🇲 美国节点'
+      - '🇸🇬 狮城节点'
+      - '🇯🇵 日本节点'
+      - '🇼🇸 台湾节点'
+      - '🌍 其他节点'
+      - '🛡️ 前置节点'
+    include-all: true
+    filter: ".*"
+
+  - name: '🏠 家宽节点'
+    type: select
+    include-all: true
+    filter: "(家宽)"
+
+  - name: '🇭🇰 香港节点'
+    type: select
+    include-all: true
+    filter: '(港|HK|hk|Hong Kong|HongKong|hongkong)'
+
+  - name: '🇺🇲 美国节点'
+    type: select
+    include-all: true
+    filter: '(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲)'
+
+  - name: '🇸🇬 狮城节点'
+    type: select
+    include-all: true
+    filter: '(新加坡|坡|狮城|SG|Singapore)'
+
+  - name: '🇯🇵 日本节点'
+    type: select
+    include-all: true
+    filter: '(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)'
+
+  - name: '🇼🇸 台湾节点'
+    type: select
+    include-all: true
+    filter: '(台|新北|彰化|TW|Taiwan)'
+
+  - name: '🌍 其他节点'
+    type: select
+    include-all: true
+    filter: '^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan)).*'
+
+  - name: '🎯 全球直连'
+    type: select
+    proxies:
+      - DIRECT
+      - '🚀 节点选择'
+
+rule-providers:
+  local-area-network: &classical_text_provider
+    type: http
+    behavior: classical
+    format: text
+    interval: 86400
+    proxy: DIRECT
+    path: ./ruleset/local-area-network.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/LocalAreaNetwork.list'
+
+  unban:
+    <<: *classical_text_provider
+    path: ./ruleset/unban.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/UnBan.list'
+
+  china-domain:
+    <<: *classical_text_provider
+    path: ./ruleset/china-domain.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ChinaDomain.list'
+
+  china-company-ip:
+    <<: *classical_text_provider
+    path: ./ruleset/china-company-ip.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ChinaCompanyIp.list'
+
+  download:
+    <<: *classical_text_provider
+    path: ./ruleset/download.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Download.list'
+
+  steam-cn:
+    <<: *classical_text_provider
+    path: ./ruleset/steam-cn.list
+    url: 'https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/SteamCN/SteamCN.list'
+
+  youtube:
+    <<: *classical_text_provider
+    path: ./ruleset/youtube.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/YouTube.list'
+
+  netflix:
+    <<: *classical_text_provider
+    path: ./ruleset/netflix.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Netflix.list'
+
+  ai:
+    <<: *classical_text_provider
+    path: ./ruleset/ai.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/AI.list'
+
+  ai-suite:
+    <<: *classical_text_provider
+    path: ./ruleset/ai-suite.list
+    url: 'https://cdn.jsdmirror.com/gh/dler-io/Rules@master/Surge/Surge%203/Provider/AI%20Suite.list'
+
+  openai:
+    <<: *classical_text_provider
+    path: ./ruleset/openai.list
+    url: 'https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.list'
+
+  gemini:
+    <<: *classical_text_provider
+    path: ./ruleset/gemini.list
+    url: 'https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Gemini/Gemini.list'
+
+  telegram:
+    <<: *classical_text_provider
+    path: ./ruleset/telegram.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Telegram.list'
+
+  github:
+    <<: *classical_text_provider
+    path: ./ruleset/github.list
+    url: 'https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.list'
+
+  apple:
+    <<: *classical_text_provider
+    path: ./ruleset/apple.list
+    url: 'https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple.list'
+
+  microsoft:
+    <<: *classical_text_provider
+    path: ./ruleset/microsoft.list
+    url: 'https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.list'
+
+  google:
+    <<: *classical_text_provider
+    path: ./ruleset/google.list
+    url: 'https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.list'
+
+  bilibili-hmt:
+    <<: *classical_text_provider
+    path: ./ruleset/bilibili-hmt.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/BilibiliHMT.list'
+
+  bilibili:
+    <<: *classical_text_provider
+    path: ./ruleset/bilibili.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Bilibili.list'
+
+  china-media:
+    <<: *classical_text_provider
+    path: ./ruleset/china-media.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ChinaMedia.list'
+
+  proxy-media:
+    <<: *classical_text_provider
+    path: ./ruleset/proxy-media.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ProxyMedia.list'
+
+  epic:
+    <<: *classical_text_provider
+    path: ./ruleset/epic.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Epic.list'
+
+  origin:
+    <<: *classical_text_provider
+    path: ./ruleset/origin.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Origin.list'
+
+  sony:
+    <<: *classical_text_provider
+    path: ./ruleset/sony.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Sony.list'
+
+  steam:
+    <<: *classical_text_provider
+    path: ./ruleset/steam.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Steam.list'
+
+  nintendo:
+    <<: *classical_text_provider
+    path: ./ruleset/nintendo.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Nintendo.list'
+
+  crypto:
+    <<: *classical_text_provider
+    path: ./ruleset/crypto.list
+    url: 'https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Crypto/Crypto.list'
+
+  proxy-gfw:
+    <<: *classical_text_provider
+    path: ./ruleset/proxy-gfw.list
+    url: 'https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ProxyGFWlist.list'
+
+rules:
+  - 'DOMAIN-SUFFIX,334837632.xyz,🎯 全球直连'
+  - 'DOMAIN-SUFFIX,07c06051-81fd-4aa4-a94e-a0860315df8f.org,🎯 全球直连'
+  - 'DOMAIN-SUFFIX,22b74943-12ad-47f4-b705-f2defb6ffea0.org,🎯 全球直连'
+  - 'RULE-SET,local-area-network,🎯 全球直连'
+  - 'RULE-SET,unban,🎯 全球直连'
+  - 'RULE-SET,china-domain,🎯 全球直连'
+  - 'RULE-SET,china-company-ip,🎯 全球直连'
+  - 'RULE-SET,download,🎯 全球直连'
+  - 'RULE-SET,steam-cn,🎯 全球直连'
+  - 'GEOIP,CN,🎯 全球直连,no-resolve'
+  - 'RULE-SET,youtube,📹 油管视频'
+  - 'RULE-SET,netflix,🎥 奈飞视频'
+  - 'RULE-SET,ai,💬 Ai平台'
+  - 'RULE-SET,ai-suite,💬 Ai平台'
+  - 'RULE-SET,openai,💬 Ai平台'
+  - 'RULE-SET,gemini,💬 Ai平台'
+  - 'GEOSITE,category-ai-!cn,💬 Ai平台'
+  - 'RULE-SET,telegram,📲 电报消息'
+  - 'RULE-SET,github,🐙 Github'
+  - 'RULE-SET,apple,🍎 Apple'
+  - 'RULE-SET,microsoft,Ⓜ️ Microsoft'
+  - 'RULE-SET,google,📢 Google'
+  - 'RULE-SET,bilibili-hmt,📺 国内媒体'
+  - 'RULE-SET,bilibili,📺 国内媒体'
+  - 'RULE-SET,china-media,📺 国内媒体'
+  - 'RULE-SET,proxy-media,🌍 国外媒体'
+  - 'RULE-SET,epic,🎮 游戏平台'
+  - 'RULE-SET,origin,🎮 游戏平台'
+  - 'RULE-SET,sony,🎮 游戏平台'
+  - 'RULE-SET,steam,🎮 游戏平台'
+  - 'RULE-SET,nintendo,🎮 游戏平台'
+  - 'RULE-SET,crypto,💰 加密货币'
+  - 'RULE-SET,proxy-gfw,🚀 节点选择'
+  - 'MATCH,🐟 漏网之鱼'
