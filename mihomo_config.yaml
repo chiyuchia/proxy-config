@@ -315,7 +315,7 @@ proxy-groups:
     interval: 300
     proxies:
       - '🏠 家宽节点'
-    filter: "(家宽|落地)"
+    filter: "(自建|家宽|落地)"
     include-all: true
 
   - name: '🇭🇰 香港节点'
