@@ -31,11 +31,13 @@ dns:
     - '+.22b74943-12ad-47f4-b705-f2defb6ffea0.org' # oixCloud IEPL 域名
     - '+.nat.qq.pw'                # 自建节点域名
     - '+.us-nj.122870.xyz'         # 家宽节点域名
+    - '+.oix_nodes.com'
   use-hosts: true                # 尊重操作系统的 /etc/hosts 记录
   default-nameserver:            # 启动 DNS：仅用于解析下方 DoH 链接本身的真实 IP
     - 119.29.29.29
     - 223.5.5.5
   nameserver-policy:             # DNS 分流策略：精准匹配国内域名
+    '*.oix_nodes.com': '106.53.6.121'
     'geosite:cn':                # 只要是中国域名，就直接发给国内腾讯/阿里 DoH 解析 (极速直连)
       - 'https://doh.pub/dns-query'
       - 'https://dns.alidns.com/dns-query'
