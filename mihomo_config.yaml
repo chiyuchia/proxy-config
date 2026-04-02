@@ -26,15 +26,16 @@ dns:
     - "ntp.*.com" # 网络时间协议服务器
     - "+.market.xiaomi.com" # 小米应用商店(特定网络需求)
     - "localhost.ptlogin2.qq.com" # 腾讯系软件快捷登录必备回环域名
+    # 当前维护中的节点域名；旧 IEPL 域已迁移到 oix_nodes.com
     - "+.334837632.xyz" # V2Tun 节点域名
     - "+.07c06051-81fd-4aa4-a94e-a0860315df8f.org" # oixCloud Edge/落地域名
-    - "+.22b74943-12ad-47f4-b705-f2defb6ffea0.org" # oixCloud IEPL 域名
     - "+.oix_nodes.com" # oixNodes IEPL 节点域名
     - "+.nodesyo.org" # Nodesyo 节点域名
     - "+.link-t7.com" # Link T7 节点域名
     - "+.dexlos.com" # Dexlos 节点域名
-    - "+.nat.qq.pw" # 自建节点域名
     - "+.us-nj.122870.xyz" # 家宽节点域名
+    # 当前 runtime 未出现，但保留为历史/备用节点域
+    - "+.nat.qq.pw" # 自建节点域名
   use-hosts: true # 尊重操作系统的 /etc/hosts 记录
   default-nameserver: # 启动 DNS：仅用于解析下方 DoH 链接本身的真实 IP
     - 119.29.29.29

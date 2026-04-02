@@ -1,12 +1,12 @@
 payload:
   # BT 进程直连，避免下载流量误走代理
   - "PROCESS-NAME,qbittorrent-nox"
-  # 机场/节点接入域名直连，避免节点域名进入代理递归或被 Fake-IP 干扰
+  # 当前维护中的节点接入域名；旧 IEPL 域已迁移到 oix_nodes.com
+  # 保留直连以避免节点域名进入代理递归或被 Fake-IP 干扰
   - "DOMAIN-SUFFIX,334837632.xyz"
   - "DOMAIN-SUFFIX,07c06051-81fd-4aa4-a94e-a0860315df8f.org"
-  - "DOMAIN-SUFFIX,22b74943-12ad-47f4-b705-f2defb6ffea0.org"
   - "DOMAIN-SUFFIX,oix_nodes.com"
-  # 家宽上游节点域名；当前运行时通过“前置节点”接入，是否保留直连取决于你的链路设计
+  # 运行时实际出现，且当前通过“前置节点”接入；是否保留直连取决于你的链路设计
   - "DOMAIN,us-nj.122870.xyz"
   # 运行时配置中实际作为 server 出现的其他节点域名
   - "DOMAIN-SUFFIX,nodesyo.org"
