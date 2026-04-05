@@ -164,6 +164,7 @@ const DEFAULT_FILTER_WORDS = [
   "Expire",
   "一元机场",
   "客户端",
+  "网站",
 ];
 const RETAIN_KEYWORDS = [
   // 日本
