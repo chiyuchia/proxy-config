@@ -126,6 +126,22 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
 
+  - name: "♊ Gemini"
+    type: select
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    proxies:
+      - "🏝️ 落地节点"
+      - "🏠 家宽节点"
+      - "🚀 节点选择"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇲🇾 大马节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+
   - name: "💬 Ai平台"
     type: select
     url: "https://www.gstatic.com/generate_204"
@@ -590,10 +606,10 @@ rules:
   - "GEOIP,CN,🎯 全球直连,no-resolve"
   - "RULE-SET,youtube,📹 油管视频"
   - "RULE-SET,netflix,🎥 奈飞视频"
+  - "RULE-SET,gemini,♊ Gemini"
   - "RULE-SET,ai,💬 Ai平台"
   - "RULE-SET,ai-suite,💬 Ai平台"
   - "RULE-SET,openai,💬 Ai平台"
-  - "RULE-SET,gemini,💬 Ai平台"
   - "GEOSITE,category-ai-!cn,💬 Ai平台"
   - "RULE-SET,telegram,📲 电报消息"
   - "RULE-SET,github,🐙 Github"
