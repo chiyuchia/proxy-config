@@ -402,7 +402,8 @@ const RETAIN_KEYWORDS = [
   "RS",
   "OVH",
   "CDN",
-  "下载"
+  "下载",
+  "OCTO"
 ];
 
 /**
