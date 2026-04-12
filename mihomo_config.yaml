@@ -31,8 +31,6 @@ dns:
     - "+.07c06051-81fd-4aa4-a94e-a0860315df8f.org" # oixCloud Edge/落地域名
     - "+.cloud-nodes.com" # oixNodes IEPL 节点域名
     - "+.nodesyo.org" # Nodesyo 节点域名
-    - "+.link-t7.com" # Link T7 节点域名
-    - "+.dexlos.com" # Dexlos 节点域名
     - "+.us-nj.122870.xyz" # 家宽节点域名
     - "+.sys.wpssx.com" # 合租线路 🇲🇾 MY | Evoxt KUL
     # 当前 runtime 未出现，但保留为历史/备用节点域
@@ -643,13 +641,6 @@ proxy-groups:
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(Netsyo)"
-    include-all: true
-
-  - name: "✈️ Mitce"
-    type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    filter: "(Mitce)"
     include-all: true
 
   - name: "✈️ 良心云"

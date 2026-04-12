@@ -11,7 +11,5 @@ payload:
   # 运行时配置中实际作为 server 出现的其他节点域名
   - "DOMAIN-SUFFIX,sys.wpssx.com" # 合租线路 🇲🇾 MY | Evoxt KUL
   - "DOMAIN-SUFFIX,nodesyo.org"
-  - "DOMAIN-SUFFIX,link-t7.com"
-  - "DOMAIN-SUFFIX,dexlos.com"
   # L 站邀请码
   - "DOMAIN-SUFFIX,invite.linuxdo.org"
