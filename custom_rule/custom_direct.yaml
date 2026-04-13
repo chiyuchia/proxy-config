@@ -13,3 +13,5 @@ payload:
   - "DOMAIN-SUFFIX,nodesyo.org"
   # L 站邀请码
   - "DOMAIN-SUFFIX,invite.linuxdo.org"
+  # EMBY 反代域名
+  - "DOMAIN,uhd.440115.xyz"
