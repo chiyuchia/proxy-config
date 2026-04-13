@@ -95,6 +95,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -118,6 +119,7 @@ proxy-groups:
       - "🇸🇬 狮城节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -141,29 +143,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
-      - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
-      - "✈️ Netsyo"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
-
-  - name: "🛡️ 日本中转"
-    type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    proxies:
-      - "🇯🇵 日本节点"
-      - "🚀 节点选择"
-      - "🏝️ 精品节点"
-      - "💻 自建节点"
-      - "🖥️ 合租节点"
-      - "🇭🇰 香港节点"
-      - "🇺🇲 美国节点"
-      - "🇸🇬 狮城节点"
-      - "🇲🇾 大马节点"
-      - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -218,6 +198,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -242,6 +223,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -266,6 +248,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -290,6 +273,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -314,6 +298,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -338,6 +323,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -362,6 +348,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -387,6 +374,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -411,6 +399,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -435,6 +424,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -460,6 +450,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -483,6 +474,7 @@ proxy-groups:
       - "🇸🇬 狮城节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -509,6 +501,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -533,6 +526,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -558,6 +552,7 @@ proxy-groups:
       - "🇲🇾 大马节点"
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
       - "✈️ V2Tun"
       - "✈️ oixCloud"
@@ -606,6 +601,13 @@ proxy-groups:
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(台|新北|彰化|TW|Taiwan)"
+    include-all: true
+
+  - name: "🇪🇺 欧洲节点"
+    type: select
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    filter: "(?=.*(?i)(🇦🇱|🇦🇩|🇦🇹|🇧🇾|🇧🇪|🇧🇦|🇧🇬|🇭🇷|🇨🇾|🇨🇿|🇩🇰|🇪🇪|🇫🇮|🇫🇷|🇩🇪|🇬🇷|🇭🇺|🇮🇸|🇮🇪|🇮🇹|🇽🇰|🇱🇻|🇱🇮|🇱🇹|🇱🇺|🇲🇹|🇲🇩|🇲🇨|🇲🇪|🇳🇱|🇲🇰|🇳🇴|🇵🇱|🇵🇹|🇷🇴|🇷🇺|🇸🇲|🇷🇸|🇸🇰|🇸🇮|🇪🇸|🇸🇪|🇨🇭|🇹🇷|🇺🇦|🇬🇧|🇻🇦))"
     include-all: true
 
   - name: "🌍 其他节点"
@@ -667,167 +669,168 @@ rule-providers:
   custom_direct:
     type: http
     behavior: classical
-    url: "https://raw.githubusercontent.com/chiyuchia/proxy-rule/master/custom_rule/custom_direct.yaml"
-    path: ./ruleset/custom_direct.yaml
     interval: 86400
+    path: ./ruleset/custom_direct.yaml
+    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/custom_direct.yaml"
 
   ai-suite-gemini:
     type: http
     behavior: classical
-    url: "https://raw.githubusercontent.com/chiyuchia/proxy-rule/master/custom_rule/ai_suite_gemini.yaml"
-    path: ./ruleset/ai-suite-gemini.yaml
     interval: 86400
+    path: ./ruleset/ai-suite-gemini.yaml
+    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/ai_suite_gemini.yaml"
 
-  local-area-network: &classical_text_provider
+  local-area-network: &classical_yaml_provider
     type: http
     behavior: classical
-    format: text
+    format: yaml
     interval: 86400
     proxy: DIRECT
-    path: ./ruleset/local-area-network.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/LocalAreaNetwork.list"
+    path: ./ruleset/local-area-network.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/LocalAreaNetwork.yaml"
 
   unban:
-    <<: *classical_text_provider
-    path: ./ruleset/unban.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/UnBan.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/unban.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/UnBan.yaml"
 
   china-domain:
-    <<: *classical_text_provider
-    path: ./ruleset/china-domain.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ChinaDomain.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/china-domain.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ChinaDomain.yaml"
 
   china-company-ip:
-    <<: *classical_text_provider
-    path: ./ruleset/china-company-ip.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ChinaCompanyIp.list"
+    <<: *classical_yaml_provider
+    behavior: ipcidr
+    path: ./ruleset/china-company-ip.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ChinaCompanyIp.yaml"
 
   download:
-    <<: *classical_text_provider
-    path: ./ruleset/download.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Download.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/download.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Download.yaml"
 
   steam-cn:
-    <<: *classical_text_provider
-    path: ./ruleset/steam-cn.list
-    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/SteamCN/SteamCN.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/steam-cn.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/SteamCN/SteamCN_No_Resolve.yaml"
 
   youtube:
-    <<: *classical_text_provider
-    path: ./ruleset/youtube.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/YouTube.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/youtube.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/YouTube.yaml"
 
   netflix:
-    <<: *classical_text_provider
-    path: ./ruleset/netflix.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Netflix.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/netflix.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Netflix.yaml"
 
   ai:
-    <<: *classical_text_provider
-    path: ./ruleset/ai.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/AI.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/ai.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/AI.yaml"
 
   ai-suite:
     type: http
     behavior: classical
-    url: "https://raw.githubusercontent.com/dler-io/Rules/main/Clash/Provider/AI%20Suite.yaml"
+    url: "https://cdn.jsdmirror.com/gh/dler-io/Rules@main/Clash/Provider/AI%20Suite.yaml"
     path: ./ruleset/ai-suite.yaml
     interval: 86400
 
   openai:
-    <<: *classical_text_provider
-    path: ./ruleset/openai.list
-    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/openai.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml"
 
   copilot:
-    <<: *classical_text_provider
-    path: ./ruleset/copilot.list
-    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Copilot/Copilot.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/copilot.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Copilot/Copilot.yaml"
 
   gemini:
-    <<: *classical_text_provider
-    path: ./ruleset/gemini.list
-    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Gemini/Gemini.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/gemini.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Gemini/Gemini.yaml"
 
   telegram:
-    <<: *classical_text_provider
-    path: ./ruleset/telegram.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Telegram.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/telegram.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Telegram.yaml"
 
   github:
-    <<: *classical_text_provider
-    path: ./ruleset/github.list
-    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/github.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.yaml"
 
   apple:
-    <<: *classical_text_provider
-    path: ./ruleset/apple.list
-    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/apple.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple.yaml"
 
   microsoft:
-    <<: *classical_text_provider
-    path: ./ruleset/microsoft.list
-    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/microsoft.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.yaml"
 
   google:
-    <<: *classical_text_provider
-    path: ./ruleset/google.list
-    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/google.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml"
 
   bilibili-hmt:
-    <<: *classical_text_provider
-    path: ./ruleset/bilibili-hmt.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/BilibiliHMT.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/bilibili-hmt.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/BilibiliHMT.yaml"
 
   bilibili:
-    <<: *classical_text_provider
-    path: ./ruleset/bilibili.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Bilibili.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/bilibili.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Bilibili.yaml"
 
   china-media:
-    <<: *classical_text_provider
-    path: ./ruleset/china-media.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ChinaMedia.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/china-media.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ChinaMedia.yaml"
 
   proxy-media:
-    <<: *classical_text_provider
-    path: ./ruleset/proxy-media.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ProxyMedia.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/proxy-media.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ProxyMedia.yaml"
 
   epic:
-    <<: *classical_text_provider
-    path: ./ruleset/epic.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Epic.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/epic.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Epic.yaml"
 
   origin:
-    <<: *classical_text_provider
-    path: ./ruleset/origin.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Origin.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/origin.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Origin.yaml"
 
   sony:
-    <<: *classical_text_provider
-    path: ./ruleset/sony.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Sony.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/sony.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Sony.yaml"
 
   steam:
-    <<: *classical_text_provider
-    path: ./ruleset/steam.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Steam.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/steam.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Steam.yaml"
 
   nintendo:
-    <<: *classical_text_provider
-    path: ./ruleset/nintendo.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Nintendo.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/nintendo.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Nintendo.yaml"
 
   crypto:
-    <<: *classical_text_provider
-    path: ./ruleset/crypto.list
-    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Crypto/Crypto.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/crypto.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Crypto/Crypto.yaml"
 
   proxy-gfw:
-    <<: *classical_text_provider
-    path: ./ruleset/proxy-gfw.list
-    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/ProxyGFWlist.list"
+    <<: *classical_yaml_provider
+    path: ./ruleset/proxy-gfw.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ProxyGFWlist.yaml"
 
 rules:
   - "DOMAIN,v1.uhdnow.com,📼 EMBY"
