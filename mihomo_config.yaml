@@ -666,26 +666,21 @@ proxy-groups:
       - "🚀 节点选择"
 
 rule-providers:
-  custom_direct:
+  custom_direct: &classical_yaml_provider
     type: http
     behavior: classical
     interval: 86400
+    proxy: DIRECT
     path: ./ruleset/custom_direct.yaml
     url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/custom_direct.yaml"
 
   ai-suite-gemini:
-    type: http
-    behavior: classical
-    interval: 86400
+    <<: *classical_yaml_provider
     path: ./ruleset/ai-suite-gemini.yaml
     url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/ai_suite_gemini.yaml"
 
-  local-area-network: &classical_yaml_provider
-    type: http
-    behavior: classical
-    format: yaml
-    interval: 86400
-    proxy: DIRECT
+  local-area-network:
+    <<: *classical_yaml_provider
     path: ./ruleset/local-area-network.yaml
     url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/LocalAreaNetwork.yaml"
 
@@ -731,11 +726,9 @@ rule-providers:
     url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/AI.yaml"
 
   ai-suite:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdmirror.com/gh/dler-io/Rules@main/Clash/Provider/AI%20Suite.yaml"
+    <<: *classical_yaml_provider
     path: ./ruleset/ai-suite.yaml
-    interval: 86400
+    url: "https://cdn.jsdmirror.com/gh/dler-io/Rules@main/Clash/Provider/AI%20Suite.yaml"
 
   openai:
     <<: *classical_yaml_provider
