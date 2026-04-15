@@ -1,18 +1,50 @@
-port: 6152
-socks-port: 6153
-mixed-port: 8899
-allow-lan: true
+# ==========================================
+# 全局配置 (General)
+# ==========================================
+mixed-port: 7890 # 混合端口，同时支持 HTTP 和 SOCKS5
+allow-lan: true # 允许局域网设备(如手机/iPad)连接此代理
+bind-address: "*" # 监听所有网络接口
 mode: rule
-log-level: info
-external-controller: "127.0.0.1:9090"
-secret: dler
-experimental:
-  ignore-resolve-fail: true
+log-level: info # 日志级别：打印重要连接信息，不影响性能
+ipv6: false # 是否允许内核接受 IPv6 流量
+find-process-mode: always # 始终追踪发起网络连接的具体进程名
+unified-delay: true # 使用真实 HTTP 响应时间作为测速延迟，而不是虚假的 TCP 握手时间
+tcp-concurrent: true # 并发连接域名的所有 IP，极大提升首次加载速度
+
+# ==========================================
+# 防泄露与 DNS 分流设置 (DNS)
+# ==========================================
 dns:
-  enable: true
-  listen: "0.0.0.0:1053"
-  default-nameserver: [119.29.29.29, 223.5.5.5]
-  nameserver-policy: { +.cloud-nodes.com: "140.205.1.13" }
+  enable: true # 开启内置 DNS 服务器
+  ipv6: false # 关闭 IPv6 解析，防止本地宽带 IPv6 导致流量直连泄露
+  enhanced-mode: fake-ip # 开启 Fake-IP 伪装模式，彻底杜绝本地 DNS 泄露
+  fake-ip-range: 198.18.0.1/16 # 伪装 IP 的生成网段 (内网保留网段)
+  fake-ip-filter: # Fake-IP 白名单：以下域名返回真实 IP
+    - "*.lan" # 局域网设备
+    - "*.local" # 本地网络设备
+    - "time.*.com" # 时间同步服务器
+    - "ntp.*.com" # 网络时间协议服务器
+    - "+.market.xiaomi.com" # 小米应用商店(特定网络需求)
+    - "localhost.ptlogin2.qq.com" # 腾讯系软件快捷登录必备回环域名
+    # 当前维护中的节点域名；旧 IEPL 域已迁移到 cloud-nodes.com
+    - "+.334837632.xyz" # V2Tun 节点域名
+    - "+.07c06051-81fd-4aa4-a94e-a0860315df8f.org" # oixCloud Edge/落地域名
+    - "+.cloud-nodes.com" # oixNodes IEPL 节点域名
+    - "+.nodesyo.org" # Nodesyo 节点域名
+    - "+.us-nj.122870.xyz" # 家宽节点域名
+    - "+.sys.wpssx.com" # 合租线路 🇲🇾 MY | Evoxt KUL
+    # 当前 runtime 未出现，但保留为历史/备用节点域
+  use-hosts: true # 尊重操作系统的 /etc/hosts 记录
+  default-nameserver: # 启动 DNS：仅用于解析下方 DoH 链接本身的真实 IP
+    - 119.29.29.29
+    - 223.5.5.5
+  nameserver: # 默认 DNS：解析非国内域名 (强制通过代理节点走，防污染)
+    - "https://1.1.1.1/dns-query"
+    - "https://8.8.8.8/dns-query"
+    - "https://doh.pub/dns-query"
+    - "https://dns.alidns.com/dns-query"
+  nameserver-policy: # DNS 分流策略：精准匹配国内域名
+    "+.cloud-nodes.com": 140.205.1.13
 
 proxy-groups:
   - name: "🚀 节点选择"
@@ -48,7 +80,6 @@ proxy-groups:
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(家宽|落地)"
-    include-all: true
 
   - name: "🏝️ 精品节点"
     type: select
@@ -57,21 +88,18 @@ proxy-groups:
     proxies:
       - "🏠 家宽节点"
     filter: "(自建|合租|家宽|落地|线路)"
-    include-all: true
 
   - name: "💻 自建节点"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(自建)"
-    include-all: true
 
   - name: "🖥️ 合租节点"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(合租)"
-    include-all: true
 
   - name: "♊ Gemini"
     type: select
@@ -367,56 +395,48 @@ proxy-groups:
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(港|HK|hk|Hong Kong|HongKong|hongkong)"
-    include-all: true
 
   - name: "🇺🇲 美国节点"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲)"
-    include-all: true
 
   - name: "🇸🇬 狮城节点"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(新加坡|坡|狮城|SG|Singapore)"
-    include-all: true
 
   - name: "🇲🇾 大马节点"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(MY|马来西亚|马来|🇲🇾)"
-    include-all: true
 
   - name: "🇯🇵 日本节点"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)"
-    include-all: true
 
   - name: "🇼🇸 台湾节点"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(台|新北|彰化|TW|Taiwan)"
-    include-all: true
 
   - name: "🇪🇺 欧洲节点"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "(?=.*(?i)(🇦🇱|🇦🇩|🇦🇹|🇧🇾|🇧🇪|🇧🇦|🇧🇬|🇭🇷|🇨🇾|🇨🇿|🇩🇰|🇪🇪|🇫🇮|🇫🇷|🇩🇪|🇬🇷|🇭🇺|🇮🇸|🇮🇪|🇮🇹|🇽🇰|🇱🇻|🇱🇮|🇱🇹|🇱🇺|🇲🇹|🇲🇩|🇲🇨|🇲🇪|🇳🇱|🇲🇰|🇳🇴|🇵🇱|🇵🇹|🇷🇴|🇷🇺|🇸🇲|🇷🇸|🇸🇰|🇸🇮|🇪🇸|🇸🇪|🇨🇭|🇹🇷|🇺🇦|🇬🇧|🇻🇦))"
-    include-all: true
 
   - name: "🌍 其他节点"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
     filter: "^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|MY|马来西亚|马来|🇲🇾|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan|🇦🇱|🇦🇩|🇦🇹|🇧🇾|🇧🇪|🇧🇦|🇧🇬|🇭🇷|🇨🇾|🇨🇿|🇩🇰|🇪🇪|🇫🇮|🇫🇷|🇩🇪|🇬🇷|🇭🇺|🇮🇸|🇮🇪|🇮🇹|🇽🇰|🇱🇻|🇱🇮|🇱🇹|🇱🇺|🇲🇹|🇲🇩|🇲🇨|🇲🇪|🇳🇱|🇲🇰|🇳🇴|🇵🇱|🇵🇹|🇷🇴|🇷🇺|🇸🇲|🇷🇸|🇸🇰|🇸🇮|🇪🇸|🇸🇪|🇨🇭|🇹🇷|🇺🇦|🇬🇧|🇻🇦)).*"
-    include-all: true
 
   - name: "🎯 全球直连"
     type: select
