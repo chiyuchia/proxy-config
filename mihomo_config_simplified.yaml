@@ -37,37 +37,11 @@ proxy-groups:
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
-    proxies:
-      - "🇲🇾 大马节点"
-      - "🚀 节点选择"
-      - "🏝️ 精品节点"
-      - "💻 自建节点"
-      - "🖥️ 合租节点"
-      - "🇭🇰 香港节点"
-      - "🇺🇲 美国节点"
-      - "🇸🇬 狮城节点"
-      - "🇯🇵 日本节点"
-      - "🇼🇸 台湾节点"
-      - "🇪🇺 欧洲节点"
-      - "🌍 其他节点"
 
   - name: "🛡️ 美西中转"
     type: select
     url: "https://www.gstatic.com/generate_204"
     interval: 300
-    proxies:
-      - "🇺🇲 美国节点"
-      - "🚀 节点选择"
-      - "🏝️ 精品节点"
-      - "💻 自建节点"
-      - "🖥️ 合租节点"
-      - "🇭🇰 香港节点"
-      - "🇸🇬 狮城节点"
-      - "🇲🇾 大马节点"
-      - "🇯🇵 日本节点"
-      - "🇼🇸 台湾节点"
-      - "🇪🇺 欧洲节点"
-      - "🌍 其他节点"
 
   - name: "🏠 家宽节点"
     type: select
