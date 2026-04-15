@@ -38,13 +38,21 @@ dns:
   default-nameserver: # 启动 DNS：仅用于解析下方 DoH 链接本身的真实 IP
     - 119.29.29.29
     - 223.5.5.5
-  nameserver: # 默认 DNS：解析非国内域名 (强制通过代理节点走，防污染)
-    - "https://1.1.1.1/dns-query"
-    - "https://8.8.8.8/dns-query"
+  nameserver:
     - "https://doh.pub/dns-query"
     - "https://dns.alidns.com/dns-query"
   nameserver-policy: # DNS 分流策略：精准匹配国内域名
     "+.cloud-nodes.com": 140.205.1.13
+
+# ==========================================
+# 全局接管设置 (TUN 模式)
+# ==========================================
+tun:
+  enable: true # 开启虚拟网卡，实现所有流量的全局接管
+  stack: mixed # TCP 用系统栈，UDP 用 gVisor 栈，兼顾性能与兼容
+  dns-hijack:
+    - any:53 # 强制劫持系统 53 端口的所有传统 DNS 请求，送入内置 DNS 处理
+  mtu: 1500 # 虚拟网卡最大传输单元，标准 1500
 
 proxy-groups:
   - name: "🚀 节点选择"
