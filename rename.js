@@ -392,6 +392,7 @@ const RETAIN_KEYWORDS = [
   "HKT",
   "HINET",
   "GIA",
+  "CIA",
   "BGP",
   "流媒体",
   "高速",
