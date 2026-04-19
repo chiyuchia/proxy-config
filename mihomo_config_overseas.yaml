@@ -3,7 +3,7 @@
 # 设计目标：
 # 1. 适用于墙外网络环境，绝大多数流量保持直连
 # 2. 仅 AI 相关服务命中规则后走代理
-# 3. 保留 TUN / Fake-IP / Sniffer 的稳定配置，减少 DNS 泄露与规则失效
+# 3. 关闭 DNS / Sniffer / TUN，仅保留端口代理与 AI 规则分流
 # ==========================================
 
 # ==========================================
@@ -19,65 +19,6 @@ find-process-mode: always # 始终追踪发起网络连接的具体进程名
 unified-delay: true # 使用真实 HTTP 响应时间作为测速延迟，而不是虚假的 TCP 握手时间
 tcp-concurrent: true # 并发连接域名的所有 IP，极大提升首次加载速度
 
-# ==========================================
-# 防泄露与 DNS 设置 (DNS)
-# 香港环境下无需针对中国大陆做 DNS 分流：
-# 统一走公共 DNS，节点域名仍保留直连解析，避免循环解析
-# ==========================================
-dns:
-  enable: true # 开启内置 DNS 服务器
-  ipv6: false # 关闭 IPv6 解析，避免本地 IPv6 绕过规则
-  enhanced-mode: fake-ip # 开启 Fake-IP，减少 DNS 泄露并增强规则命中率
-  fake-ip-range: 198.18.0.1/16 # 伪装 IP 的生成网段
-  fake-ip-filter: # 以下域名返回真实 IP，避免本地网络与节点域名异常
-    - "*.lan" # 局域网设备
-    - "*.local" # 本地网络设备
-    - "time.*.com" # 时间同步服务器
-    - "ntp.*.com" # 网络时间协议服务器
-    - "+.market.xiaomi.com" # 小米应用商店(特定网络需求)
-    - "localhost.ptlogin2.qq.com" # 腾讯系软件快捷登录必备回环域名
-    - "+.334837632.xyz" # V2Tun 节点域名
-    - "+.07c06051-81fd-4aa4-a94e-a0860315df8f.org" # oixCloud Edge/落地域名
-    - "+.cloud-nodes.com" # oixNodes IEPL 节点域名
-    - "+.nodesyo.org" # Nodesyo 节点域名
-    - "+.us-nj.122870.xyz" # 家宽节点域名
-    - "+.sys.wpssx.com" # 合租线路域名
-  use-hosts: true # 尊重操作系统的 /etc/hosts 记录
-  default-nameserver: # 启动 DNS，仅用于解析 DoH 地址本身
-    - 1.1.1.1
-    - 8.8.8.8
-  nameserver: # 香港环境下直接使用公共 DoH，无需再经代理解析
-    - "https://1.1.1.1/dns-query"
-    - "https://8.8.8.8/dns-query"
-
-# ==========================================
-# 域名嗅探 (Sniffer)
-# ==========================================
-sniffer:
-  enable: true # 开启流量嗅探，应对软件直接通过纯 IP 发起连接的情况
-  force-dns-mapping: true # 强制将嗅探到的域名与 Fake-IP 对应，防止分流规则失效
-  parse-pure-ip: true # 强行解析纯 IP 请求，尝试从中提取真实域名
-  sniff:
-    HTTP:
-      ports:
-        - 80
-        - 443
-    TLS:
-      ports:
-        - 443
-  skip-domain:
-    - "+.push.apple.com" # 放行苹果推送服务，防止消息通知断连或收不到
-
-# ==========================================
-# 全局接管设置 (TUN 模式)
-# ==========================================
-tun:
-  enable: true # 开启虚拟网卡，实现所有流量的全局接管
-  stack: mixed # TCP 用系统栈，UDP 用 gVisor 栈，兼顾性能与兼容
-  dns-hijack:
-    - any:53 # 强制劫持系统 53 端口的传统 DNS 请求，送入内置 DNS 处理
-  mtu: 1500 # 虚拟网卡最大传输单元
-
 proxy-groups:
   - name: "🚀 节点选择"
     type: select
@@ -91,8 +32,8 @@ proxy-groups:
     interval: 300
     include-all: true
     proxies:
-      - "🚀 节点选择"
       - DIRECT
+      - "🚀 节点选择"
 
   - name: "💬 Ai平台"
     type: select
