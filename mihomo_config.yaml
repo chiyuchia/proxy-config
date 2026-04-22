@@ -105,8 +105,6 @@ proxy-groups:
 
   - name: "🛡️ 亚太中转"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🇲🇾 大马节点"
       - "🚀 节点选择"
@@ -128,8 +126,6 @@ proxy-groups:
 
   - name: "🛡️ 美西中转"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🇺🇲 美国节点"
       - "🚀 节点选择"
@@ -151,34 +147,24 @@ proxy-groups:
 
   - name: "🏠 家宽节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(家宽|落地)"
 
   - name: "🏝️ 精品节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🏠 家宽节点"
     filter: "(自建|合租|家宽|落地|线路)"
 
   - name: "💻 自建节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(自建)"
 
   - name: "🖥️ 合租节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(合租)"
 
   - name: "♊ Gemini"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🏠 家宽节点"
       - "🏝️ 精品节点"
@@ -201,8 +187,6 @@ proxy-groups:
 
   - name: "💬 Ai平台"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🏠 家宽节点"
       - "🏝️ 精品节点"
@@ -225,8 +209,6 @@ proxy-groups:
 
   - name: "🎥 奈飞视频"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🇸🇬 狮城节点"
       - "🚀 节点选择"
@@ -249,8 +231,6 @@ proxy-groups:
 
   - name: "📹 油管视频"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🇺🇲 美国节点"
       - "🚀 节点选择"
@@ -273,8 +253,6 @@ proxy-groups:
 
   - name: "📼 EMBY"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🇺🇲 美国节点"
       - "🚀 节点选择"
@@ -297,8 +275,6 @@ proxy-groups:
 
   - name: "📲 电报消息"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🇸🇬 狮城节点"
       - "🚀 节点选择"
@@ -321,8 +297,6 @@ proxy-groups:
 
   - name: "🐙 Github"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🚀 节点选择"
       - "🏠 家宽节点"
@@ -345,8 +319,6 @@ proxy-groups:
 
   - name: "🍎 Apple"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - DIRECT
       - "🚀 节点选择"
@@ -370,8 +342,6 @@ proxy-groups:
 
   - name: "Ⓜ️ Microsoft"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🚀 节点选择"
       - "🏠 家宽节点"
@@ -394,8 +364,6 @@ proxy-groups:
 
   - name: "📢 Google"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🏠 家宽节点"
       - "🏝️ 精品节点"
@@ -418,8 +386,6 @@ proxy-groups:
 
   - name: "📺 国内媒体"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - DIRECT
       - "🚀 节点选择"
@@ -443,8 +409,6 @@ proxy-groups:
 
   - name: "🌍 国外媒体"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🚀 节点选择"
       - "🏠 家宽节点"
@@ -467,8 +431,6 @@ proxy-groups:
 
   - name: "🎮 游戏平台"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🚀 节点选择"
       - DIRECT
@@ -492,8 +454,6 @@ proxy-groups:
 
   - name: "💰 加密货币"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🇸🇬 狮城节点"
       - "🚀 节点选择"
@@ -516,8 +476,6 @@ proxy-groups:
 
   - name: "🐟 漏网之鱼"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     proxies:
       - "🚀 节点选择"
       - DIRECT
@@ -541,80 +499,54 @@ proxy-groups:
 
   - name: "🇭🇰 香港节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(港|HK|hk|Hong Kong|HongKong|hongkong)"
 
   - name: "🇺🇲 美国节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲)"
 
   - name: "🇸🇬 狮城节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(新加坡|坡|狮城|SG|Singapore)"
 
   - name: "🇲🇾 大马节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(MY|马来西亚|马来|🇲🇾)"
 
   - name: "🇯🇵 日本节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)"
 
   - name: "🇼🇸 台湾节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(台|新北|彰化|TW|Taiwan)"
 
   - name: "🇪🇺 欧洲节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(?=.*(?i)(🇦🇱|🇦🇩|🇦🇹|🇧🇾|🇧🇪|🇧🇦|🇧🇬|🇭🇷|🇨🇾|🇨🇿|🇩🇰|🇪🇪|🇫🇮|🇫🇷|🇩🇪|🇬🇷|🇭🇺|🇮🇸|🇮🇪|🇮🇹|🇽🇰|🇱🇻|🇱🇮|🇱🇹|🇱🇺|🇲🇹|🇲🇩|🇲🇨|🇲🇪|🇳🇱|🇲🇰|🇳🇴|🇵🇱|🇵🇹|🇷🇴|🇷🇺|🇸🇲|🇷🇸|🇸🇰|🇸🇮|🇪🇸|🇸🇪|🇨🇭|🇹🇷|🇺🇦|🇬🇧|🇻🇦))"
 
   - name: "🌍 其他节点"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|MY|马来西亚|马来|🇲🇾|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan|🇦🇱|🇦🇩|🇦🇹|🇧🇾|🇧🇪|🇧🇦|🇧🇬|🇭🇷|🇨🇾|🇨🇿|🇩🇰|🇪🇪|🇫🇮|🇫🇷|🇩🇪|🇬🇷|🇭🇺|🇮🇸|🇮🇪|🇮🇹|🇽🇰|🇱🇻|🇱🇮|🇱🇹|🇱🇺|🇲🇹|🇲🇩|🇲🇨|🇲🇪|🇳🇱|🇲🇰|🇳🇴|🇵🇱|🇵🇹|🇷🇴|🇷🇺|🇸🇲|🇷🇸|🇸🇰|🇸🇮|🇪🇸|🇸🇪|🇨🇭|🇹🇷|🇺🇦|🇬🇧|🇻🇦)).*"
 
   - name: "✈️ V2Tun"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(V2Tun)"
 
   - name: "✈️ oixCloud"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(oixCloud)"
 
   - name: "✈️ Nachoneko"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(Nachoneko)"
 
   - name: "✈️ 良心云"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(良心云)"
 
   - name: "✈️ 一元机场"
     type: select
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
     filter: "(一元机场)"
 
   - name: "🎯 全球直连"
