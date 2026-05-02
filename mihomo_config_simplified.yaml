@@ -395,11 +395,16 @@ proxy-groups:
       - "🚀 节点选择"
 
 rule-providers:
-  custom_direct: &classical_yaml_provider
+  custom_proxy: &classical_yaml_provider
     type: http
     behavior: classical
     interval: 86400
     proxy: DIRECT
+    path: ./ruleset/custom_proxy.yaml
+    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/custom_proxy.yaml"
+
+  custom_direct:
+    <<: *classical_yaml_provider
     path: ./ruleset/custom_direct.yaml
     url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/custom_direct.yaml"
 
@@ -557,6 +562,7 @@ rule-providers:
 rules:
   - "DOMAIN,v1.uhdnow.com,📼 EMBY"
   - "DOMAIN,global.uhdnow.com,📼 EMBY"
+  - "RULE-SET,custom_proxy,🚀 节点选择"
   - "RULE-SET,custom_direct,🎯 全球直连"
   - "RULE-SET,local-area-network,🎯 全球直连"
   - "RULE-SET,unban,🎯 全球直连"

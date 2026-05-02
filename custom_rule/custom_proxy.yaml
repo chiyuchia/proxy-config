@@ -1,0 +1,3 @@
+payload:
+  # 苹果推送服务改走代理，避免在特定网络环境下通知不稳定
+  - "DOMAIN-SUFFIX,push.apple.com"
