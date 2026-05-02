@@ -721,8 +721,7 @@ rule-providers:
     url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ProxyGFWlist.yaml"
 
 rules:
-  - "DOMAIN,v1.uhdnow.com,📼 EMBY"
-  - "DOMAIN,global.uhdnow.com,📼 EMBY"
+  - "DOMAIN-SUFFIX,uhdnow.com,📼 EMBY"
   - "RULE-SET,custom_proxy,🚀 节点选择"
   - "RULE-SET,custom_direct,🎯 全球直连"
   - "RULE-SET,local-area-network,🎯 全球直连"
