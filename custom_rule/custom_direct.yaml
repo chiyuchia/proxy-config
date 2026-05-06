@@ -1,16 +1,10 @@
 payload:
   # BT 进程直连，避免下载流量误走代理
   - "PROCESS-NAME,qbittorrent-nox"
-  # 当前维护中的节点接入域名；旧 IEPL 域已迁移到 cloud-nodes.com
-  # 保留直连以避免节点域名进入代理递归或被 Fake-IP 干扰
-  - "DOMAIN-SUFFIX,334837632.xyz"
-  - "DOMAIN-SUFFIX,07c06051-81fd-4aa4-a94e-a0860315df8f.org"
-  - "DOMAIN-SUFFIX,cloud-nodes.com"
-  # 运行时实际出现，且当前通过“前置节点”接入；是否保留直连取决于你的链路设计
+  # 家宽节点域名
   - "DOMAIN,us-nj.122870.xyz"
   # 运行时配置中实际作为 server 出现的其他节点域名
   - "DOMAIN-SUFFIX,sys.wpssx.com" # 合租线路 🇲🇾 MY | Evoxt KUL
-  - "DOMAIN-SUFFIX,nodesyo.org"
   # L 站邀请码
   - "DOMAIN-SUFFIX,invite.linuxdo.org"
   # EMBY 反代域名

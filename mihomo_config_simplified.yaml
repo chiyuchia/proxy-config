@@ -26,11 +26,6 @@ dns:
     - "ntp.*.com" # 网络时间协议服务器
     - "+.market.xiaomi.com" # 小米应用商店(特定网络需求)
     - "localhost.ptlogin2.qq.com" # 腾讯系软件快捷登录必备回环域名
-    # 当前维护中的节点域名；旧 IEPL 域已迁移到 cloud-nodes.com
-    - "+.334837632.xyz" # V2Tun 节点域名
-    - "+.07c06051-81fd-4aa4-a94e-a0860315df8f.org" # oixCloud Edge/落地域名
-    - "+.cloud-nodes.com" # oixNodes IEPL 节点域名
-    - "+.nodesyo.org" # Nodesyo 节点域名
     - "+.us-nj.122870.xyz" # 家宽节点域名
     - "+.sys.wpssx.com" # 合租线路 🇲🇾 MY | Evoxt KUL
     # 当前 runtime 未出现，但保留为历史/备用节点域
@@ -41,8 +36,6 @@ dns:
   nameserver:
     - "https://doh.pub/dns-query"
     - "https://dns.alidns.com/dns-query"
-  nameserver-policy: # DNS 分流策略：精准匹配国内域名
-    "+.cloud-nodes.com": 140.205.1.13
 
 # ==========================================
 # 全局接管设置 (TUN 模式)

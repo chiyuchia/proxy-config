@@ -27,10 +27,6 @@ dns:
     - "+.market.xiaomi.com" # 小米应用商店(特定网络需求)
     - "localhost.ptlogin2.qq.com" # 腾讯系软件快捷登录必备回环域名
     # 当前维护中的节点域名；旧 IEPL 域已迁移到 cloud-nodes.com
-    - "+.334837632.xyz" # V2Tun 节点域名
-    - "+.07c06051-81fd-4aa4-a94e-a0860315df8f.org" # oixCloud Edge/落地域名
-    - "+.cloud-nodes.com" # oixNodes IEPL 节点域名
-    - "+.nodesyo.org" # Nodesyo 节点域名
     - "+.us-nj.122870.xyz" # 家宽节点域名
     - "+.sys.wpssx.com" # 合租线路 🇲🇾 MY | Evoxt KUL
     # 当前 runtime 未出现，但保留为历史/备用节点域
@@ -48,8 +44,6 @@ dns:
   proxy-server-nameserver: # 代理节点专用 DNS：始终直连解析，避免 TUN + Fake-IP 循环
     - "https://doh.pub/dns-query"
     - "https://dns.alidns.com/dns-query"
-  proxy-server-nameserver-policy:
-    "+.cloud-nodes.com": 140.205.1.13
 
 # ==========================================
 # 域名嗅探 (Sniffer)
@@ -97,9 +91,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -118,9 +109,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -139,9 +127,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -179,9 +164,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -201,9 +183,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -223,9 +202,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -245,9 +221,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -267,9 +240,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -289,9 +259,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -311,9 +278,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -334,9 +298,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -356,9 +317,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -378,9 +336,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -401,9 +356,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -422,9 +374,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
       - DIRECT
@@ -446,9 +395,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -468,9 +414,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -491,9 +434,6 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
-      - "✈️ V2Tun"
-      - "✈️ oixCloud"
-      - "✈️ Nachoneko"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -528,18 +468,6 @@ proxy-groups:
   - name: "🌍 其他节点"
     type: select
     filter: "^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|MY|马来西亚|马来|🇲🇾|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan|🇦🇱|🇦🇩|🇦🇹|🇧🇾|🇧🇪|🇧🇦|🇧🇬|🇭🇷|🇨🇾|🇨🇿|🇩🇰|🇪🇪|🇫🇮|🇫🇷|🇩🇪|🇬🇷|🇭🇺|🇮🇸|🇮🇪|🇮🇹|🇽🇰|🇱🇻|🇱🇮|🇱🇹|🇱🇺|🇲🇹|🇲🇩|🇲🇨|🇲🇪|🇳🇱|🇲🇰|🇳🇴|🇵🇱|🇵🇹|🇷🇴|🇷🇺|🇸🇲|🇷🇸|🇸🇰|🇸🇮|🇪🇸|🇸🇪|🇨🇭|🇹🇷|🇺🇦|🇬🇧|🇻🇦)).*"
-
-  - name: "✈️ V2Tun"
-    type: select
-    filter: "(V2Tun)"
-
-  - name: "✈️ oixCloud"
-    type: select
-    filter: "(oixCloud)"
-
-  - name: "✈️ Nachoneko"
-    type: select
-    filter: "(Nachoneko)"
 
   - name: "✈️ 良心云"
     type: select
