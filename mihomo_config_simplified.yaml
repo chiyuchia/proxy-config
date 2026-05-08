@@ -36,6 +36,8 @@ dns:
   nameserver:
     - "https://doh.pub/dns-query"
     - "https://dns.alidns.com/dns-query"
+  nameserver-policy: # DNS 分流策略：精准匹配国内域名
+    "+.cloud-nodes.com": 140.205.1.13
 
 # ==========================================
 # 全局接管设置 (TUN 模式)

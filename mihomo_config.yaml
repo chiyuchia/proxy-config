@@ -44,6 +44,8 @@ dns:
   proxy-server-nameserver: # 代理节点专用 DNS：始终直连解析，避免 TUN + Fake-IP 循环
     - "https://doh.pub/dns-query"
     - "https://dns.alidns.com/dns-query"
+  proxy-server-nameserver-policy:
+    "+.cloud-nodes.com": 140.205.1.13
 
 # ==========================================
 # 域名嗅探 (Sniffer)
