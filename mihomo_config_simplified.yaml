@@ -124,6 +124,23 @@ proxy-groups:
       - "🇪🇺 欧洲节点"
       - "🌍 其他节点"
 
+  - name: "🍎 Apple Push"
+    type: select
+    proxies:
+      - "🚀 节点选择"
+      - "🏠 家宽节点"
+      - "🏝️ 精品节点"
+      - "💻 自建节点"
+      - "🖥️ 合租节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🇪🇺 欧洲节点"
+      - "🌍 其他节点"
+      - DIRECT
+
   - name: "🎥 奈飞视频"
     type: select
     proxies:
@@ -482,6 +499,11 @@ rule-providers:
     path: ./ruleset/github.yaml
     url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.yaml"
 
+  apple-push:
+    <<: *classical_yaml_provider
+    url: 'https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Apple%20Push.yaml'
+    path: ./ruleset/apple-push.yaml
+
   apple:
     <<: *classical_yaml_provider
     path: ./ruleset/apple.yaml
@@ -572,6 +594,7 @@ rules:
   - "RULE-SET,ai,💬 Ai平台"
   - "RULE-SET,ai-suite,💬 Ai平台"
   - "GEOSITE,category-ai-!cn,💬 Ai平台"
+  - "RULE-SET,apple-push,🍎 Apple Push"
   - "RULE-SET,telegram,📲 电报消息"
   - "RULE-SET,github,🐙 Github"
   - "RULE-SET,apple,🍎 Apple"
