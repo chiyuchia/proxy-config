@@ -78,7 +78,7 @@ tun:
 proxy-groups:
   - name: "🚀 节点选择"
     type: select
-    url: "http://cp.cloudflare.com"
+    url: "http://cp.cloudflare.com/generate_204"
     interval: 300
     proxies:
       - "🏝️ 精品节点"

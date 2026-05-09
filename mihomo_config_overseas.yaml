@@ -22,13 +22,13 @@ tcp-concurrent: true # 并发连接域名的所有 IP，极大提升首次加载
 proxy-groups:
   - name: "🚀 节点选择"
     type: select
-    url: "http://cp.cloudflare.com"
+    url: "http://cp.cloudflare.com/generate_204"
     interval: 300
     include-all: true
 
   - name: "♊ Gemini"
     type: select
-    url: "http://cp.cloudflare.com"
+    url: "http://cp.cloudflare.com/generate_204"
     interval: 300
     include-all: true
     proxies:
@@ -37,7 +37,7 @@ proxy-groups:
 
   - name: "💬 Ai平台"
     type: select
-    url: "http://cp.cloudflare.com"
+    url: "http://cp.cloudflare.com/generate_204"
     interval: 300
     include-all: true
     proxies:
