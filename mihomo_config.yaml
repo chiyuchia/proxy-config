@@ -90,7 +90,21 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🛡️ Edge 中转"
+    type: select
+    proxies:
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -117,7 +131,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -136,7 +150,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -151,7 +165,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -166,7 +180,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
       - DIRECT
@@ -182,7 +196,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -197,7 +211,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -212,7 +226,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -227,7 +241,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -242,7 +256,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -258,7 +272,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -273,7 +287,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -288,7 +302,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -304,7 +318,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -319,7 +333,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
       - DIRECT
@@ -336,7 +350,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -351,7 +365,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -367,7 +381,7 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ oixCloud"
+      - "✈️ oixCloud Optimized"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
@@ -395,9 +409,13 @@ proxy-groups:
     type: select
     filter: "^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan)).*"
 
-  - name: "✈️ oixCloud"
+  - name: "✈️ oixCloud Optimized"
     type: select
-    filter: "(oixCloud)"
+    filter: "(oixCloud Optimized)"
+    
+  - name: "✈️ oixCloud Edge"
+    type: select
+    filter: "(oixCloud Edge)"
 
   - name: "✈️ 良心云"
     type: select
