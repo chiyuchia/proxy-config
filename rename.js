@@ -517,8 +517,19 @@ async function operator(proxies, targetPlatform, context) {
   let errorCount = 0;
 
   // 第一阶段：用节点名全量匹配地区，命中则写入 countryMap，跳过 API
-  const countryMap = new Map(); // `${server}:${port}` -> country_code
-  const serverKey = (p) => `${p.server}:${p.port}`;
+  const countryMap = new Map(); // node endpoint/signature -> country_code
+  const serverKey = (p) =>
+    [
+      p.server,
+      p.port,
+      p.type,
+      p.network,
+      p.servername || p.sni,
+      p["ws-opts"]?.headers?.Host,
+      p["ws-opts"]?.path,
+    ]
+      .filter(Boolean)
+      .join("|");
 
   for (const proxy of proxies) {
     if (!proxy.server) continue;
