@@ -23,10 +23,10 @@
  *                                多个用 | 连接，按顺序拼接，例如: "FG|ZH"、"ZH"、"FG|ZH|EN"
  *
  * 输出格式 (默认 out=FG|EN):
- *   remove=false: "_subName 🇺🇸 US 01 | 原节点名"
- *   remove=true 未传 retain:          "_subName 🇺🇸 US 01"
- *   remove=true 传 retain 有命中:     "_subName 🇺🇸 US 01 | 东京 IPLC"
- *   remove=true 传 retain 无命中:     "_subName 🇺🇸 US 01"
+ *   remove=false: "🇺🇸 US 01 | 原节点名 _subName"
+ *   remove=true 未传 retain:          "🇺🇸 US 01 | _subName"
+ *   remove=true 传 retain 有命中:     "🇺🇸 US 01 | 东京 IPLC _subName"
+ *   remove=true 传 retain 无命中:     "🇺🇸 US 01 | _subName"
  */
 
 // prettier-ignore
@@ -637,14 +637,20 @@ async function operator(proxies, targetPlatform, context) {
     counterMap.set(key, count);
     const seq = String(count).padStart(2, "0");
 
+    const baseName = [countryLabel, seq].filter(Boolean).join(" ");
+    const appendSubName = (name) => [name, subName].filter(Boolean).join(" ");
+    const joinNameParts = (...parts) => parts.filter(Boolean).join(" | ");
+
     const newName = removeOriginalName
       ? (() => {
-          if (!retainKeys) return `${subName} ${countryLabel} ${seq}`;
+          if (!retainKeys) return joinNameParts(baseName, subName);
           const retained = extractRetainKeywords(proxy.name, retainKeys);
-          const base = `${subName} ${countryLabel} ${seq}`;
-          return retained.length > 0 ? `${base} | ${retained.join(" ")}` : base;
+          return joinNameParts(
+            baseName,
+            appendSubName(retained.length > 0 ? retained.join(" ") : ""),
+          );
         })()
-      : `${subName} ${countryLabel} ${seq} | ${proxy.name}`;
+      : joinNameParts(baseName, appendSubName(proxy.name));
 
     console.log(`[geo-tag] 重命名: ${proxy.name} → ${newName}`);
     return { ...proxy, name: newName };
