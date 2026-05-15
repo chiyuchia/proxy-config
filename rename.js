@@ -27,6 +27,7 @@
  *   remove=true 未传 retain:          "🇺🇸 US 01 | _subName"
  *   remove=true 传 retain 有命中:     "🇺🇸 US 01 | 东京 IPLC _subName"
  *   remove=true 传 retain 无命中:     "🇺🇸 US 01 | _subName"
+ *   VikingLinks 格式:               "🇯🇵 JP-SH-12-GCP" → "🇯🇵 JP 12 | SH GCP"
  */
 
 // prettier-ignore
@@ -444,6 +445,58 @@ function extractRetainKeywords(name, retainKeys) {
   );
 }
 
+const COUNTRY_CODE_ALIASES = {
+  UK: "GB",
+};
+
+function normalizeCountryCode(code) {
+  const upper = String(code || "").toUpperCase();
+  if (EN.includes(upper)) return upper;
+  return COUNTRY_CODE_ALIASES[upper] || null;
+}
+
+/**
+ * 解析 VikingLinks 的节点名：COUNTRY-NN-PROVIDER 或 COUNTRY-LINE-NN-PROVIDER。
+ * 例：HK-Go-01-Hytron -> { countryCode: "HK", suffix: "Go Hytron" }
+ */
+function parseVkGistName(name) {
+  const trimmed = String(name || "").trim();
+  const flagMatch = trimmed.match(/^([\u{1F1E6}-\u{1F1FF}]{2})\s*/u);
+  const rawName = flagMatch ? trimmed.slice(flagMatch[0].length) : trimmed;
+  const parts = rawName
+    .split("-")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (parts.length < 3 || !/^[A-Z]{2}$/i.test(parts[0])) return null;
+
+  const displayCode = parts[0].toUpperCase();
+  const countryCode = normalizeCountryCode(displayCode);
+  if (!countryCode) return null;
+
+  let line = "";
+  let providerParts = [];
+
+  if (/^\d{1,3}$/.test(parts[1])) {
+    providerParts = parts.slice(2);
+  } else if (parts.length >= 4 && /^\d{1,3}$/.test(parts[2])) {
+    line = parts[1];
+    providerParts = parts.slice(3);
+  } else {
+    return null;
+  }
+
+  const provider = providerParts.join(" ").replace(/\s+/g, " ").trim();
+  if (!provider) return null;
+
+  return {
+    countryCode,
+    displayCode,
+    flag: flagMatch?.[1] || "",
+    suffix: [line, provider].filter(Boolean).join(" "),
+  };
+}
+
 async function operator(proxies, targetPlatform, context) {
   const removeOriginalName =
     $arguments?.remove === undefined ? true : !!$arguments.remove;
@@ -536,12 +589,13 @@ async function operator(proxies, targetPlatform, context) {
     let cleanName = blockRegex
       ? proxy.name.replace(blockRegex, "")
       : proxy.name;
+    const parsedName = parseVkGistName(cleanName);
     // 自动剥离节点名中的域名（含点的多级域名），避免误匹配国家代码
     cleanName = cleanName.replace(
       /[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]+/g,
       "",
     );
-    const code = matchNameToCode(cleanName);
+    const code = parsedName?.countryCode || matchNameToCode(cleanName);
     if (code) {
       countryMap.set(serverKey(proxy), code);
       nameHitCount++;
@@ -616,12 +670,14 @@ async function operator(proxies, targetPlatform, context) {
     );
   }
 
-  // 第二阶段：按 _subName + country_code 分组计数，生成新名称
+  // 第二阶段：按 _subName + country_code 分组计数，生成新名称。
   const counterMap = new Map(); // `${subName}|${countryCode}` -> 当前计数
 
   const renamedProxies = proxies.map((proxy) => {
     const server = proxy.server;
     const countryCode = server ? countryMap.get(serverKey(proxy)) : null;
+    const parsedName = parseVkGistName(proxy.name);
+    const parsedNameMatched = parsedName?.countryCode === countryCode;
 
     if (!countryCode) {
       return proxy;
@@ -629,21 +685,25 @@ async function operator(proxies, targetPlatform, context) {
 
     const subName = proxy._subName || "";
     const flag = getFlagEmoji(countryCode);
+    const outputFlag =
+      parsedNameMatched && parsedName.flag ? parsedName.flag : flag;
+    const outputCountryCode = parsedNameMatched
+      ? parsedName.displayCode
+      : countryCode;
     const zhName = EN_TO_ZH.get(countryCode) || countryCode;
     const qcName = QC[EN.indexOf(countryCode)] || countryCode;
     const countryLabel = outFields
       .map((f) =>
         f === "FG"
-          ? flag
+          ? outputFlag
           : f === "ZH"
             ? zhName
             : f === "QC"
               ? qcName
-              : countryCode,
+              : outputCountryCode,
       )
       .join(" ");
     const key = `${subName}|${countryCode}`;
-
     const count = (counterMap.get(key) || 0) + 1;
     counterMap.set(key, count);
     const seq = String(count).padStart(2, "0");
@@ -655,6 +715,9 @@ async function operator(proxies, targetPlatform, context) {
     const newName = removeOriginalName
       ? (() => {
           if (!retainKeys) return joinNameParts(baseName, subName);
+          if (parsedNameMatched) {
+            return joinNameParts(baseName, appendSubName(parsedName.suffix));
+          }
           const retained = extractRetainKeywords(proxy.name, retainKeys);
           return joinNameParts(
             baseName,
