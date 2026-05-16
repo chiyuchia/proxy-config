@@ -28,6 +28,7 @@
  *   remove=true 传 retain 有命中:     "🇺🇸 US 01 | 东京 IPLC _subName"
  *   remove=true 传 retain 无命中:     "🇺🇸 US 01 | _subName"
  *   VikingLinks 格式:               "🇯🇵 JP-SH-12-GCP" → "🇯🇵 JP 12 | SH GCP"
+ *   良心云格式:                     "🇯🇵日本高速01|CTCU|0.5x" → "🇯🇵 JP 01 | 高速 CTCU 0.5x"
  */
 
 // prettier-ignore
@@ -405,17 +406,44 @@ const RETAIN_KEYWORDS = [
   "OVH",
   "CDN",
   "下载",
-  "OCTO"
+  "OCTO",
+  "CTCUCM",
+  "CMCU",
+  "CUCM",
+  "CTCU",
+  "CM",
+  "CT",
+  "CU"
 ];
+
+const RETAIN_PIPE_TAG_PATTERNS = [
+  /^(?:CM|CT|CU)+$/i,
+  /^(?:\d+(?:\.\d+)?|\.\d+)x$/i,
+];
+
+function extractRetainPipeTags(name) {
+  const parts = String(name || "")
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return [];
+
+  return parts
+    .slice(1)
+    .filter((part) => RETAIN_PIPE_TAG_PATTERNS.some((re) => re.test(part)));
+}
 
 /**
  * 从原节点名中提取命中的保留关键词列表
- * 先匹配城市关键词，再匹配用户自定义 retainKeys
+ * 先匹配城市/线路关键词，再匹配良心云这类尾部管道标签，最后匹配用户自定义 retainKeys
  * 返回命中词数组（去重），未命中返回空数组
  */
 function extractRetainKeywords(name, retainKeys) {
   const hits = [];
   const nameLower = name.toLowerCase();
+  const pushOriginal = (value) => {
+    if (value && !hits.includes(value)) hits.push(value);
+  };
   const pushHit = (kw) => {
     const kwLower = kw.toLowerCase();
     // 英文关键词加单词边界，避免匹配单词内部（如 ist 命中 Registry）
@@ -426,9 +454,10 @@ function extractRetainKeywords(name, retainKeys) {
     const m = re.exec(nameLower);
     if (!m) return;
     const original = name.slice(m.index, m.index + kw.length);
-    if (!hits.includes(original)) hits.push(original);
+    pushOriginal(original);
   };
   for (const kw of RETAIN_KEYWORDS) pushHit(kw);
+  for (const tag of extractRetainPipeTags(name)) pushOriginal(tag);
   for (const kw of retainKeys) pushHit(kw);
   // 按关键词在原节点名中的首次出现位置排序，保留源词序
   hits.sort(
