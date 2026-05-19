@@ -489,6 +489,11 @@ rule-providers:
     path: ./ruleset/custom_direct.yaml
     url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/custom_direct.yaml"
 
+  emby:
+    <<: *classical_yaml_provider
+    path: ./ruleset/emby.yaml
+    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/emby.yaml"
+
   ai-suite-gemini:
     <<: *classical_yaml_provider
     path: ./ruleset/ai-suite-gemini.yaml
@@ -646,11 +651,10 @@ rule-providers:
     url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ProxyGFWlist.yaml"
 
 rules:
-  - "DOMAIN-SUFFIX,uhdnow.com,📼 EMBY"
-  - "DOMAIN-SUFFIX,newneeship.com,📼 EMBY"
-  - "DOMAIN-SUFFIX,shrekmedia.org,📼 EMBY"
   - "RULE-SET,custom_proxy,🚀 节点选择"
   - "RULE-SET,custom_direct,🎯 全球直连"
+  - "RULE-SET,emby,📼 EMBY"
+  - "RULE-SET,ai-suite-gemini,♊ Gemini"
   - "RULE-SET,local-area-network,🎯 全球直连"
   - "RULE-SET,unban,🎯 全球直连"
   - "RULE-SET,china-domain,🎯 全球直连"
@@ -660,7 +664,6 @@ rules:
   - "GEOIP,CN,🎯 全球直连,no-resolve"
   - "RULE-SET,youtube,📹 油管视频"
   - "RULE-SET,netflix,🎥 奈飞视频"
-  - "RULE-SET,ai-suite-gemini,♊ Gemini"
   - "RULE-SET,gemini,♊ Gemini"
   - "RULE-SET,openai,💬 Ai平台"
   - "RULE-SET,copilot,💬 Ai平台"
