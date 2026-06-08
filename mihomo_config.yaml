@@ -390,6 +390,23 @@ proxy-groups:
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
+  - name: "👛 Paypal"
+    type: select
+    proxies:
+      - "🇺🇲 美国节点"
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
   - name: "💰 加密货币"
     type: select
     proxies:
@@ -640,6 +657,11 @@ rule-providers:
     path: ./ruleset/nintendo.yaml
     url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Nintendo.yaml"
 
+  paypal:
+    <<: *classical_yaml_provider
+    path: ./ruleset/paypal.yaml
+    url: "https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/PayPal.yaml"
+
   crypto:
     <<: *classical_yaml_provider
     path: ./ruleset/crypto.yaml
@@ -685,6 +707,7 @@ rules:
   - "RULE-SET,sony,🎮 游戏平台"
   - "RULE-SET,steam,🎮 游戏平台"
   - "RULE-SET,nintendo,🎮 游戏平台"
+  - "RULE-SET,paypal,👛 Paypal"
   - "RULE-SET,crypto,💰 加密货币"
   - "RULE-SET,proxy-gfw,🚀 节点选择"
   - "MATCH,🐟 漏网之鱼"
