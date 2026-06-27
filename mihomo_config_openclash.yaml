@@ -83,7 +83,7 @@ tun:
 proxy-providers:
   oixCloud:
     type: http
-    path: ./proxy_provider/oixCloud Edge.yaml
+    path: ./proxy_provider/oixCloudEdge.yaml
     interval: 86400
     proxy: DIRECT
     health-check:

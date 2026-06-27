@@ -64,6 +64,32 @@ function mergeProxyNames(existingProxies, extraProxies) {
   return [...new Set([...(existingProxies ?? []), ...extraProxies])];
 }
 
+function buildOixCloudProvider(url, existingProvider) {
+  if (!hasText(url)) {
+    return null;
+  }
+
+  if (existingProvider) {
+    return {
+      ...existingProvider,
+      url,
+    };
+  }
+
+  return {
+    type: 'http',
+    url,
+    path: './proxy_provider/oixCloudEdge.yaml',
+    interval: 86400,
+    proxy: 'DIRECT',
+    'health-check': {
+      enable: true,
+      interval: 600,
+      url: 'http://www.gstatic.com/generate_204',
+    },
+  };
+}
+
 function main(config) {
   // 防御性兜底：某些订阅模板可能没有生成 `proxy-groups` 或 `proxies`。
   const originalProxyGroups = config?.['proxy-groups'] ?? [];
@@ -88,5 +114,19 @@ function main(config) {
       proxies: mergeProxyNames(group?.proxies, extraProxies),
     };
   });
+
+  const oixCloudEdgePath = $arguments?.oixCloudEdgePath || '';
+  const existingProxyProviders = config?.['proxy-providers'] ?? {};
+  const oixCloudProvider = buildOixCloudProvider(
+    oixCloudEdgePath,
+    existingProxyProviders.oixCloud
+  );
+  if (oixCloudProvider) {
+    config['proxy-providers'] = {
+      ...existingProxyProviders,
+      oixCloud: oixCloudProvider,
+    };
+  }
+
   return config;
 }
