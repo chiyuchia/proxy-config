@@ -78,13 +78,26 @@ tun:
   mtu: 1500 # 虚拟网卡最大传输单元，标准 1500
 
 # ==========================================
-# 说明：以下 proxy-group 的 `use: - oixCloud` 依赖 OpenClash
-# 运行时自动注入的 proxy-provider，本文件不显式定义该 provider。
+# 代理提供者 (Proxy Providers)
+# ==========================================
+proxy-providers:
+  oixCloud:
+    type: http
+    path: ./proxy_provider/oixCloud Edge.yaml
+    interval: 86400
+    proxy: DIRECT
+    health-check:
+      enable: true
+      interval: 600
+      url: https://cp.cloudflare.com/generate_204
+
+# ==========================================
+# 代理组 (Proxy Groups)
 # ==========================================
 proxy-groups:
   - name: "🚀 节点选择"
     type: select
-    url: "http://cp.cloudflare.com/generate_204"
+    url: "https://cp.cloudflare.com/generate_204"
     interval: 300
     use:
       - oixCloud
