@@ -1,0 +1,771 @@
+# ==========================================
+# 全局配置 (General)
+# ==========================================
+mixed-port: 7890 # 混合端口，同时支持 HTTP 和 SOCKS5
+allow-lan: true # 允许局域网设备(如手机/iPad)连接此代理
+bind-address: "*" # 监听所有网络接口
+mode: rule
+log-level: info # 日志级别：打印重要连接信息，不影响性能
+ipv6: false # 是否允许内核接受 IPv6 流量
+find-process-mode: always # 始终追踪发起网络连接的具体进程名
+unified-delay: true # 使用真实 HTTP 响应时间作为测速延迟，而不是虚假的 TCP 握手时间
+tcp-concurrent: true # 并发连接域名的所有 IP，极大提升首次加载速度
+
+# ==========================================
+# 防泄露与 DNS 分流设置 (DNS)
+# ==========================================
+dns:
+  enable: true # 开启内置 DNS 服务器
+  ipv6: false # 关闭 IPv6 解析，防止本地宽带 IPv6 导致流量直连泄露
+  enhanced-mode: fake-ip # 开启 Fake-IP 伪装模式，彻底杜绝本地 DNS 泄露
+  fake-ip-range: 198.18.0.1/16 # 伪装 IP 的生成网段 (内网保留网段)
+  fake-ip-filter: # Fake-IP 白名单：以下域名返回真实 IP
+    - "*.lan" # 局域网设备
+    - "*.local" # 本地网络设备
+    - "time.*.com" # 时间同步服务器
+    - "ntp.*.com" # 网络时间协议服务器
+    - "+.market.xiaomi.com" # 小米应用商店(特定网络需求)
+    - "localhost.ptlogin2.qq.com" # 腾讯系软件快捷登录必备回环域名
+    # 当前维护中的节点域名；旧 IEPL 域已迁移到 cloud-nodes.com
+    - "+.us-nj.122870.xyz" # 家宽节点域名
+    - "+.sys.wpssx.com" # 合租线路 🇲🇾 MY | Evoxt KUL
+    - "+.cloud-nodes.com" # oixCloud 域名
+    - "+.22b74943-12ad-47f4-b705-f2defb6ffea0.org" # OCTO 域名
+    - "+.07c06051-81fd-4aa4-a94e-a0860315df8f.org" # Edge 域名
+  use-hosts: true # 尊重操作系统的 /etc/hosts 记录
+  default-nameserver: # 启动 DNS：仅用于解析下方 DoH 链接本身的真实 IP
+    - 119.29.29.29
+    - 223.5.5.5
+  nameserver-policy: # DNS 分流策略：精准匹配国内域名
+    "geosite:cn": # 只要是中国域名，就直接发给国内腾讯/阿里 DoH 解析 (极速直连)
+      - "https://doh.pub/dns-query"
+      - "https://dns.alidns.com/dns-query"
+  nameserver: # 默认 DNS：解析非国内域名 (强制通过代理节点走，防污染)
+    - "https://1.1.1.1/dns-query#🚀 节点选择"
+    - "https://8.8.8.8/dns-query#🚀 节点选择"
+  proxy-server-nameserver: # 代理节点专用 DNS：始终直连解析，避免 TUN + Fake-IP 循环
+    - "https://doh.pub/dns-query"
+    - "https://dns.alidns.com/dns-query"
+  proxy-server-nameserver-policy:
+    "+.cloud-nodes.com": 124.221.68.73:1053
+
+# ==========================================
+# 域名嗅探 (Sniffer)
+# ==========================================
+sniffer:
+  enable: true # 开启流量嗅探，应对软件直接通过纯 IP 发起连接的情况
+  force-dns-mapping: true # 强制将嗅探到的域名与 Fake-IP 对应，防止分流规则失效
+  parse-pure-ip: true # 强行解析纯 IP 请求，尝试从中提取真实域名
+  sniff: # 指定嗅探的协议与端口
+    HTTP:
+      ports:
+        - 80
+        - 443
+    TLS:
+      ports:
+        - 443
+  skip-domain: # 嗅探白名单：排除特定域名的嗅探
+    - "+.push.apple.com" # 放行苹果推送服务，防止消息通知断连或收不到
+
+# ==========================================
+# 全局接管设置 (TUN 模式)
+# ==========================================
+tun:
+  enable: true # 开启虚拟网卡，实现所有流量的全局接管
+  stack: mixed # TCP 用系统栈，UDP 用 gVisor 栈，兼顾性能与兼容
+  dns-hijack:
+    - any:53 # 强制劫持系统 53 端口的所有传统 DNS 请求，送入内置 DNS 处理
+  mtu: 1500 # 虚拟网卡最大传输单元，标准 1500
+
+# ==========================================
+# 说明：以下 proxy-group 的 `use: - oixCloud` 依赖 OpenClash
+# 运行时自动注入的 proxy-provider，本文件不显式定义该 provider。
+# ==========================================
+proxy-groups:
+  - name: "🚀 节点选择"
+    type: select
+    url: "http://cp.cloudflare.com/generate_204"
+    interval: 300
+    use:
+      - oixCloud
+    proxies:
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🛡️ Edge 中转"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🛡️ 亚太中转"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🛡️ 美西中转"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🇺🇲 美国节点"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🏝️ 精品节点"
+    type: select
+    filter: "(自建|合租)"
+
+  - name: "♊ Gemini"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🏝️ 精品节点"
+      - "🚀 节点选择"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "💬 Ai平台"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🏝️ 精品节点"
+      - "🚀 节点选择"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🍎 Apple Push"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+      - DIRECT
+
+  - name: "🎥 奈飞视频"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🇸🇬 狮城节点"
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "📹 油管视频"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🇺🇲 美国节点"
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "📼 EMBY"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "📲 电报消息"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🇸🇬 狮城节点"
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🐙 Github"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🍎 Apple"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - DIRECT
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "Ⓜ️ Microsoft"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "📢 Google"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🏝️ 精品节点"
+      - "🚀 节点选择"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "📺 国内媒体"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - DIRECT
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🌍 国外媒体"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+      - DIRECT
+
+  - name: "🎮 游戏平台"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🚀 节点选择"
+      - DIRECT
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "👛 Paypal"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🇺🇲 美国节点"
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "💰 加密货币"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🇸🇬 狮城节点"
+      - "🚀 节点选择"
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🐟 漏网之鱼"
+    type: select
+    use:
+      - oixCloud
+    proxies:
+      - "🚀 节点选择"
+      - DIRECT
+      - "🏝️ 精品节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇲 美国节点"
+      - "🇸🇬 狮城节点"
+      - "🇯🇵 日本节点"
+      - "🇼🇸 台湾节点"
+      - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud"
+      - "✈️ oixCloud Edge"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
+
+  - name: "🇭🇰 香港节点"
+    type: select
+    filter: "(港|HK|hk|Hong Kong|HongKong|hongkong)"
+    use:
+      - oixCloud
+
+  - name: "🇺🇲 美国节点"
+    type: select
+    filter: "(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲)"
+    use:
+      - oixCloud
+
+  - name: "🇸🇬 狮城节点"
+    type: select
+    filter: "(新加坡|坡|狮城|SG|Singapore)"
+    use:
+      - oixCloud
+
+  - name: "🇯🇵 日本节点"
+    type: select
+    filter: "(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)"
+    use:
+      - oixCloud
+
+  - name: "🇼🇸 台湾节点"
+    type: select
+    filter: "(台|新北|彰化|TW|Taiwan)"
+    use:
+      - oixCloud
+
+  - name: "🌍 其他节点"
+    type: select
+    filter: "^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan)).*"
+    use:
+      - oixCloud
+
+  - name: "✈️ VikingLinks"
+    type: select
+    filter: "(VikingLinks)"
+
+  - name: "✈️ oixCloud"
+    type: select
+    use:
+      - oixCloud
+
+  - name: "✈️ oixCloud Edge"
+    type: select
+    filter: "(oixCloud Edge)"
+
+  - name: "✈️ 良心云"
+    type: select
+    filter: "(良心云)"
+
+  - name: "✈️ 一元机场"
+    type: select
+    filter: "(一元机场)"
+
+  - name: "🎯 全球直连"
+    type: select
+    proxies:
+      - DIRECT
+      - "🚀 节点选择"
+
+rule-providers:
+  custom_proxy: &classical_yaml_provider
+    type: http
+    behavior: classical
+    interval: 86400
+    proxy: DIRECT
+    path: ./ruleset/custom_proxy.yaml
+    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/custom_proxy.yaml"
+
+  custom_direct:
+    <<: *classical_yaml_provider
+    path: ./ruleset/custom_direct.yaml
+    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/custom_direct.yaml"
+
+  emby:
+    <<: *classical_yaml_provider
+    path: ./ruleset/emby.yaml
+    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/emby.yaml"
+
+  ai-suite-gemini:
+    <<: *classical_yaml_provider
+    path: ./ruleset/ai-suite-gemini.yaml
+    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/ai_suite_gemini.yaml"
+
+  local-area-network:
+    <<: *classical_yaml_provider
+    path: ./ruleset/local-area-network.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/LocalAreaNetwork.yaml"
+
+  unban:
+    <<: *classical_yaml_provider
+    path: ./ruleset/unban.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/UnBan.yaml"
+
+  china-domain:
+    <<: *classical_yaml_provider
+    path: ./ruleset/china-domain.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ChinaDomain.yaml"
+
+  china-company-ip:
+    <<: *classical_yaml_provider
+    behavior: ipcidr
+    path: ./ruleset/china-company-ip.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ChinaCompanyIp.yaml"
+
+  download:
+    <<: *classical_yaml_provider
+    path: ./ruleset/download.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Download.yaml"
+
+  steam-cn:
+    <<: *classical_yaml_provider
+    path: ./ruleset/steam-cn.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/SteamCN/SteamCN_No_Resolve.yaml"
+
+  youtube:
+    <<: *classical_yaml_provider
+    path: ./ruleset/youtube.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/YouTube.yaml"
+
+  netflix:
+    <<: *classical_yaml_provider
+    path: ./ruleset/netflix.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Netflix.yaml"
+
+  ai:
+    <<: *classical_yaml_provider
+    path: ./ruleset/ai.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/AI.yaml"
+
+  ai-suite:
+    <<: *classical_yaml_provider
+    path: ./ruleset/ai-suite.yaml
+    url: "https://cdn.jsdmirror.com/gh/dler-io/Rules@main/Clash/Provider/AI%20Suite.yaml"
+
+  openai:
+    <<: *classical_yaml_provider
+    path: ./ruleset/openai.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml"
+
+  copilot:
+    <<: *classical_yaml_provider
+    path: ./ruleset/copilot.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Copilot/Copilot.yaml"
+
+  gemini:
+    <<: *classical_yaml_provider
+    path: ./ruleset/gemini.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Gemini/Gemini.yaml"
+
+  telegram:
+    <<: *classical_yaml_provider
+    path: ./ruleset/telegram.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Telegram.yaml"
+
+  github:
+    <<: *classical_yaml_provider
+    path: ./ruleset/github.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.yaml"
+
+  apple-push:
+    <<: *classical_yaml_provider
+    url: "https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Apple%20Push.yaml"
+    path: ./ruleset/apple-push.yaml
+
+  apple:
+    <<: *classical_yaml_provider
+    path: ./ruleset/apple.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple.yaml"
+
+  microsoft:
+    <<: *classical_yaml_provider
+    path: ./ruleset/microsoft.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.yaml"
+
+  google:
+    <<: *classical_yaml_provider
+    path: ./ruleset/google.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml"
+
+  bilibili-hmt:
+    <<: *classical_yaml_provider
+    path: ./ruleset/bilibili-hmt.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/BilibiliHMT.yaml"
+
+  bilibili:
+    <<: *classical_yaml_provider
+    path: ./ruleset/bilibili.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Bilibili.yaml"
+
+  china-media:
+    <<: *classical_yaml_provider
+    path: ./ruleset/china-media.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ChinaMedia.yaml"
+
+  proxy-media:
+    <<: *classical_yaml_provider
+    path: ./ruleset/proxy-media.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ProxyMedia.yaml"
+
+  epic:
+    <<: *classical_yaml_provider
+    path: ./ruleset/epic.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Epic.yaml"
+
+  origin:
+    <<: *classical_yaml_provider
+    path: ./ruleset/origin.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Origin.yaml"
+
+  sony:
+    <<: *classical_yaml_provider
+    path: ./ruleset/sony.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Sony.yaml"
+
+  steam:
+    <<: *classical_yaml_provider
+    path: ./ruleset/steam.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Steam.yaml"
+
+  nintendo:
+    <<: *classical_yaml_provider
+    path: ./ruleset/nintendo.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/Ruleset/Nintendo.yaml"
+
+  paypal:
+    <<: *classical_yaml_provider
+    path: ./ruleset/paypal.yaml
+    url: "https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/PayPal.yaml"
+
+  crypto:
+    <<: *classical_yaml_provider
+    path: ./ruleset/crypto.yaml
+    url: "https://cdn.jsdmirror.com/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Crypto/Crypto.yaml"
+
+  proxy-gfw:
+    <<: *classical_yaml_provider
+    path: ./ruleset/proxy-gfw.yaml
+    url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ProxyGFWlist.yaml"
+
+rules:
+  - "RULE-SET,custom_proxy,🚀 节点选择"
+  - "RULE-SET,custom_direct,🎯 全球直连"
+  - "RULE-SET,emby,📼 EMBY"
+  - "RULE-SET,ai-suite-gemini,♊ Gemini"
+  - "RULE-SET,local-area-network,🎯 全球直连"
+  - "RULE-SET,unban,🎯 全球直连"
+  - "RULE-SET,china-domain,🎯 全球直连"
+  - "RULE-SET,china-company-ip,🎯 全球直连"
+  - "RULE-SET,download,🎯 全球直连"
+  - "RULE-SET,steam-cn,🎯 全球直连"
+  - "GEOIP,CN,🎯 全球直连,no-resolve"
+  - "RULE-SET,youtube,📹 油管视频"
+  - "RULE-SET,netflix,🎥 奈飞视频"
+  - "RULE-SET,gemini,♊ Gemini"
+  - "RULE-SET,openai,💬 Ai平台"
+  - "RULE-SET,copilot,💬 Ai平台"
+  - "RULE-SET,ai,💬 Ai平台"
+  - "RULE-SET,ai-suite,💬 Ai平台"
+  - "GEOSITE,category-ai-!cn,💬 Ai平台"
+  - "RULE-SET,apple-push,🍎 Apple Push"
+  - "RULE-SET,telegram,📲 电报消息"
+  - "RULE-SET,github,🐙 Github"
+  - "RULE-SET,apple,🍎 Apple"
+  - "RULE-SET,microsoft,Ⓜ️ Microsoft"
+  - "RULE-SET,google,📢 Google"
+  - "RULE-SET,bilibili-hmt,📺 国内媒体"
+  - "RULE-SET,bilibili,📺 国内媒体"
+  - "RULE-SET,china-media,📺 国内媒体"
+  - "RULE-SET,proxy-media,🌍 国外媒体"
+  - "RULE-SET,epic,🎮 游戏平台"
+  - "RULE-SET,origin,🎮 游戏平台"
+  - "RULE-SET,sony,🎮 游戏平台"
+  - "RULE-SET,steam,🎮 游戏平台"
+  - "RULE-SET,nintendo,🎮 游戏平台"
+  - "RULE-SET,paypal,👛 Paypal"
+  - "RULE-SET,crypto,💰 加密货币"
+  - "RULE-SET,proxy-gfw,🚀 节点选择"
+  - "MATCH,🐟 漏网之鱼"
