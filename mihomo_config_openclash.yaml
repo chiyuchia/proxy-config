@@ -543,6 +543,8 @@ proxy-groups:
   - name: "✈️ oixCloud"
     type: select
     filter: "(IXP|CIA)"
+    use:
+      - oixCloud
 
   - name: "✈️ oixCloud Edge"
     type: select
