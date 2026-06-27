@@ -79,7 +79,7 @@ function buildOixCloudProvider(url, existingProvider) {
   return {
     type: 'http',
     url,
-    path: './proxy_provider/oixCloudEdge.yaml',
+    path: './proxy_provider/oixCloud.yaml',
     interval: 86400,
     proxy: 'DIRECT',
     'health-check': {
