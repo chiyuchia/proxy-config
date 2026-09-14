@@ -88,8 +88,12 @@ proxy-providers:
     proxy: DIRECT
     health-check:
       enable: true
-      interval: 600
+      # use 引入的节点由 provider 检查，周期与 Optimized 组保持一致。
+      interval: 60
+      timeout: 5000
+      lazy: false
       url: https://cp.cloudflare.com/generate_204
+      expected-status: 204
 
 # ==========================================
 # 代理组 (Proxy Groups)
@@ -543,7 +547,14 @@ proxy-groups:
     filter: "(VikingLinks)"
 
   - name: "✈️ oixCloud Optimized"
-    type: select
+    type: url-test
+    url: "https://cp.cloudflare.com/generate_204"
+    interval: 60
+    timeout: 5000
+    lazy: false
+    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
+    max-failed-times: 3
+    expected-status: 204
     filter: "(IXP|CIA)"
     use:
       - oixCloud
