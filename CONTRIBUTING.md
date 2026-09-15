@@ -2,12 +2,14 @@
 
 本文档说明了本项目的开发规范和约定。
 
+项目主要维护 `mihomo_config.yaml` 和 `mihomo_config_stash.yaml` 两个 YAML 模板，以及订阅处理脚本和 `custom_rule/` 中的自定义规则集。模板需要配合订阅转换流程注入实际节点。
+
 ---
 
 ## 开发流程
 
 1. **修改代码**：在本地进行必要的修改
-2. **验证更改**：确保修改正确可用
+2. **验证更改**：检查 YAML 语法、规则集和策略组引用，并验证节点注入结果
 3. **手动提交**：使用约定式提交格式进行 `git commit`
 4. **确认后推送**：检查 commit 信息无误后，手动执行 `git push`
 
@@ -71,22 +73,15 @@ git commit -m "perf(rules): 替换 raw.githubusercontent.com 为 JSDMirror CDN �
 
 ## CDN 配置
 
-本项目使用 [JSDMirror](https://cdn.jsdmirror.com) CDN 加速 GitHub 资源访问。
+本项目主要使用 [JSDMirror](https://cdn.jsdmirror.com) CDN 加速 GitHub 资源访问。
 
 ### 链接格式
 
 | 源格式 | CDN 格式 |
 |---------|----------|
-| `https://raw.githubusercontent.com/{user}/{repo}/{branch}/{path}` | `https://cdn.jsdmirror.com/gh/{user}/{repo}/{branch}/{path}` |
+| `https://raw.githubusercontent.com/{user}/{repo}/{branch}/{path}` | `https://cdn.jsdmirror.com/gh/{user}/{repo}@{branch}/{path}` |
 
-### JSDMirror 说明
-
-- **价格**：免费
-- **流量**：无限制
-- **QPS**：单 IP 300 QPS，超过 570 会限速
-- **同步**：自动从 jsDelivr 回源，无需手动操作
-
-> 💡 JSDMirror 是被动缓存服务，提交到 GitHub 后会自动同步（通常需要几分钟）。
+修改链接时保留正确的仓库、分支和文件路径，并检查资源是否可访问。
 
 ---
 
@@ -104,25 +99,33 @@ Clash 规则**从上到下依次匹配**，第一条匹配的规则生效。
 
 ### 示例
 
-```ini
-; 正确顺序：YouTube 优先于 Google
-ruleset=📹 油管视频,YouTube.list
-ruleset=📢 谷歌服务,Google.list
-
-; 错误顺序：Google 会匹配 YouTube
-ruleset=📢 谷歌服务,Google.list
-ruleset=📹 油管视频,YouTube.list
+```yaml
+# 更具体的规则在前；交换两条规则可能让 Google 先匹配 YouTube 流量。
+rules:
+  - "RULE-SET,youtube,📹 油管视频"
+  - "RULE-SET,google,📢 Google"
 ```
+
+### 订阅处理
+
+- `rename.js` 用于节点重命名。
+- `config_overwrite.js` 合并并去重策略组的 `proxies` 成员，按 `filter` 筛选节点；中转组只追加不带 `dialer-proxy` 的节点，良心云 Hy2 组按协议重建成员，全球直连组保持手工配置。
+- `oixCloudEdgePath` 参数可为 oixCloud provider 注入订阅 URL；主模板本身没有填写该 URL。
+- 修改模板或覆写逻辑后，检查最终生成配置中的组成员和引用，避免仅验证未注入节点的模板。
 
 ---
 
 ## 项目结构
 
 ```
-proxy-rule/
-├── clash_config.ini      # Clash 配置文件
-├── CONTRIBUTING.md       # 本文档
-└── .trae/              # 相关工具配置
+proxy-config/
+├── mihomo_config.yaml        # Mihomo 模板
+├── mihomo_config_stash.yaml  # Stash 模板
+├── config_overwrite.js       # 订阅配置覆写
+├── rename.js                 # 节点重命名
+├── custom_rule/              # 自定义规则集
+├── CLAUDE.md                 # 仓库工作指南
+└── CONTRIBUTING.md           # 本文档
 ```
 
 ---
@@ -199,4 +202,4 @@ git merge feature/large-feature
 
 ## 联系方式
 
-如有问题，请提交 [Issue](https://github.com/chiyuchia/proxy-rule/issues)。
+如有问题，请提交 [Issue](https://github.com/chiyuchia/proxy-config/issues)。

@@ -27,8 +27,6 @@ dns:
     - "+.market.xiaomi.com" # 小米应用商店(特定网络需求)
     - "localhost.ptlogin2.qq.com" # 腾讯系软件快捷登录必备回环域名
     # 当前维护中的节点域名；旧 IEPL 域已迁移到 cloud-nodes.com
-    - "+.us-nj.122870.xyz" # 家宽节点域名
-    - "+.sys.wpssx.com" # 合租线路 🇲🇾 MY | Evoxt KUL
     - "+.cloud-nodes.com" # oixCloud 域名
     - "+.22b74943-12ad-47f4-b705-f2defb6ffea0.org" # OCTO 域名
     - "+.07c06051-81fd-4aa4-a94e-a0860315df8f.org" # Edge 域名

@@ -4,30 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 仓库概述
 
-这是一个 Clash 代理配置仓库，用于管理基于规则的流量路由。主配置文件是 [clash_config.ini](clash_config.ini)，定义了各种服务和平台的规则集和代理组。
+这是一个代理配置仓库，用于管理基于规则的流量路由。主要维护 Mihomo 和 Stash 的 YAML 模板、订阅处理脚本及自定义规则集。
 
 ## 核心配置文件
 
-**[clash_config.ini](clash_config.ini)** - 主 Clash 配置文件，使用 INI 格式和自定义语法：
-- `ruleset=<策略组>,<规则集URL>` - 定义流量路由规则
-- `custom_proxy_group=<组名>`select`<选项>` - 定义代理选择组
-- 代理组定义中使用反引号 (`) 作为分隔符
+- [mihomo_config.yaml](mihomo_config.yaml)：Mihomo 主模板，包含 DNS、TUN、嗅探、代理组、订阅集合和分流规则。
+- [mihomo_config_stash.yaml](mihomo_config_stash.yaml)：Stash 模板，单独维护 DNS 和代理组配置。
+- [config_overwrite.js](config_overwrite.js)：订阅转换后的覆写脚本，合并并去重代理组成员，按 `filter` 筛选节点；中转组只追加不带 `dialer-proxy` 的节点，良心云 Hy2 组按协议重建成员。
+- [rename.js](rename.js)：订阅节点重命名脚本。
+- [custom_rule/](custom_rule/)：自定义规则集。
+
+两个 YAML 文件都是模板，需要配合订阅转换流程注入实际节点。覆写脚本还可通过 `oixCloudEdgePath` 参数补入 oixCloud provider 的订阅 URL；主模板本身未填写该 URL。
 
 ## CDN 配置
 
-所有 GitHub raw 内容 URL 使用 JSDMirror CDN 以提升国内访问速度：
+规则集中的 GitHub 资源链接主要使用 JSDMirror CDN：
 
 **格式转换：**
 ```
 https://raw.githubusercontent.com/{user}/{repo}/{branch}/{path}
-→ https://cdn.jsdmirror.com/gh/{user}/{repo}/{branch}/{path}
+→ https://cdn.jsdmirror.com/gh/{user}/{repo}@{branch}/{path}
 ```
 
-**JSDMirror 特性：**
-- 免费服务，流量无限制
-- 单 IP 限制 300 QPS（超过 570 会限速）
-- 被动缓存，自动从 jsDelivr 回源
-- GitHub 更改后几分钟内自动同步
+修改链接时保留正确的仓库、分支和文件路径，并检查资源是否可访问。
 
 ## Clash 规则优先级
 
@@ -38,33 +37,27 @@ https://raw.githubusercontent.com/{user}/{repo}/{branch}/{path}
 2. 示例：YouTube 规则必须放在 Google 规则之前（否则 YouTube 域名会被 Google 规则匹配）
 
 **正确顺序：**
-```ini
-ruleset=📹 油管视频,YouTube.list
-ruleset=📢 谷歌服务,Google.list
+```yaml
+rules:
+  - "RULE-SET,youtube,📹 油管视频"
+  - "RULE-SET,google,📢 Google"
 ```
 
 **错误顺序（YouTube 流量会被 Google 规则捕获）：**
-```ini
-ruleset=📢 谷歌服务,Google.list
-ruleset=📹 油管视频,YouTube.list
+```yaml
+rules:
+  - "RULE-SET,google,📢 Google"
+  - "RULE-SET,youtube,📹 油管视频"
 ```
 
 ## 配置结构
 
-[clash_config.ini](clash_config.ini) 按以下部分组织：
+YAML 模板包含全局与网络配置、`proxy-groups`、`rule-providers` 和 `rules`；主模板另有 `proxy-providers`。
 
-1. **局域网和直连规则** - LAN 和直连规则
-2. **特定平台规则** - 平台特定规则（媒体、AI、游戏、IM）
-3. **企业服务规则** - 企业服务（Apple、Microsoft、Google）
-4. **大类服务规则** - 大类服务分类
-5. **代理节点规则** - 代理节点规则
-6. **最终规则** - 最终兜底规则
-
-代理组包括：
-- 核心组：节点选择、手动切换、自动选择
-- 机场订阅组：Dler Cloud、肯の机、V2Tun、一元机场
-- 地区节点组：香港、美国、狮城、日本、台湾、韩国
-- 服务分流组：与每个规则集对应
+- `proxy-groups` 定义节点选择、中转、地区、机场和服务分流组。
+- `rule-providers` 定义远程规则集，`rules` 按顺序引用规则集和策略组。
+- 修改组名或规则集名时，同步检查所有引用；最终以 `MATCH` 兜底。
+- 两个模板面向不同客户端，修改时分别验证兼容性和生成后的节点成员。
 
 ## Git 工作流
 
@@ -110,9 +103,12 @@ git commit -m "feat(clash-config): 为所有服务分流组添加机场订阅选
 ## 文件结构
 
 ```
-proxy-rule/
-├── clash_config.ini      # 主 Clash 配置文件
-├── CONTRIBUTING.md       # 开发指南（中文）
-├── temp/                 # 临时/备份配置
-└── .trae/               # 工具配置
+proxy-config/
+├── mihomo_config.yaml        # Mihomo 模板
+├── mihomo_config_stash.yaml  # Stash 模板
+├── config_overwrite.js       # 订阅配置覆写
+├── rename.js                 # 节点重命名
+├── custom_rule/              # 自定义规则集
+├── CLAUDE.md                 # 仓库工作指南
+└── CONTRIBUTING.md           # 开发指南
 ```
