@@ -5,6 +5,7 @@
  * - 带 `filter` 的策略组按筛选规则追加匹配到的节点；
  * - `全球直连` 保持手工维护，不在这里注入节点；
  * - `中转` 组只从未使用 `dialer-proxy` 的节点中挑选，避免混入链式代理。
+ * - `良心云 Hy2` 组按实际协议类型重建成员，只保留可作为第一跳的 Hy2 节点。
  * - 合并节点时自动去重，避免脚本重复执行后出现重复项。
  */
 function hasText(value) {
@@ -104,6 +105,17 @@ function main(config) {
     // `全球直连` 保持手工维护，不在覆写脚本里自动扩充。
     if (groupName.includes('全球直连')) {
       return group;
+    }
+
+    if (groupName === '✈️ 良心云 Hy2') {
+      // 节点名称不一定包含 Hy2，按协议筛选；重建列表以移除过期或协议已变更的成员。
+      const hy2Proxies = transitProxies.filter((proxy) =>
+        ['hysteria2', 'hy2'].includes(String(proxy.type).toLowerCase())
+      );
+      return {
+        ...group,
+        proxies: mergeProxyNames([], getExtraProxyNames(group, hy2Proxies)),
+      };
     }
 
     const candidateProxies = getCandidateProxies(groupName, allProxies, transitProxies);
