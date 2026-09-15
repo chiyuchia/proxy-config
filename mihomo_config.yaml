@@ -77,11 +77,34 @@ tun:
     - any:53 # 强制劫持系统 53 端口的所有传统 DNS 请求，送入内置 DNS 处理
   mtu: 1500 # 虚拟网卡最大传输单元，标准 1500
 
+# ==========================================
+# 代理提供者 (Proxy Providers)
+# ==========================================
+proxy-providers:
+  oixCloud:
+    type: http
+    path: ./proxy_provider/oixCloud.yaml
+    interval: 86400
+    proxy: DIRECT
+    health-check:
+      enable: true
+      # use 引入的节点由 provider 检查，周期与 Optimized 组保持一致。
+      interval: 60
+      timeout: 5000
+      lazy: false
+      url: https://cp.cloudflare.com/generate_204
+      expected-status: 204
+
+# ==========================================
+# 代理组 (Proxy Groups)
+# ==========================================
 proxy-groups:
   - name: "🚀 节点选择"
     type: select
-    url: "http://cp.cloudflare.com/generate_204"
+    url: "https://cp.cloudflare.com/generate_204"
     interval: 300
+    use:
+      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🇭🇰 香港节点"
@@ -91,6 +114,7 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 良心云 Hy2"
@@ -98,6 +122,8 @@ proxy-groups:
 
   - name: "🛡️ Edge 中转"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🇭🇰 香港节点"
@@ -107,12 +133,16 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
+      - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 良心云 Hy2"
       - "✈️ 一元机场"
 
   - name: "🛡️ 亚太中转"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🇭🇰 香港节点"
@@ -122,6 +152,7 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 良心云 Hy2"
@@ -129,6 +160,8 @@ proxy-groups:
 
   - name: "🛡️ 美西中转"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🇺🇲 美国节点"
       - "🏝️ 精品节点"
@@ -138,6 +171,7 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 良心云 Hy2"
@@ -149,6 +183,8 @@ proxy-groups:
 
   - name: "♊ Gemini"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🚀 节点选择"
@@ -159,12 +195,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "💬 Ai平台"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🚀 节点选择"
@@ -175,12 +214,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "🍎 Apple Push"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -191,6 +233,7 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
@@ -198,6 +241,8 @@ proxy-groups:
 
   - name: "🎥 奈飞视频"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🇸🇬 狮城节点"
       - "🚀 节点选择"
@@ -208,12 +253,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "📹 油管视频"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🇺🇲 美国节点"
       - "🚀 节点选择"
@@ -224,12 +272,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "📼 EMBY"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -240,12 +291,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "📲 电报消息"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🇸🇬 狮城节点"
       - "🚀 节点选择"
@@ -256,12 +310,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "🐙 Github"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -272,12 +329,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "🍎 Apple"
     type: select
+    use:
+      - oixCloud
     proxies:
       - DIRECT
       - "🚀 节点选择"
@@ -289,12 +349,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "Ⓜ️ Microsoft"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -305,12 +368,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "📢 Google"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🚀 节点选择"
@@ -321,12 +387,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "📺 国内媒体"
     type: select
+    use:
+      - oixCloud
     proxies:
       - DIRECT
       - "🚀 节点选择"
@@ -338,12 +407,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "🌍 国外媒体"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -354,6 +426,7 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
@@ -361,6 +434,8 @@ proxy-groups:
 
   - name: "🎮 游戏平台"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🚀 节点选择"
       - DIRECT
@@ -372,12 +447,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "👛 Paypal"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🇺🇲 美国节点"
       - "🚀 节点选择"
@@ -388,12 +466,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "💰 加密货币"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🇸🇬 狮城节点"
       - "🚀 节点选择"
@@ -404,12 +485,15 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
   - name: "🐟 漏网之鱼"
     type: select
+    use:
+      - oixCloud
     proxies:
       - "🚀 节点选择"
       - DIRECT
@@ -421,6 +505,7 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
       - "✈️ 一元机场"
@@ -428,30 +513,55 @@ proxy-groups:
   - name: "🇭🇰 香港节点"
     type: select
     filter: "(港|HK|hk|Hong Kong|HongKong|hongkong)"
+    use:
+      - oixCloud
 
   - name: "🇺🇲 美国节点"
     type: select
     filter: "(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲)"
+    use:
+      - oixCloud
 
   - name: "🇸🇬 狮城节点"
     type: select
     filter: "(新加坡|坡|狮城|SG|Singapore)"
+    use:
+      - oixCloud
 
   - name: "🇯🇵 日本节点"
     type: select
     filter: "(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)"
+    use:
+      - oixCloud
 
   - name: "🇼🇸 台湾节点"
     type: select
     filter: "(台|新北|彰化|TW|Taiwan)"
+    use:
+      - oixCloud
 
   - name: "🌍 其他节点"
     type: select
     filter: "^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan)).*"
+    use:
+      - oixCloud
 
   - name: "✈️ VikingLinks"
     type: select
     filter: "(VikingLinks)"
+
+  - name: "✈️ oixCloud Optimized"
+    type: url-test
+    url: "https://cp.cloudflare.com/generate_204"
+    interval: 60
+    timeout: 5000
+    lazy: false
+    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
+    max-failed-times: 3
+    expected-status: 204
+    filter: "(IXP|CIA)"
+    use:
+      - oixCloud
 
   - name: "✈️ oixCloud Edge"
     type: select
