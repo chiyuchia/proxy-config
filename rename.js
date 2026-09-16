@@ -401,6 +401,7 @@ const RETAIN_KEYWORDS = [
   "移动",
   "联通",
   "电信",
+  "移联",
   "AWS",
   "RS",
   "OVH",
