@@ -124,57 +124,33 @@ proxy-groups:
     use:
       - oixCloud
     proxies:
-      - "🏝️ 精品节点"
-      - "🇭🇰 香港节点"
-      - "🇺🇲 美国节点"
-      - "🇸🇬 狮城节点"
-      - "🇯🇵 日本节点"
-      - "🇼🇸 台湾节点"
-      - "🌍 其他节点"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Optimized"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
       - "✈️ 良心云 Hy2"
-      - "✈️ 一元机场"
 
   - name: "🛡️ 亚太中转"
     type: select
     use:
       - oixCloud
     proxies:
-      - "🏝️ 精品节点"
-      - "🇭🇰 香港节点"
-      - "🇺🇲 美国节点"
-      - "🇸🇬 狮城节点"
-      - "🇯🇵 日本节点"
-      - "🇼🇸 台湾节点"
-      - "🌍 其他节点"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Optimized"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
       - "✈️ 良心云 Hy2"
-      - "✈️ 一元机场"
 
   - name: "🛡️ 美西中转"
     type: select
     use:
       - oixCloud
     proxies:
-      - "🇺🇲 美国节点"
-      - "🏝️ 精品节点"
-      - "🇭🇰 香港节点"
-      - "🇸🇬 狮城节点"
-      - "🇯🇵 日本节点"
-      - "🇼🇸 台湾节点"
-      - "🌍 其他节点"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Optimized"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
       - "✈️ 良心云 Hy2"
-      - "✈️ 一元机场"
 
   - name: "🏝️ 精品节点"
     type: select
