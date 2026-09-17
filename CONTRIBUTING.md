@@ -134,47 +134,7 @@ proxy-config/
 
 ### 分支策略
 
-本项目采用 `test` 分支开发，`master` 分支发布的策略：
-
-1. **切换到 test 分支**：
-   ```bash
-   # 默认使用 test 分支
-   git checkout test
-
-   # 如果 test 分支不存在，从 master 创建
-   git checkout -b test master
-   ```
-
-2. **在 test 分支开发**：
-   - 所有新功能都在 test 分支上开发
-   - 定期同步 master 分支的更改：
-     ```bash
-     git fetch origin
-     git rebase origin/master
-     ```
-
-3. **测试验证**：
-   - 完成开发后，在本地充分测试
-   - 确保所有功能正常工作
-
-4. **合并到 master**：
-   ```bash
-   # 切换到 master 分支
-   git checkout master
-
-   # 拉取最新代码
-   git pull origin master
-
-   # 合并 test 分支
-   git merge test
-
-   # 推送到远程
-   git push origin master
-
-   # 可选：删除已合并的 test 分支
-   git branch -d test
-   git push origin --delete test
-   ```
+`master` 分支保持稳定，提交或合并前需在本地充分验证更改。
 
 ### 大型功能分支策略
 
@@ -183,17 +143,15 @@ proxy-config/
 # 创建功能分支
 git checkout -b feature/large-feature master
 
-# 开发完成后，先合并到 test 分支
-git checkout test
+# 开发并验证完成后，合并到 master 分支
+git checkout master
+git pull origin master
 git merge feature/large-feature
-
-# 然后按上述流程合并到 master
 ```
 
 ### 注意事项
 
 - **master 分支始终保持稳定**：只包含已测试通过的代码
-- **test 分支作为开发分支**：日常开发和测试在此进行
 - **功能分支可选**：仅在大型功能时使用
 - **提交前检查**：确认更改无误后再 commit
 - **推送前确认**：检查 commit 信息正确后再 push
