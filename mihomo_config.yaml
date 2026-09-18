@@ -124,6 +124,7 @@ proxy-groups:
     use:
       - oixCloud
     proxies:
+      - "✈️ VikingLinks 亚太中转"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Optimized"
       - "✈️ 吹雪云"
@@ -135,6 +136,7 @@ proxy-groups:
     use:
       - oixCloud
     proxies:
+      - "✈️ VikingLinks 亚太中转"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Optimized"
       - "✈️ 吹雪云"
@@ -541,6 +543,19 @@ proxy-groups:
   - name: "✈️ VikingLinks"
     type: select
     filter: "(VikingLinks)"
+
+  - name: "✈️ VikingLinks 亚太中转"
+    type: url-test
+    url: "https://cp.cloudflare.com/generate_204"
+    interval: 60
+    timeout: 5000
+    lazy: false
+    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
+    max-failed-times: 3
+    expected-status: 204
+    # 按重命名后的国家码限定亚太，仅筛选 Go、IEPL、SH 线路。
+    # 组名包含“中转”，config_overwrite.js 会排除带 dialer-proxy 的落地节点。
+    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|MO|TW|JP|KR|SG|MY|TH|VN|PH|ID|IN|AU|NZ)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
   - name: "✈️ oixCloud Optimized"
     type: url-test
