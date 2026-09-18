@@ -1,17 +1,19 @@
 /**
  * Sub-Store 节点地区标注脚本
- * 通过节点名匹配或 IP 查询为节点添加地区标签（国旗 + 中文地区名 + 序号）
+ * 通过节点名匹配或服务器 IP 查询为节点添加地区标签（默认国旗 + 地区代码 + 序号）
+ * 用于订阅/组合订阅的脚本操作，入口为 async operator(proxies, targetPlatform, context)。
+ * 接入方式、URL 参数示例见 README.md 的“节点重命名”。
  *
  * 参数 (通过 $arguments 传入):
  *   remove: boolean              是否删除原节点名，默认 true
  *   filter: string               过滤词，节点名匹配则直接丢弃，不参与后续处理
- *                                默认应用内置预设（过期|剩余|官网|套餐|重置|到期|Traffic|Expire）
- *                                传空值（filter=）禁用过滤；传词组则追加到内置预设
+ *                                默认应用内置预设（过期|剩余|官网|套餐|重置|到期|Traffic|Expire|一元机场|客户端|网站）
+ *                                传空字符串禁用过滤；传词组则追加到内置预设
  *                                例如: "测试|备用"
- *   block: string                屏蔽词，多个用 | 连接，匹配前从节点名中去除，不影响输出原名
+ *   block: string                屏蔽正则，忽略大小写并全局替换，识别地区前从名称中去除，不影响输出原名或关键词
  *                                例如: "TG:LSMOO|公益|测试"
- *   token: string                IPinfo API Token，不传则使用标准 API: https://ipinfo.io/{ip}/json（有限速）
- *   one: boolean                 去掉只有一个节点的地区的序号（01），默认 false
+ *   token: string                IPinfo Token，传入时使用 Lite API，不传则使用 https://ipinfo.io/{ip}/json
+ *   one: boolean                 去掉两位序号后的完整名称唯一时移除 01（含后缀判断），默认 false
  *   hot: boolean|string          只保留热门地区节点，默认不过滤
  *                                传 true/1 使用预设热门地区（HK/TW/CN/JP/SG/US）
  *                                传 "HK|SG|JP" 形式则只保留指定地区
@@ -22,12 +24,15 @@
  *                                可选值：FG（旗帜）、ZH（中文名）、EN（英文代码）、QC（英文全称）
  *                                多个用 | 连接，按顺序拼接，例如: "FG|ZH"、"ZH"、"FG|ZH|EN"
  *
- * 输出格式 (默认 out=FG|EN):
+ * URL 参数中的布尔值/空字符串应使用 # + encodeURIComponent(JSON.stringify(args))。
+ * 普通 #key=value 传入字符串，filter= 会被 Sub-Store 转成 true；remove=false 等也不是布尔 false。
+ *
+ * 输出格式 (默认 out=FG|EN；_subName 为订阅名，空的后缀部分省略):
  *   remove=false: "🇺🇸 US 01 | 原节点名 _subName"
- *   remove=true 未传 retain:          "🇺🇸 US 01 | _subName"
- *   remove=true 传 retain 有命中:     "🇺🇸 US 01 | 东京 IPLC _subName"
- *   remove=true 传 retain 无命中:     "🇺🇸 US 01 | _subName"
- *   VikingLinks 格式:               "🇯🇵 JP-SH-12-GCP" → "🇯🇵 JP 12 | SH GCP"
+ *   remove=true 默认 retain 有命中:  "🇺🇸 US 01 | 洛杉矶 _subName"
+ *   remove=true 无命中或 retain=false: "🇺🇸 US 01 | _subName"
+ *   序号按 _subName + 地区从 01 重新生成；以下例子均为组内首个节点且无 _subName：
+ *   VikingLinks 格式:               "🇯🇵 JP-SH-12-GCP" → "🇯🇵 JP 01 | SH GCP"
  *   良心云格式:                     "🇯🇵日本高速01|CTCU|0.5x" → "🇯🇵 JP 01 | 高速 CTCU 0.5x"
  */
 

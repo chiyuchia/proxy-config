@@ -4,7 +4,7 @@
 
 项目维护 `config/base.yaml` 公共配置、`config/mihomo.yaml` 与 `config/stash.yaml` 客户端差异，以及订阅处理脚本和 `custom_rule/` 中的自定义规则集。Sub-Store 使用 `scripts/merge-config.js` 在服务端合并 YAML，再注入实际节点并运行 `scripts/config-overwrite.js`。接入方式和合并语法见 [README.md](README.md)。
 
-根目录的两份完整 YAML 仅作为迁移前快照保留，不会自动更新，也不再作为修改入口。公共更改只改 `config/base.yaml`；客户端专用更改写入对应差异文件。
+配置来源统一维护在 `config/base.yaml`、`config/mihomo.yaml` 和 `config/stash.yaml`。公共更改只改 `config/base.yaml`；客户端专用更改写入对应差异文件。
 
 ---
 
@@ -25,7 +25,7 @@
 node --test tests/merge-config.test.js
 ```
 
-测试覆盖两种客户端的配置合并、数组与代理组补丁、远程读取和错误处理、节点保留及现有覆写流程。首次迁移应确认合并结果与旧模板的语义一致；今后有意调整配置行为时，应更新相应测试预期，旧模板快照保持不变。
+测试覆盖两种客户端的配置合并、数组与代理组补丁、远程读取和错误处理、节点保留及现有覆写流程。有意调整配置行为时，应更新相应测试预期，并检查三份配置源合并后的实际输出。
 
 ---
 
@@ -127,7 +127,7 @@ rules:
 - `scripts/merge-config.js` 用于 Sub-Store 的“Mihomo 配置”类型，通过 `client=mihomo` / `client=stash` 选择差异文件；必须在 `scripts/config-overwrite.js` 之前作为独立脚本执行。合并时保留已有 `config.proxies`，其他输入配置由新结果替换。
 - 三份 YAML 分别解析，不能跨文件引用锚点。公共文件的 `$base` 与差异文件的 `$profile` 标记在输出时移除。
 - 普通映射递归合并，普通数组整体替换，顶层 `proxy-groups` 按 `name` 合并。数组局部增删使用 `$append`、`$prepend`、`$remove` 或 `$insert-before`，不要改变公共规则的优先级。
-- `scripts/rename.js` 用于节点重命名。
+- `scripts/rename.js` 在 Sub-Store 的订阅或组合订阅中，通过 `async operator(proxies, targetPlatform, context)` 处理节点数组，完成地区识别、重命名、筛选和排序。处理后的节点再供文件注入及 `scripts/config-overwrite.js` 覆写使用；接入方式和参数见 [README.md 的节点重命名说明](README.md#节点重命名)。
 - `scripts/config-overwrite.js` 合并并去重策略组的 `proxies` 成员，按 `filter` 筛选节点；中转组和机场亚太组只使用不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点，全球直连组保持手工配置。
 - VikingLinks、良心云和吹雪云的机场亚太组统一命名为“机场名 亚太”，仅筛选 HK、SG、JP、TW，每次覆写都重建成员，避免旧节点残留。良心云亚太组另要求名称包含 `CT`（含 `CTCU`、`CTCUCM`），吹雪云亚太组另要求名称包含“电信”。
 - `oixCloudEdgePath` 参数可为 oixCloud provider 注入订阅 URL；Mihomo 差异文件本身没有填写该 URL。
@@ -147,8 +147,6 @@ proxy-config/
 │   ├── merge-config.js       # Sub-Store 服务端合并
 │   ├── config-overwrite.js   # 订阅配置覆写
 │   └── rename.js             # 节点重命名
-├── mihomo_config.yaml        # 迁移前快照，不再维护
-├── mihomo_config_stash.yaml  # 迁移前快照，不再维护
 ├── custom_rule/              # 自定义规则集
 ├── tests/                    # 合并与节点处理验证
 ├── README.md                 # Sub-Store 接入与日常维护

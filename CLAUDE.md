@@ -13,14 +13,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [config/stash.yaml](config/stash.yaml)：Stash 专用 DNS 和代理组差异。
 - [scripts/merge-config.js](scripts/merge-config.js)：通过 `async main(config)` 在 Sub-Store 中读取公共配置和指定客户端差异，合并、检查并保留传入节点；必须排在 `scripts/config-overwrite.js` 之前执行。
 - [scripts/config-overwrite.js](scripts/config-overwrite.js)：订阅转换后的覆写脚本，合并并去重代理组成员，按 `filter` 筛选节点；中转组和机场亚太组只使用不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点。
-- [scripts/rename.js](scripts/rename.js)：订阅节点重命名脚本。
+- [scripts/rename.js](scripts/rename.js)：在 Sub-Store 的订阅或组合订阅中，通过 `async operator(proxies, targetPlatform, context)` 处理节点数组，完成地区识别、重命名、筛选和排序；处理后的节点再供文件注入及覆写使用。接入方式和参数见 [README.md 的节点重命名说明](README.md#节点重命名)。
 - [custom_rule/](custom_rule/)：自定义规则集。
 
 VikingLinks、良心云和吹雪云的机场亚太组统一命名为“机场名 亚太”，仅筛选 HK、SG、JP、TW，每次覆写都重建成员，避免旧节点残留。良心云亚太组另要求名称包含 `CT`（含 `CTCU`、`CTCUCM`），吹雪云亚太组另要求名称包含“电信”。
 
 三份 YAML 是合并来源，需要配合订阅转换流程注入实际节点。覆写脚本还可通过 `oixCloudEdgePath` 参数补入 oixCloud provider 的订阅 URL；Mihomo 差异文件本身未填写该 URL。Sub-Store 接入步骤和补丁语法见 [README.md](README.md)。
 
-根目录的 `mihomo_config.yaml` 和 `mihomo_config_stash.yaml` 只保留为迁移前快照，不随公共源文件更新；后续更改应写入 `config/`，不要继续维护两份快照。
+配置来源统一维护在 `config/base.yaml`、`config/mihomo.yaml` 和 `config/stash.yaml`。公共更改写入 `config/base.yaml`，客户端专用更改写入对应差异文件。
 
 ## 资源链接
 
@@ -117,8 +117,6 @@ proxy-config/
 │   ├── merge-config.js       # Sub-Store 服务端合并
 │   ├── config-overwrite.js   # 订阅配置覆写
 │   └── rename.js             # 节点重命名
-├── mihomo_config.yaml        # 迁移前快照，不再维护
-├── mihomo_config_stash.yaml  # 迁移前快照，不再维护
 ├── custom_rule/              # 自定义规则集
 ├── tests/                    # 合并与节点处理验证
 ├── README.md                 # Sub-Store 接入与日常维护

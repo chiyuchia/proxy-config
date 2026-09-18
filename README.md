@@ -9,6 +9,7 @@ Mihomo 和 Stash 共用一份基础配置，各自只维护差异。Sub-Store �
 | [config/stash.yaml](config/stash.yaml) | Stash 的 DNS 和代理组差异 |
 | [scripts/merge-config.js](scripts/merge-config.js) | Sub-Store 服务端拉取、合并与配置检查 |
 | [scripts/config-overwrite.js](scripts/config-overwrite.js) | 按节点名称和实际协议重建组成员、去重和补充 provider URL |
+| [scripts/rename.js](scripts/rename.js) | 订阅节点地区识别、名称整理、关键词保留与过滤 |
 
 ## 接入 Sub-Store
 
@@ -16,12 +17,12 @@ Mihomo 和 Stash 共用一份基础配置，各自只维护差异。Sub-Store �
 
 先将本仓库的新文件发布到 GitHub 或你自己的 HTTP(S) 地址，确认 Sub-Store 服务端能够读取这些地址。本地尚未推送的修改不会生效。
 
-文件类型继续使用“Mihomo 配置”，保留原来的订阅节点来源。如果旧 YAML 是文件的远程来源，将文件来源改为本地内容，填写非空模板 `{}`；如果旧 YAML 是一个模板处理操作，则移除该操作。三份新 YAML 由合并脚本自行下载，不需要逐份添加为文件来源。
+文件类型使用“Mihomo 配置”，文件来源设为本地内容，填写非空初始内容 `{}`，并配置订阅节点来源。三份 YAML 由合并脚本自行下载，不需要逐份添加为文件来源或添加模板处理操作。
 
 然后按以下顺序配置处理操作：
 
 1. 添加远程脚本 `scripts/merge-config.js`，通过下方的 URL 参数选择客户端。
-2. 保留原来的节点注入操作（例如“从订阅添加节点”）。
+2. 配置节点注入操作（例如“从订阅添加节点”）；需要整理节点名称时，先在来源订阅中配置[节点重命名](#节点重命名)。
 3. 最后运行原有 `scripts/config-overwrite.js`，保留其已有参数。
 
 ```text
@@ -58,7 +59,7 @@ Stash 输出不需要添加 `oixCloudEdgePath`；该参数会额外生成 oixClo
 
 首次切换后，在 Sub-Store 预览最终配置，确认原来的订阅节点仍在 `proxies` 中，并检查三个机场亚太组的成员，再更新客户端订阅。
 
-### 脚本参数
+### 合并脚本参数
 
 | 参数 | 含义 |
 | --- | --- |
@@ -76,13 +77,75 @@ https://example.com/scripts/merge-config.js#client=stash&configBaseUrl=https%3A%
 
 需要固定版本时，将脚本 URL 和 `configBaseUrl` 一起固定到同一个 Git 提交，例如配置目录使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/<commit>/config`。仅固定脚本地址不会自动固定 YAML 版本。
 
-合并脚本在远程请求失败、来源为空、客户端不匹配、补丁无效或配置引用错误时会报错，不会退回旧模板输出。
+合并脚本在远程请求失败、来源为空、客户端不匹配、补丁无效或配置引用错误时会报错并停止生成配置。
+
+## 节点重命名
+
+在 Sub-Store 的**订阅或组合订阅**中添加远程脚本操作，使用以下地址：
+
+```text
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.js
+```
+
+该脚本通过 `async operator(proxies, targetPlatform, context)` 处理节点数组。先在来源订阅中完成重命名，再由“Mihomo 配置”文件注入处理后的节点，并运行 `scripts/config-overwrite.js`。文件中的合并与覆写脚本使用 `main(config)`，`rename.js` 应配置在订阅的节点处理流程中。
+
+脚本先过滤信息节点，再从节点名识别地区；名称无法识别时才查询服务器 IP 的归属地，域名先通过 Cloudflare DoH 解析为 IPv4，再请求 IPinfo。名称命中不会发起查询；这一步按服务器地址判断地区，不检测代理实际出口。查询使用 `fetch` 和 `AbortController`，运行环境需提供这些 API。
+
+默认输出 `国旗 地区代码 序号 | 保留关键词 订阅名`，序号按 `_subName` 与地区分组，从 `01` 重新生成，空的后缀部分会省略。订阅名来自节点的 `_subName` 字段。以下例子各自作为所属分组的第一个节点：
+
+| 原节点名 | `_subName` | 默认输出 |
+| --- | --- | --- |
+| `🇯🇵 JP-SH-12-GCP` | `VikingLinks` | `🇯🇵 JP 01 \| SH GCP VikingLinks` |
+| `🇯🇵日本高速01\|CTCU\|0.5x` | `良心云` | `🇯🇵 JP 01 \| 高速 CTCU 0.5x 良心云` |
+| `香港 03` | 无 | `🇭🇰 HK 01` |
+
+默认保留城市、线路、运营商等内置关键词；VikingLinks 格式会保留线路和服务商，良心云格式会保留运营商组合及倍率标签。结果按内置热门地区优先排序，各类内部按地区代码和名称排序，未识别地区的节点放到最后。
+
+### 重命名脚本参数
+
+下表描述传入 `$arguments` 后的值。包含布尔值或空字符串时，请使用下方的 JSON 参数写法。
+
+| 参数 | 默认值 | 含义 |
+| --- | --- | --- |
+| `remove` | `true` | 替换原节点名；`false` 保留完整原名，追加在地区标签和序号后 |
+| `filter` | 内置词表 | 名称包含过滤词时丢弃节点，不区分大小写；自定义词用 `\|` 分隔并追加到内置词表；空字符串 `""` 禁用过滤 |
+| `block` | 不启用 | 识别地区前从名称中去除匹配内容，支持正则表达式，忽略大小写并全局替换；不修改输出中的原名或关键词 |
+| `token` | 不设置 | IPinfo Token；设置时使用 Lite API，不设置时使用标准 JSON API |
+| `one` | `false` | 去掉两位序号后的完整名称唯一时，移除其中的 `01`；判断包含关键词和订阅名，并非只按地区计数 |
+| `hot` | 不过滤 | `true` / `1` 仅保留 `HK/TW/CN/JP/SG/US`；字符串如 `HK\|SG\|JP` 仅保留指定地区；启用后未识别地区的节点也会丢弃 |
+| `retain` | 启用内置关键词 | `remove=true` 时生效；`false` / `0` 禁用保留；字符串如 `IPLC\|专线` 在内置规则上追加关键词 |
+| `out` | `FG\|EN` | 按顺序组合 `FG`（旗帜）、`ZH`（中文名）、`EN`（地区代码）、`QC`（英文全称）；忽略无效项，全无效时回退默认值 |
+
+内置过滤词为：`过期、剩余、官网、套餐、重置、到期、Traffic、Expire、一元机场、客户端、网站`。它们按名称中的字面子串匹配；`block` 则按正则表达式处理。`hot` 的自定义值若没有任何有效地区代码，会使用内置热门地区列表。
+
+仅保留香港、新加坡、日本，并显示旗帜与地区代码：
+
+```text
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.js#hot=HK%7CSG%7CJP&out=FG%7CEN
+```
+
+Sub-Store 的普通 `#key=value` 参数会将值传为字符串，且把 `filter=` 这样的空值转成 `true`；因此 `remove=false`、`one=false`、`hot=false` 不能按布尔值关闭对应行为，`filter=` 也不能禁用过滤。布尔值或空字符串应使用 `#` 加 URL 编码后的 JSON，参见[官方参数解析实现](https://github.com/sub-store-org/Sub-Store/blob/master/backend/src/core/proxy-utils/index.js)。例如，保留完整原名并禁用信息节点过滤，参数对象为：
+
+```json
+{"remove": false, "filter": ""}
+```
+
+对应的可直接使用地址：
+
+```text
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.js#%7B%22remove%22%3Afalse%2C%22filter%22%3A%22%22%7D
+```
+
+其他组合也可用 `encodeURIComponent(JSON.stringify(参数对象))` 生成 URL 片段。默认参数无需填写。修改 `out`、`retain` 或订阅名后，检查最终名称是否仍满足 `config/base.yaml` 中代理组对机场名、地区代码和线路关键词的筛选要求。
+
+查询每批最多并发 5 个节点，DoH 和 IPinfo 请求分别设置 3 秒超时，脚本没有跨次运行的查询缓存。解析或查询失败时通常保留原节点；开启 `hot` 后，未识别地区的节点会被过滤。
 
 ## 日常维护
 
 - 两个客户端共同使用的规则、测速参数、机场亚太组筛选等，只改 `config/base.yaml`。
 - 仅一个客户端使用的 DNS、provider 或候选顺序，改对应的 `config/mihomo.yaml` 或 `config/stash.yaml`。
 - 节点协议筛选和组成员生成逻辑，改 `scripts/config-overwrite.js`。
+- 节点地区识别、名称格式和关键词提取，改 `scripts/rename.js`；使用方式见[节点重命名](#节点重命名)。
 - 修改后验证并发布文件，再让 Sub-Store 更新输出。远程资源和 Sub-Store 的缓存可能使刚发布的修改延迟生效。
 
 `base.yaml` 需要保留 `$base: true`，两份差异文件分别保留 `$profile: mihomo` 和 `$profile: stash`。这些标记用于检查读取的文件是否正确，输出时会移除。三个文件分别解析，YAML 锚点只能引用同一文件内定义的锚点。
@@ -132,9 +195,5 @@ proxy-groups:
 ```
 
 删除策略组时，也要同步修改其他组和规则中的引用。补丁字段只用于服务端合并，不会出现在最终客户端配置中。
-
-## 旧模板
-
-仓库根目录的 `mihomo_config.yaml` 和 `mihomo_config_stash.yaml` 保留为迁移前快照，供尚未切换的订阅继续读取。它们不会随 `config/` 的修改自动更新，也不再作为日常维护入口；请按上面的步骤迁移到服务端合并。
 
 开发规范与验证说明见 [CONTRIBUTING.md](CONTRIBUTING.md)。
