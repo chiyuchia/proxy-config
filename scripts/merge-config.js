@@ -220,7 +220,7 @@ async function main(config) {
   if (!['mihomo', 'stash'].includes(client)) configError('请设置 client=mihomo 或 client=stash');
   const timeout = args.timeout === undefined ? 10000 : Number(args.timeout);
   if (!Number.isFinite(timeout) || timeout <= 0) configError('timeout 必须是正数（毫秒）');
-  const root = args.configBaseUrl ?? 'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/config';
+  const root = args.configBaseUrl ?? 'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs';
   if (typeof root !== 'string') configError('configBaseUrl 必须是 URL 字符串');
   const directory = root.replace(/\/+$/, '');
   const [base, profile] = await Promise.all([

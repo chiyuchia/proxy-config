@@ -492,22 +492,22 @@ rule-providers:
     interval: 86400
     proxy: DIRECT
     path: ./ruleset/custom_proxy.yaml
-    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/custom_proxy.yaml"
+    url: "https://raw.githubusercontent.com/chiyuchia/proxy-config/master/rules/custom_proxy.yaml"
 
   custom_direct:
     <<: *classical_yaml_provider
     path: ./ruleset/custom_direct.yaml
-    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/custom_direct.yaml"
+    url: "https://raw.githubusercontent.com/chiyuchia/proxy-config/master/rules/custom_direct.yaml"
 
   emby:
     <<: *classical_yaml_provider
     path: ./ruleset/emby.yaml
-    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/emby.yaml"
+    url: "https://raw.githubusercontent.com/chiyuchia/proxy-config/master/rules/emby.yaml"
 
   ai-suite-gemini:
     <<: *classical_yaml_provider
     path: ./ruleset/ai-suite-gemini.yaml
-    url: "https://cdn.jsdmirror.com/gh/chiyuchia/proxy-rule@master/custom_rule/ai_suite_gemini.yaml"
+    url: "https://raw.githubusercontent.com/chiyuchia/proxy-config/master/rules/ai_suite_gemini.yaml"
 
   local-area-network:
     <<: *classical_yaml_provider

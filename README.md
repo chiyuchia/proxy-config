@@ -4,9 +4,9 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 
 | 文件 | 维护内容 |
 | --- | --- |
-| [config/base.yaml](config/base.yaml) | 公共网络设置、全部共同代理组及其候选顺序、筛选、测速设置、规则集和分流规则 |
-| [config/mihomo.yaml](config/mihomo.yaml) | Mihomo 的 DNS、嗅探、oixCloud provider、Optimized 组及相关 `use` 和菜单引用 |
-| [config/stash.yaml](config/stash.yaml) | Stash 的 DNS 差异 |
+| [configs/base.yaml](configs/base.yaml) | 公共网络设置、全部共同代理组及其候选顺序、筛选、测速设置、规则集和分流规则 |
+| [configs/mihomo.yaml](configs/mihomo.yaml) | Mihomo 的 DNS、嗅探、oixCloud provider、Optimized 组及相关 `use` 和菜单引用 |
+| [configs/stash.yaml](configs/stash.yaml) | Stash 的 DNS 差异 |
 | [scripts/merge-config.js](scripts/merge-config.js) | Sub-Store 服务端拉取、合并与配置检查 |
 | [scripts/config-overwrite.js](scripts/config-overwrite.js) | 按节点名称和实际协议重建组成员、去重和补充 provider URL |
 | [scripts/rename.js](scripts/rename.js) | 订阅节点地区识别、名称整理、关键词保留与过滤 |
@@ -64,7 +64,7 @@ Stash 输出不需要添加 `oixCloudEdgePath`；该参数会额外生成 oixClo
 | 参数 | 含义 |
 | --- | --- |
 | `client` | 必填，值为 `mihomo` 或 `stash` |
-| `configBaseUrl` | 三份 YAML 的远程目录；默认 `https://raw.githubusercontent.com/chiyuchia/proxy-config/master/config` |
+| `configBaseUrl` | 三份 YAML 的远程目录；默认 `https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs` |
 | `baseUrl` | 单独指定公共配置地址，优先于 `configBaseUrl` |
 | `profileUrl` | 单独指定客户端差异地址，优先于 `configBaseUrl` |
 | `timeout` | 每次请求的超时毫秒数，默认 `10000` |
@@ -72,10 +72,10 @@ Stash 输出不需要添加 `oixCloudEdgePath`；该参数会额外生成 oixClo
 参数放在脚本 URL 的 `#` 后，用 `&` 分隔。URL 参数值需要进行 URL 编码，例如使用自己的目录：
 
 ```text
-https://example.com/scripts/merge-config.js#client=stash&configBaseUrl=https%3A%2F%2Fexample.com%2Fproxy-config%2Fconfig
+https://example.com/scripts/merge-config.js#client=stash&configBaseUrl=https%3A%2F%2Fexample.com%2Fproxy-config%2Fconfigs
 ```
 
-需要固定版本时，将脚本 URL 和 `configBaseUrl` 一起固定到同一个 Git 提交，例如配置目录使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/<commit>/config`。仅固定脚本地址不会自动固定 YAML 版本。
+需要固定版本时，将脚本 URL 和 `configBaseUrl` 一起固定到同一个 Git 提交，例如配置目录使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/<commit>/configs`。仅固定脚本地址不会自动固定 YAML 版本。
 
 合并脚本在远程请求失败、来源为空、客户端不匹配、补丁无效或配置引用错误时会报错并停止生成配置。
 
@@ -135,7 +135,7 @@ Sub-Store 的普通 `#key=value` 参数会将值传为字符串，且把 `filter
 https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.js#%7B%22remove%22%3Afalse%2C%22filter%22%3A%22%22%7D
 ```
 
-其他组合也可用 `encodeURIComponent(JSON.stringify(参数对象))` 生成 URL 片段。默认参数无需填写。修改 `out`、`retain` 或订阅名后，检查最终名称是否仍满足 `config/base.yaml` 中代理组对机场名、地区代码和线路关键词的筛选要求。
+其他组合也可用 `encodeURIComponent(JSON.stringify(参数对象))` 生成 URL 片段。默认参数无需填写。修改 `out`、`retain` 或订阅名后，检查最终名称是否仍满足 `configs/base.yaml` 中代理组对机场名、地区代码和线路关键词的筛选要求。
 
 ## 修改与更新
 

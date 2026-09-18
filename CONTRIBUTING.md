@@ -8,15 +8,15 @@
 
 | 修改内容 | 维护位置 |
 | --- | --- |
-| 公共网络设置、全部共同代理组及候选顺序、筛选、测速设置、规则集和分流规则 | `config/base.yaml` |
-| Mihomo 的 DNS、嗅探、oixCloud provider、Optimized 组及相关 `use` 和菜单引用 | `config/mihomo.yaml` |
-| Stash 的 DNS 差异 | `config/stash.yaml` |
+| 公共网络设置、全部共同代理组及候选顺序、筛选、测速设置、规则集和分流规则 | `configs/base.yaml` |
+| Mihomo 的 DNS、嗅探、oixCloud provider、Optimized 组及相关 `use` 和菜单引用 | `configs/mihomo.yaml` |
+| Stash 的 DNS 差异 | `configs/stash.yaml` |
 | 服务端下载、配置合并及引用检查 | `scripts/merge-config.js` |
 | 节点协议筛选、代理组成员生成和 provider URL 注入 | `scripts/config-overwrite.js` |
 | 节点地区识别、名称格式和关键词提取 | `scripts/rename.js` |
-| 自定义规则集内容 | `custom_rule/` |
+| 自定义规则集内容 | `rules/` |
 
-共同代理组沿用 Mihomo 的分组和候选顺序，只在 `config/base.yaml` 维护，包括 oixCloud Edge、吹雪云和一元机场组。`config/stash.yaml` 不维护代理组；Mihomo 的代理组补丁仅用于 oixCloud provider 相关差异。
+共同代理组沿用 Mihomo 的分组和候选顺序，只在 `configs/base.yaml` 维护，包括 oixCloud Edge、吹雪云和一元机场组。`configs/stash.yaml` 不维护代理组；Mihomo 的代理组补丁仅用于 oixCloud provider 相关差异。
 
 除 Mihomo 的 oixCloud provider、Optimized 组及相应 `use` 和菜单引用外，两种客户端合并后的 `proxy-groups` 必须一致。共同候选顺序、筛选和测速设置不能分别在客户端差异文件中维护。
 
@@ -24,7 +24,7 @@
 
 ### 配置来源与处理流程
 
-- `config/base.yaml` 保留 `$base: true`，两份差异文件分别保留 `$profile: mihomo` 和 `$profile: stash`；标记用于检查来源，输出时移除。
+- `configs/base.yaml` 保留 `$base: true`，两份差异文件分别保留 `$profile: mihomo` 和 `$profile: stash`；标记用于检查来源，输出时移除。
 - 三份 YAML 分别解析，锚点只能引用同一文件中的定义。实际节点由 Sub-Store 注入，三份配置源不要定义顶层 `proxies`。
 - `scripts/merge-config.js` 通过 `async main(config)` 读取公共配置和指定客户端差异；保留已有 `config.proxies`，其余输入配置由合并结果替换。
 - 合并与 `scripts/config-overwrite.js` 覆写必须作为两个独立的脚本操作执行，不能拼接；覆写在合并之后执行。额外的配置修改也应放在合并之后。
@@ -34,7 +34,7 @@
 
 公共测速组通过 `<<: *url_test_defaults` 复用参数，锚点定义在 `base.yaml` 的 VikingLinks 亚太组中。调整公共测速参数时只改该定义，各组名称和筛选条件单独维护。
 
-Mihomo 的 oixCloud provider 健康检查与 Optimized 组通过 `config/mihomo.yaml` 内的 `oix_health_check` 锚点复用测速参数。provider 的 `enable` 与组的 `tolerance`、`max-failed-times` 等专属字段分别保留，不跨文件引用锚点。
+Mihomo 的 oixCloud provider 健康检查与 Optimized 组通过 `configs/mihomo.yaml` 内的 `oix_health_check` 锚点复用测速参数。provider 的 `enable` 与组的 `tolerance`、`max-failed-times` 等专属字段分别保留，不跨文件引用锚点。
 
 ### 合并与补丁语法
 
@@ -124,7 +124,7 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/{branch}/{path}
 
 例如，合并脚本使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-config.js`。修改链接时保留正确的仓库、分支和路径，并检查资源是否可访问。
 
-其他仓库（如 `proxy-rule`、`ACL4SSR`、`blackmatrix7` 和 `dler-io`）保留各自现有的 CDN 链接策略。
+其他仓库（如 `ACL4SSR`、`blackmatrix7` 和 `dler-io`）保留各自现有的 CDN 链接策略。
 
 固定脚本和配置版本的用法见 README 的[合并脚本参数](README.md#合并脚本参数)。
 

@@ -6,7 +6,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
-const defaultConfigUrl = 'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/config';
+const defaultConfigUrl = 'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs';
 
 // Sub-Store supplies js-yaml. Keep these tests dependency-free on the JS side;
 // the Python bridge accepts YAML (including anchors) and rejects duplicate keys.
@@ -104,7 +104,7 @@ function respondWith(base, profile) {
 }
 
 function liveConfigs(proxies) {
-  const read = (name) => parseYaml(fs.readFileSync(path.join(root, 'config', `${name}.yaml`), 'utf8'));
+  const read = (name) => parseYaml(fs.readFileSync(path.join(root, 'configs', `${name}.yaml`), 'utf8'));
   const base = read('base');
   const { mergeConfigDocuments } = loadScript('scripts/merge-config.js');
   return Object.fromEntries(['mihomo', 'stash'].map((client) => [
@@ -260,7 +260,7 @@ test('main selects the requested profile and preserves only injected proxies fro
 test('main supports source URL overrides and passes the configured timeout to HTTP', async () => {
   const { main, calls } = runtime({
     client: 'stash',
-    configBaseUrl: 'https://config.example/config/',
+    configBaseUrl: 'https://config.example/configs/',
     baseUrl: 'https://override.example/base.yaml',
     profileUrl: 'https://override.example/stash.yaml',
     timeout: '12345',
@@ -271,11 +271,11 @@ test('main supports source URL overrides and passes the configured timeout to HT
   ]);
   assert.ok(calls.every(({ timeout }) => timeout === 12345));
 
-  const custom = runtime({ client: 'mihomo', configBaseUrl: 'https://config.example/config/' },
+  const custom = runtime({ client: 'mihomo', configBaseUrl: 'https://config.example/configs/' },
     respondWith(fixture(), { $profile: 'mihomo' }));
   await custom.main({ proxies: [] });
   assert.deepEqual(custom.calls.map(({ url }) => url).sort(), [
-    'https://config.example/config/base.yaml', 'https://config.example/config/mihomo.yaml',
+    'https://config.example/configs/base.yaml', 'https://config.example/configs/mihomo.yaml',
   ]);
 });
 
@@ -445,7 +445,7 @@ test('both live source profiles work with the existing airport and transit node 
   for (const client of ['mihomo', 'stash']) {
     const { main } = runtime({ client }, ({ url }) => ({
       statusCode: 200,
-      body: fs.readFileSync(path.join(root, 'config', path.basename(new URL(url).pathname)), 'utf8'),
+      body: fs.readFileSync(path.join(root, 'configs', path.basename(new URL(url).pathname)), 'utf8'),
     }));
     const merged = await main({ proxies: plain(proxies) });
     const overwrite = loadScript('scripts/config-overwrite.js', { $arguments: {} }).main;
@@ -506,7 +506,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
               await Promise.resolve();
               return {
                 statusCode: 200,
-                body: fs.readFileSync(path.join(root, 'config', path.basename(new URL(url).pathname)), 'utf8'),
+                body: fs.readFileSync(path.join(root, 'configs', path.basename(new URL(url).pathname)), 'utf8'),
               };
             },
           },

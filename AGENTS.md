@@ -12,7 +12,7 @@
 
 ## 关键约束
 
-- 共同代理组、候选顺序、筛选和测速参数只在 `config/base.yaml` 维护。两端代理组仅允许 oixCloud provider、Optimized 组及相关引用存在差异。
+- 共同代理组、候选顺序、筛选和测速参数只在 `configs/base.yaml` 维护。两端代理组仅允许 oixCloud provider、Optimized 组及相关引用存在差异。
 - 三份 YAML 独立解析，保留 `$base` / `$profile` 标记，不使用跨文件锚点，不在配置源定义顶层 `proxies`。
 - 保留规则的匹配优先级和候选顺序；修改组名、规则集名或文件位置时，同步检查引用。
 - `merge-config.js` 与 `config-overwrite.js` 是两个独立的 `main(config)` 操作，合并先于覆写；`rename.js` 在来源订阅中通过 `operator` 处理节点。
