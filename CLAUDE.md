@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 仓库概述
 
-这是一个代理配置仓库，用于管理基于规则的流量路由。Mihomo 和 Stash 使用公共 YAML 与客户端差异，由 Sub-Store 服务端脚本合并，再注入节点并覆写组成员。
+这是一个代理配置仓库，用于管理基于规则的流量路由。Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一在公共 YAML 中维护，由 Sub-Store 服务端脚本合并客户端差异，再注入节点并覆写组成员。
 
 ## 核心配置文件
 
-- [config/base.yaml](config/base.yaml)：两个客户端共用的网络设置、代理组、规则集和分流规则，公共配置只在这里维护。
-- [config/mihomo.yaml](config/mihomo.yaml)：Mihomo 专用 DNS、嗅探、provider 和代理组差异。
-- [config/stash.yaml](config/stash.yaml)：Stash 专用 DNS 和代理组差异。
+- [config/base.yaml](config/base.yaml)：两个客户端共用的网络设置、全部共同代理组及其候选顺序、筛选、测速设置、规则集和分流规则；oixCloud Edge、吹雪云和一元机场组也在这里维护。
+- [config/mihomo.yaml](config/mihomo.yaml)：Mihomo 专用 DNS、嗅探、oixCloud provider、Optimized 组及相应 `use` 和菜单引用。
+- [config/stash.yaml](config/stash.yaml)：仅维护 Stash 专用 DNS 差异。
 - [scripts/merge-config.js](scripts/merge-config.js)：通过 `async main(config)` 在 Sub-Store 中读取公共配置和指定客户端差异，合并、检查并保留传入节点；必须排在 `scripts/config-overwrite.js` 之前执行。
 - [scripts/config-overwrite.js](scripts/config-overwrite.js)：订阅转换后的覆写脚本，合并并去重代理组成员，按 `filter` 筛选节点；中转组和机场亚太组只使用不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点。
 - [scripts/rename.js](scripts/rename.js)：在 Sub-Store 的订阅或组合订阅中，通过 `async operator(proxies, targetPlatform, context)` 处理节点数组，完成地区识别、重命名、筛选和排序；处理后的节点再供文件注入及覆写使用。接入方式和参数见 [README.md 的节点重命名说明](README.md#节点重命名)。
@@ -20,7 +20,7 @@ VikingLinks、良心云和吹雪云的机场亚太组统一命名为“机场名
 
 三份 YAML 是合并来源，需要配合订阅转换流程注入实际节点。覆写脚本还可通过 `oixCloudEdgePath` 参数补入 oixCloud provider 的订阅 URL；Mihomo 差异文件本身未填写该 URL。Sub-Store 接入步骤和补丁语法见 [README.md](README.md)。
 
-配置来源统一维护在 `config/base.yaml`、`config/mihomo.yaml` 和 `config/stash.yaml`。公共更改写入 `config/base.yaml`，客户端专用更改写入对应差异文件。
+配置来源统一维护在 `config/base.yaml`、`config/mihomo.yaml` 和 `config/stash.yaml`。共同代理组沿用 Mihomo 的分组和候选顺序，只在 `config/base.yaml` 修改；除 oixCloud provider 相关差异外，两种客户端合并后的 `proxy-groups` 必须一致。
 
 ## 资源链接
 
@@ -56,14 +56,14 @@ rules:
 
 ## 配置结构
 
-公共 YAML 包含全局与网络配置、`proxy-groups`、`rule-providers` 和 `rules`；Mihomo 差异文件另有 `proxy-providers`。
+公共 YAML 包含全局与网络配置、全部共同 `proxy-groups`、`rule-providers` 和 `rules`。Stash 差异文件只有 DNS；Mihomo 差异文件保留 DNS、`sniffer`、oixCloud `proxy-providers`、Optimized 组及相应 `use` 和菜单引用。
 
 - `proxy-groups` 定义节点选择、中转、地区、机场和服务分流组。
 - `rule-providers` 定义远程规则集，`rules` 按顺序引用规则集和策略组。
 - 修改组名或规则集名时，同步检查所有引用；最终以 `MATCH` 兜底。
-- 普通映射递归合并，数组整体替换；`proxy-groups` 按 `name` 合并，数组局部修改使用脚本支持的补丁操作，保留规则和候选顺序。
+- 普通映射递归合并，数组整体替换；`proxy-groups` 按 `name` 合并。共同候选顺序直接在公共文件中维护，客户端代理组补丁仅用于 oixCloud provider 相关差异，保留其他规则和候选顺序。
 - 公共文件保留 `$base: true`，差异文件保留正确的 `$profile` 标记；三个文件分别解析，不允许跨文件 YAML 锚点。
-- 修改时分别验证两个客户端的合并结果和覆写后的节点成员。
+- 测试覆盖两种客户端共同代理组及候选顺序的一致性，仅排除 Mihomo 的 oixCloud provider、Optimized 组及相应 `use` 和菜单引用；修改时还需分别验证两个客户端合并结果和覆写后的节点成员。
 
 ## Git 工作流
 
@@ -110,9 +110,9 @@ git commit -m "feat(clash-config): 为所有服务分流组添加机场订阅选
 ```
 proxy-config/
 ├── config/
-│   ├── base.yaml             # 公共配置，唯一维护入口
-│   ├── mihomo.yaml           # Mihomo 差异
-│   └── stash.yaml            # Stash 差异
+│   ├── base.yaml             # 公共配置与全部共同代理组
+│   ├── mihomo.yaml           # DNS、嗅探与 oixCloud provider 差异
+│   └── stash.yaml            # Stash DNS 差异
 ├── scripts/
 │   ├── merge-config.js       # Sub-Store 服务端合并
 │   ├── config-overwrite.js   # 订阅配置覆写

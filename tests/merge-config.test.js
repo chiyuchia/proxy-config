@@ -103,6 +103,30 @@ function respondWith(base, profile) {
   });
 }
 
+function liveConfigs(proxies) {
+  const read = (name) => parseYaml(fs.readFileSync(path.join(root, 'config', `${name}.yaml`), 'utf8'));
+  const base = read('base');
+  const { mergeConfigDocuments } = loadScript('scripts/merge-config.js');
+  return Object.fromEntries(['mihomo', 'stash'].map((client) => [
+    client, plain(mergeConfigDocuments(base, read(client), proxies)),
+  ]));
+}
+
+function sharedGroups(config) {
+  return plain(config['proxy-groups'])
+    .filter(({ name }) => name !== '✈️ oixCloud Optimized')
+    .map((group) => {
+      if (group.proxies) {
+        group.proxies = group.proxies.filter((name) => name !== '✈️ oixCloud Optimized');
+      }
+      if (group.use) {
+        group.use = group.use.filter((name) => name !== 'oixCloud');
+        if (!group.use.length) delete group.use;
+      }
+      return group;
+    });
+}
+
 test('maps merge recursively, lists replace, fields delete, and sources stay untouched', () => {
   const base = fixture();
   const profile = {
@@ -295,6 +319,95 @@ test('failed downloads and invalid YAML are rejected without returning fallback 
   await assert.rejects(() => failed.main({ proxies: [] }), /timed out/);
   const mismatched = runtime({ client: 'mihomo' }, respondWith(fixture(), { $profile: 'stash' }));
   await assert.rejects(() => mismatched.main({ proxies: [] }));
+});
+
+test('live profiles share group definitions and menu order except for the Mihomo oixCloud provider', () => {
+  const { mihomo, stash } = liveConfigs();
+  assert.deepEqual(sharedGroups(stash), sharedGroups(mihomo));
+  assert.equal(stash['proxy-providers'], undefined);
+  assert.ok(stash['proxy-groups'].every((group) => !group.use?.length));
+  assert.ok(stash['proxy-groups'].every((group) =>
+    group.name !== '✈️ oixCloud Optimized' && !group.proxies?.includes('✈️ oixCloud Optimized')));
+  assert.equal(mihomo['proxy-providers'].oixCloud.type, 'http');
+  const optimized = mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized');
+  assert.equal(optimized.type, 'url-test');
+  assert.equal(optimized.filter, '(IXP|CIA)');
+  assert.deepEqual(optimized.use, ['oixCloud']);
+  const mihomoMain = mihomo['proxy-groups'].find(({ name }) => name === '🚀 节点选择');
+  assert.deepEqual(mihomoMain.use, ['oixCloud']);
+  assert.equal(mihomoMain.proxies.indexOf('✈️ oixCloud Optimized'),
+    mihomoMain.proxies.indexOf('✈️ VikingLinks') + 1);
+
+  const groups = new Map(sharedGroups(stash).map((group) => [group.name, group]));
+  const airportMenu = ['✈️ VikingLinks', '✈️ oixCloud Edge', '✈️ 吹雪云', '✈️ 良心云', '✈️ 一元机场'];
+  const asiaRelays = [
+    '✈️ VikingLinks 亚太', '✈️ 吹雪云 亚太', '✈️ 良心云 亚太',
+    '✈️ VikingLinks', '✈️ 吹雪云', '✈️ 良心云', '✈️ 良心云 Hy2',
+  ];
+  assert.deepEqual(groups.get('🛡️ Edge 中转').proxies, asiaRelays);
+  assert.deepEqual(groups.get('🛡️ 亚太中转').proxies, asiaRelays);
+  assert.deepEqual(groups.get('🛡️ 美西中转').proxies,
+    ['✈️ VikingLinks', '✈️ 吹雪云', '✈️ 良心云', '✈️ 良心云 Hy2']);
+  assert.deepEqual(groups.get('🚀 节点选择').proxies, [
+    '🏝️ 精品节点', '🇭🇰 香港节点', '🇺🇲 美国节点', '🇸🇬 狮城节点',
+    '🇯🇵 日本节点', '🇼🇸 台湾节点', '🌍 其他节点',
+    ...airportMenu.slice(0, -1), '✈️ 良心云 Hy2', '✈️ 一元机场',
+  ]);
+  assert.equal(groups.get('🚀 节点选择').url, 'https://cp.cloudflare.com/generate_204');
+  assert.equal(groups.get('🏝️ 精品节点').filter, '(自建|合租)');
+  for (const name of [
+    '♊ Gemini', '💬 Ai平台', '🍎 Apple Push', '🎥 奈飞视频', '📹 油管视频',
+    '📼 EMBY', '📲 电报消息', '🐙 Github', '🍎 Apple', 'Ⓜ️ Microsoft', '📢 Google',
+    '📺 国内媒体', '🌍 国外媒体', '🎮 游戏平台', '👛 Paypal', '💰 加密货币', '🐟 漏网之鱼',
+  ]) {
+    const menu = groups.get(name).proxies;
+    const hasDirectTail = ['🍎 Apple Push', '🌍 国外媒体'].includes(name);
+    assert.deepEqual(menu.slice(-(airportMenu.length + Number(hasDirectTail))),
+      hasDirectTail ? [...airportMenu, 'DIRECT'] : airportMenu, `${name}: airport menu order`);
+  }
+  for (const [name, filter] of [
+    ['✈️ oixCloud Edge', '(oixCloud Edge)'],
+    ['✈️ 吹雪云', '(吹雪云)'],
+    ['✈️ 一元机场', '(一元机场)'],
+  ]) {
+    assert.equal(groups.get(name).type, 'select');
+    assert.equal(groups.get(name).filter, filter);
+  }
+});
+
+test('the same injected nodes produce matching group members in both live profiles', () => {
+  const proxies = [
+    { name: 'oixCloud Edge HK', type: 'vless' },
+    { name: '吹雪云 SG 电信', type: 'ss' },
+    { name: '一元机场 JP', type: 'ss' },
+    { name: '自建 US', type: 'vless' },
+    { name: '合租 HK', type: 'vless' },
+    { name: '家宽 US 落地线路', type: 'vless', 'dialer-proxy': '🛡️ 亚太中转' },
+    { name: 'VikingLinks HK Go', type: 'ss' },
+    { name: '良心云 HK CT', type: 'vless' },
+    { name: '良心云 HK CT Hy2', type: 'hysteria2' },
+  ];
+  const { mihomo, stash } = liveConfigs(proxies);
+  const overwrite = loadScript('scripts/config-overwrite.js', { $arguments: {} }).main;
+  overwrite(mihomo);
+  overwrite(stash);
+  assert.deepEqual(sharedGroups(stash), sharedGroups(mihomo));
+  for (const config of [mihomo, stash]) {
+    assert.deepEqual(config.proxies, proxies);
+    for (const [name, expected] of [
+      ['✈️ oixCloud Edge', ['oixCloud Edge HK']],
+      ['✈️ 吹雪云', ['吹雪云 SG 电信']],
+      ['✈️ 一元机场', ['一元机场 JP']],
+      ['🏝️ 精品节点', ['自建 US', '合租 HK']],
+    ]) {
+      assert.deepEqual(plain(config['proxy-groups'].find((group) => group.name === name).proxies), expected);
+    }
+  }
+  assert.equal(stash['proxy-providers'], undefined);
+  assert.ok(stash['proxy-groups'].every((group) => !group.use?.length));
+  assert.ok(mihomo['proxy-providers'].oixCloud);
+  assert.deepEqual(plain(mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized').use),
+    ['oixCloud']);
 });
 
 test('both live source profiles work with the existing airport and transit node filters', async () => {

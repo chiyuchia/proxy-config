@@ -9,29 +9,4 @@ dns:
   nameserver-policy: # DNS 分流策略：精准匹配国内域名
     "+.cloud-nodes.com": 124.221.68.73:1053
 
-# 保留 Stash 现有的测速 URL、精品筛选和中转候选顺序。
-proxy-groups:
-  - name: "🚀 节点选择"
-    url: "http://cp.cloudflare.com/generate_204"
-
-  - name: "🛡️ Edge 中转"
-    proxies:
-      - "✈️ VikingLinks"
-      - "✈️ 良心云 Hy2"
-
-  - name: "🛡️ 亚太中转"
-    proxies:
-      - "✈️ VikingLinks 亚太"
-      - "✈️ 良心云 亚太"
-      - "✈️ 吹雪云 亚太"
-      - "✈️ VikingLinks"
-      - "✈️ 良心云 Hy2"
-
-  - name: "🏝️ 精品节点"
-    filter: "(自建|合租|家宽|落地|线路)"
-
-  - name: "👛 Paypal"
-    proxies:
-      $append:
-        - "✈️ VikingLinks"
-        - "✈️ 良心云"
+# 所有代理组、筛选和候选顺序直接继承 base.yaml。

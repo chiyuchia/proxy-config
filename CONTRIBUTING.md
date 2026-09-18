@@ -4,14 +4,14 @@
 
 项目维护 `config/base.yaml` 公共配置、`config/mihomo.yaml` 与 `config/stash.yaml` 客户端差异，以及订阅处理脚本和 `custom_rule/` 中的自定义规则集。Sub-Store 使用 `scripts/merge-config.js` 在服务端合并 YAML，再注入实际节点并运行 `scripts/config-overwrite.js`。接入方式和合并语法见 [README.md](README.md)。
 
-配置来源统一维护在 `config/base.yaml`、`config/mihomo.yaml` 和 `config/stash.yaml`。公共更改只改 `config/base.yaml`；客户端专用更改写入对应差异文件。
+配置来源统一维护在三份 YAML 中：`config/base.yaml` 维护全部共同代理组、候选顺序、筛选、测速设置和规则，包括 oixCloud Edge、吹雪云和一元机场组；`config/mihomo.yaml` 仅维护 Mihomo 的 DNS、嗅探、oixCloud provider、Optimized 组及相应 `use` 和菜单引用；`config/stash.yaml` 仅维护 Stash 的 DNS 差异。
 
 ---
 
 ## 开发流程
 
 1. **修改代码**：在本地进行必要的修改
-2. **验证更改**：检查两种客户端的合并结果、规则集和策略组引用，并验证节点注入及覆写结果
+2. **验证更改**：检查两种客户端共同代理组的一致性、规则集和策略组引用，并验证节点注入及覆写结果
 3. **手动提交**：使用约定式提交格式进行 `git commit`
 4. **确认后推送**：检查 commit 信息无误后，手动执行 `git push`
 
@@ -25,7 +25,7 @@
 node --test tests/merge-config.test.js
 ```
 
-测试覆盖两种客户端的配置合并、数组与代理组补丁、远程读取和错误处理、节点保留及现有覆写流程。有意调整配置行为时，应更新相应测试预期，并检查三份配置源合并后的实际输出。
+测试覆盖两种客户端的配置合并、共同代理组及候选顺序的一致性、数组与代理组补丁、远程读取和错误处理、节点保留及现有覆写流程。一致性检查只排除 Mihomo 的 oixCloud provider、Optimized 组及相应 `use` 和菜单引用。有意调整配置行为时，应更新相应测试预期，并检查三份配置源合并后的实际输出。
 
 ---
 
@@ -112,6 +112,7 @@ Clash 规则**从上到下依次匹配**，第一条匹配的规则生效。
 1. **具体规则在前**：更具体的规则（如 YouTube）应放在通用规则（如 Google）之前
 2. **规则集命名**：使用清晰的中文名称（如 "📢 谷歌服务"）
 3. **策略组统一**：相同用途的规则集应使用同一个策略组
+4. **共同分组单一维护**：沿用 Mihomo 的分组和候选顺序，在 `config/base.yaml` 修改共同代理组及筛选、测速设置；除 oixCloud provider 相关差异外，两种客户端合并后的 `proxy-groups` 必须一致
 
 ### 示例
 
@@ -126,7 +127,7 @@ rules:
 
 - `scripts/merge-config.js` 用于 Sub-Store 的“Mihomo 配置”类型，通过 `client=mihomo` / `client=stash` 选择差异文件；必须在 `scripts/config-overwrite.js` 之前作为独立脚本执行。合并时保留已有 `config.proxies`，其他输入配置由新结果替换。
 - 三份 YAML 分别解析，不能跨文件引用锚点。公共文件的 `$base` 与差异文件的 `$profile` 标记在输出时移除。
-- 普通映射递归合并，普通数组整体替换，顶层 `proxy-groups` 按 `name` 合并。数组局部增删使用 `$append`、`$prepend`、`$remove` 或 `$insert-before`，不要改变公共规则的优先级。
+- 普通映射递归合并，普通数组整体替换，顶层 `proxy-groups` 按 `name` 合并。数组局部增删支持 `$append`、`$prepend`、`$remove` 或 `$insert-before`；客户端代理组补丁仅用于 oixCloud provider 相关差异，共同候选顺序直接在 `config/base.yaml` 中维护，不要改变公共规则的优先级。
 - `scripts/rename.js` 在 Sub-Store 的订阅或组合订阅中，通过 `async operator(proxies, targetPlatform, context)` 处理节点数组，完成地区识别、重命名、筛选和排序。处理后的节点再供文件注入及 `scripts/config-overwrite.js` 覆写使用；接入方式和参数见 [README.md 的节点重命名说明](README.md#节点重命名)。
 - `scripts/config-overwrite.js` 合并并去重策略组的 `proxies` 成员，按 `filter` 筛选节点；中转组和机场亚太组只使用不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点，全球直连组保持手工配置。
 - VikingLinks、良心云和吹雪云的机场亚太组统一命名为“机场名 亚太”，仅筛选 HK、SG、JP、TW，每次覆写都重建成员，避免旧节点残留。良心云亚太组另要求名称包含 `CT`（含 `CTCU`、`CTCUCM`），吹雪云亚太组另要求名称包含“电信”。
@@ -140,9 +141,9 @@ rules:
 ```
 proxy-config/
 ├── config/
-│   ├── base.yaml             # 公共配置
-│   ├── mihomo.yaml           # Mihomo 差异
-│   └── stash.yaml            # Stash 差异
+│   ├── base.yaml             # 公共配置与全部共同代理组
+│   ├── mihomo.yaml           # DNS、嗅探与 oixCloud provider 差异
+│   └── stash.yaml            # Stash DNS 差异
 ├── scripts/
 │   ├── merge-config.js       # Sub-Store 服务端合并
 │   ├── config-overwrite.js   # 订阅配置覆写

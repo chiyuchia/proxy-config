@@ -1,5 +1,5 @@
 # 两个客户端共用的配置；由 scripts/merge-config.js 与一个客户端差异文件合并。
-# 公共规则、地区筛选、机场亚太组只在这里维护。
+# 公共规则、代理组及组内候选顺序只在这里维护。
 $base: true
 
 # ==========================================
@@ -49,12 +49,13 @@ tun:
   mtu: 1500 # 虚拟网卡最大传输单元，标准 1500
 
 # ==========================================
-# 公共代理组：客户端候选列表的差异见 mihomo.yaml / stash.yaml
+# 公共代理组：两个客户端共用；Mihomo 仅额外加入 oixCloud provider 及 Optimized 组
 # ==========================================
 proxy-groups:
   - name: "🚀 节点选择"
     type: select
     interval: 300
+    url: "https://cp.cloudflare.com/generate_204"
     proxies:
       - "🏝️ 精品节点"
       - "🇭🇰 香港节点"
@@ -63,18 +64,46 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 良心云 Hy2"
+      - "✈️ 一元机场"
 
   - name: "🛡️ Edge 中转"
     type: select
+    proxies:
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
+      - "✈️ 良心云 亚太"
+      - "✈️ VikingLinks"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 良心云 Hy2"
 
   - name: "🛡️ 亚太中转"
     type: select
+    proxies:
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
+      - "✈️ 良心云 亚太"
+      - "✈️ VikingLinks"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 良心云 Hy2"
 
   - name: "🛡️ 美西中转"
     type: select
+    proxies:
+      - "✈️ VikingLinks"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 良心云 Hy2"
 
   - name: "🏝️ 精品节点"
     type: select
+    filter: "(自建|合租)"
 
   - name: "♊ Gemini"
     type: select
@@ -87,6 +116,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "💬 Ai平台"
     type: select
@@ -99,6 +133,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "🍎 Apple Push"
     type: select
@@ -111,6 +150,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
       - DIRECT
 
   - name: "🎥 奈飞视频"
@@ -124,6 +168,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "📹 油管视频"
     type: select
@@ -136,6 +185,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "📼 EMBY"
     type: select
@@ -148,6 +202,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "📲 电报消息"
     type: select
@@ -160,6 +219,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "🐙 Github"
     type: select
@@ -172,6 +236,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "🍎 Apple"
     type: select
@@ -185,6 +254,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "Ⓜ️ Microsoft"
     type: select
@@ -197,6 +271,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "📢 Google"
     type: select
@@ -209,6 +288,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "📺 国内媒体"
     type: select
@@ -222,6 +306,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "🌍 国外媒体"
     type: select
@@ -234,6 +323,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
       - DIRECT
 
   - name: "🎮 游戏平台"
@@ -248,6 +342,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "👛 Paypal"
     type: select
@@ -260,6 +359,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "💰 加密货币"
     type: select
@@ -272,6 +376,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "🐟 漏网之鱼"
     type: select
@@ -285,6 +394,11 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 一元机场"
 
   - name: "🇭🇰 香港节点"
     type: select
@@ -315,27 +429,30 @@ proxy-groups:
     filter: "(VikingLinks)"
 
   - name: "✈️ VikingLinks 亚太"
-    type: url-test
-    url: "https://cp.cloudflare.com/generate_204"
-    interval: 60
-    timeout: 5000
-    lazy: false
-    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
-    max-failed-times: 3
-    expected-status: 204
+    # 公共测速参数在此定义，后续测速组通过 YAML 合并键复用。
+    <<: &url_test_defaults
+      type: url-test
+      url: "https://cp.cloudflare.com/generate_204"
+      interval: 60
+      timeout: 5000
+      lazy: false
+      tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
+      max-failed-times: 3
+      expected-status: 204
     # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
     # scripts/config-overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
+  - name: "✈️ oixCloud Edge"
+    type: select
+    filter: "(oixCloud Edge)"
+
+  - name: "✈️ 吹雪云"
+    type: select
+    filter: "(吹雪云)"
+
   - name: "✈️ 吹雪云 亚太"
-    type: url-test
-    url: "https://cp.cloudflare.com/generate_204"
-    interval: 60
-    timeout: 5000
-    lazy: false
-    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
-    max-failed-times: 3
-    expected-status: 204
+    <<: *url_test_defaults
     # 仅筛选 HK、SG、JP、TW 地区且名称包含“电信”的节点；不限制协议类型。
     # scripts/config-overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
     filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
@@ -345,29 +462,19 @@ proxy-groups:
     filter: "(良心云)"
 
   - name: "✈️ 良心云 亚太"
-    type: url-test
-    url: "https://cp.cloudflare.com/generate_204"
-    interval: 60
-    timeout: 5000
-    lazy: false
-    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
-    max-failed-times: 3
-    expected-status: 204
+    <<: *url_test_defaults
     # 仅筛选 HK、SG、JP、TW 地区且名称包含 CT 的节点，兼容 CTCU、CTCUCM 标签。
     # scripts/config-overwrite.js 按实际协议类型仅注入 VLESS 节点，并排除带 dialer-proxy 的节点。
     filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 良心云 Hy2"
-    type: url-test
-    url: "https://cp.cloudflare.com/generate_204"
-    interval: 60
-    timeout: 5000
-    lazy: false
-    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
-    max-failed-times: 3
-    expected-status: 204
+    <<: *url_test_defaults
     # scripts/config-overwrite.js 按实际协议类型注入 Hy2 节点，并排除带 dialer-proxy 的节点。
     filter: "(良心云)"
+
+  - name: "✈️ 一元机场"
+    type: select
+    filter: "(一元机场)"
 
   - name: "🎯 全球直连"
     type: select
