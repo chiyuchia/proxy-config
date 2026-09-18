@@ -89,7 +89,7 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.j
 
 该脚本通过 `async operator(proxies, targetPlatform, context)` 处理节点数组。先在来源订阅中完成重命名，再由“Mihomo 配置”文件注入处理后的节点，并运行 `scripts/config-overwrite.js`。文件中的合并与覆写脚本使用 `main(config)`，`rename.js` 应配置在订阅的节点处理流程中。
 
-脚本先过滤信息节点，再从节点名识别地区；名称无法识别时才查询服务器 IP 的归属地，域名先通过 Cloudflare DoH 解析为 IPv4，再请求 IPinfo。名称命中不会发起查询；这一步按服务器地址判断地区，不检测代理实际出口。查询使用 `fetch` 和 `AbortController`，运行环境需提供这些 API。
+脚本先过滤信息节点，再仅从节点名称识别地区，无需联网解析或查询。名称无法识别时保留原名，`one` 参数的序号处理仍会独立生效。
 
 默认输出 `国旗 地区代码 序号 | 保留关键词 订阅名`，序号按 `_subName` 与地区分组，从 `01` 重新生成，空的后缀部分会省略。订阅名来自节点的 `_subName` 字段。以下例子各自作为所属分组的第一个节点：
 
@@ -110,7 +110,6 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.j
 | `remove` | `true` | 替换原节点名；`false` 保留完整原名，追加在地区标签和序号后 |
 | `filter` | 内置词表 | 名称包含过滤词时丢弃节点，不区分大小写；自定义词用 `\|` 分隔并追加到内置词表；空字符串 `""` 禁用过滤 |
 | `block` | 不启用 | 识别地区前从名称中去除匹配内容，支持正则表达式，忽略大小写并全局替换；不修改输出中的原名或关键词 |
-| `token` | 不设置 | IPinfo Token；设置时使用 Lite API，不设置时使用标准 JSON API |
 | `one` | `false` | 去掉两位序号后的完整名称唯一时，移除其中的 `01`；判断包含关键词和订阅名，并非只按地区计数 |
 | `hot` | 不过滤 | `true` / `1` 仅保留 `HK/TW/CN/JP/SG/US`；字符串如 `HK\|SG\|JP` 仅保留指定地区；启用后未识别地区的节点也会丢弃 |
 | `retain` | 启用内置关键词 | `remove=true` 时生效；`false` / `0` 禁用保留；字符串如 `IPLC\|专线` 在内置规则上追加关键词 |
@@ -137,8 +136,6 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.j
 ```
 
 其他组合也可用 `encodeURIComponent(JSON.stringify(参数对象))` 生成 URL 片段。默认参数无需填写。修改 `out`、`retain` 或订阅名后，检查最终名称是否仍满足 `config/base.yaml` 中代理组对机场名、地区代码和线路关键词的筛选要求。
-
-查询每批最多并发 5 个节点，DoH 和 IPinfo 请求分别设置 3 秒超时，脚本没有跨次运行的查询缓存。解析或查询失败时通常保留原节点；开启 `hot` 后，未识别地区的节点会被过滤。
 
 ## 修改与更新
 

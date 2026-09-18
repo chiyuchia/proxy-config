@@ -133,7 +133,7 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/{branch}/{path}
 运行测试需要支持 `node:test` 的 Node.js，以及可导入 `yaml` 的 Python 3（PyYAML）。它们是本地测试依赖；Sub-Store 使用自带的 YAML 解析器，服务端不需要 Python。
 
 ```bash
-node --test tests/merge-config.test.js
+node --test tests/*.test.js
 ```
 
 测试覆盖：
@@ -142,6 +142,7 @@ node --test tests/merge-config.test.js
 - 数组与代理组补丁、来源标记、节点保留、重复组名和无效引用等检查。
 - 远程读取、URL 与超时参数、请求和 YAML 错误处理，以及 Sub-Store 独立脚本的异步执行与序列化流程。
 - 实际机场与中转节点筛选、协议限制、节点注入和覆写结果。
+- 重命名仅按节点名称识别地区、未知地区保留原名，以及启用 `hot` 后过滤未知地区节点的行为。
 
 修改配置或脚本后，检查两种客户端的最终输出、规则集和策略组引用、组成员及候选顺序，不能只验证未注入节点的合并结果。有意调整行为时，同步更新测试预期。
 

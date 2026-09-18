@@ -1,6 +1,6 @@
 /**
  * Sub-Store 节点地区标注脚本
- * 通过节点名匹配或服务器 IP 查询为节点添加地区标签（默认国旗 + 地区代码 + 序号）
+ * 仅通过节点名匹配地区，为节点添加地区标签（默认国旗 + 地区代码 + 序号）
  * 用于订阅/组合订阅的脚本操作，入口为 async operator(proxies, targetPlatform, context)。
  * 接入方式、URL 参数示例见 README.md 的“节点重命名”。
  *
@@ -12,7 +12,6 @@
  *                                例如: "测试|备用"
  *   block: string                屏蔽正则，忽略大小写并全局替换，识别地区前从名称中去除，不影响输出原名或关键词
  *                                例如: "TG:LSMOO|公益|测试"
- *   token: string                IPinfo Token，传入时使用 Lite API，不传则使用 https://ipinfo.io/{ip}/json
  *   one: boolean                 去掉两位序号后的完整名称唯一时移除 01（含后缀判断），默认 false
  *   hot: boolean|string          只保留热门地区节点，默认不过滤
  *                                传 true/1 使用预设热门地区（HK/TW/CN/JP/SG/US）
@@ -46,7 +45,6 @@ const QC = ['China','Hong Kong','Macao','Taiwan','Japan','Korea','Singapore','Un
 const FG = ['🇨🇳','🇭🇰','🇲🇴','🇹🇼','🇯🇵','🇰🇷','🇸🇬','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇦🇺','🇦🇪','🇦🇫','🇦🇱','🇩🇿','🇦🇴','🇦🇷','🇦🇲','🇦🇹','🇦🇿','🇧🇭','🇧🇩','🇧🇾','🇧🇪','🇧🇿','🇧🇯','🇧🇹','🇧🇴','🇧🇦','🇧🇼','🇧🇷','🇻🇬','🇧🇳','🇧🇬','🇧🇫','🇧🇮','🇰🇭','🇨🇲','🇨🇦','🇨🇻','🇰🇾','🇨🇫','🇹🇩','🇨🇱','🇨🇴','🇰🇲','🇨🇬','🇨🇩','🇨🇷','🇭🇷','🇨🇾','🇨🇿','🇩🇰','🇩🇯','🇩🇴','🇪🇨','🇪🇬','🇸🇻','🇬🇶','🇪🇷','🇪🇪','🇪🇹','🇫🇯','🇫🇮','🇬🇦','🇬🇲','🇬🇪','🇬🇭','🇬🇷','🇬🇱','🇬🇹','🇬🇳','🇬🇾','🇭🇹','🇭🇳','🇭🇺','🇮🇸','🇮🇳','🇮🇩','🇮🇷','🇮🇶','🇮🇪','🇮🇲','🇮🇱','🇮🇹','🇨🇮','🇯🇲','🇯🇴','🇰🇿','🇰🇪','🇰🇼','🇰🇬','🇱🇦','🇱🇻','🇱🇧','🇱🇸','🇱🇷','🇱🇾','🇱🇹','🇱🇺','🇲🇰','🇲🇬','🇲🇼','🇲🇾','🇲🇻','🇲🇱','🇲🇹','🇲🇷','🇲🇺','🇲🇽','🇲🇩','🇲🇨','🇲🇳','🇲🇪','🇲🇦','🇲🇿','🇲🇲','🇳🇦','🇳🇵','🇳🇱','🇳🇿','🇳🇮','🇳🇪','🇳🇬','🇰🇵','🇳🇴','🇴🇲','🇵🇰','🇵🇦','🇵🇾','🇵🇪','🇵🇭','🇵🇹','🇵🇷','🇶🇦','🇷🇴','🇷🇺','🇷🇼','🇸🇲','🇸🇦','🇸🇳','🇷🇸','🇸🇱','🇸🇰','🇸🇮','🇸🇴','🇿🇦','🇪🇸','🇱🇰','🇸🇩','🇸🇷','🇸🇿','🇸🇪','🇨🇭','🇸🇾','🇹🇯','🇹🇿','🇹🇭','🇹🇬','🇹🇴','🇹🇹','🇹🇳','🇹🇷','🇹🇲','🇻🇮','🇺🇬','🇺🇦','🇺🇾','🇺🇿','🇻🇪','🇻🇳','🇾🇪','🇿🇲','🇿🇼','🇦🇩','🇷🇪','🇵🇱','🇬🇺','🇻🇦','🇱🇮','🇨🇼','🇸🇨','🇦🇶','🇬🇮','🇨🇺','🇫🇴','🇦🇽','🇧🇲','🇹🇱'];
 
 const EN_TO_ZH = new Map(EN.map((code, i) => [code, ZH[i]]));
-const CONCURRENCY = 5;
 
 // 热门地区（hot 参数过滤用）
 const HOT_REGIONS = new Set(["HK", "TW", "CN", "JP", "SG", "US"]);
@@ -569,7 +567,6 @@ async function operator(proxies, targetPlatform, context) {
   const blockRegex = blockWordsRaw
     ? new RegExp(decodeURIComponent(String(blockWordsRaw)), "gi")
     : null;
-  const API_TOKEN = $arguments?.token || "";
   const retainKeysRaw = $arguments?.retain;
   // 默认启用内置关键词提取（等同于 retain=true）；传 false/0 禁用；传词组则追加自定义词
   const retainKeys = (() => {
@@ -601,23 +598,9 @@ async function operator(proxies, targetPlatform, context) {
   }
 
   let nameHitCount = 0;
-  let missCount = 0;
-  let errorCount = 0;
 
-  // 第一阶段：用节点名全量匹配地区，命中则写入 countryMap，跳过 API
-  const countryMap = new Map(); // node endpoint/signature -> country_code
-  const serverKey = (p) =>
-    [
-      p.server,
-      p.port,
-      p.type,
-      p.network,
-      p.servername || p.sni,
-      p["ws-opts"]?.headers?.Host,
-      p["ws-opts"]?.path,
-    ]
-      .filter(Boolean)
-      .join("|");
+  // 第一阶段：仅用节点名匹配地区，同一服务器的不同节点各自识别。
+  const countryMap = new Map(); // proxy -> country_code
 
   for (const proxy of proxies) {
     if (!proxy.server) continue;
@@ -632,85 +615,18 @@ async function operator(proxies, targetPlatform, context) {
     );
     const code = parsedName?.countryCode || matchNameToCode(cleanName);
     if (code) {
-      countryMap.set(serverKey(proxy), code);
+      countryMap.set(proxy, code);
       nameHitCount++;
       console.log(`[geo-tag] 名称命中: ${proxy.name} → ${code}`);
     }
   }
   console.log(`[geo-tag] 名称命中 ${nameHitCount}/${proxies.length} 个节点`);
 
-  // 未命中的节点，走 DoH → API 流程
-  const apiProxies = proxies.filter(
-    (p) => p.server && !countryMap.has(serverKey(p)),
-  );
-  console.log(`[geo-tag] 需要 API 查询: ${apiProxies.length} 个节点`);
-
-  for (let i = 0; i < apiProxies.length; i += CONCURRENCY) {
-    const batch = apiProxies.slice(i, i + CONCURRENCY);
-    console.log(
-      `[geo-tag] 查询批次 ${Math.floor(i / CONCURRENCY) + 1}，节点 ${i + 1}-${Math.min(i + CONCURRENCY, apiProxies.length)}`,
-    );
-
-    await Promise.all(
-      batch.map(async (proxy) => {
-        const server = proxy.server;
-        if (!server) return;
-
-        missCount++;
-
-        // 域名先 DoH 解析
-        let queryTarget = server;
-        if (!/^[\d.]+$/.test(server) && !server.includes(":")) {
-          const ip = await resolveHost(server);
-          if (ip) {
-            console.log(`[geo-tag] 域名解析: ${server} → ${ip}`);
-            queryTarget = ip;
-          } else {
-            console.log(`[geo-tag] 域名解析失败，跳过: ${server}`);
-            errorCount++;
-            return;
-          }
-        }
-
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 3000);
-
-        try {
-          const url = API_TOKEN
-            ? `https://api.ipinfo.io/lite/${queryTarget}?token=${API_TOKEN}`
-            : `https://ipinfo.io/${queryTarget}/json`;
-          const response = await fetch(url, { signal: controller.signal });
-          clearTimeout(timer);
-
-          const data = await response.json();
-          const countryCode = data.country_code || data.country;
-          console.log(
-            `[geo-tag] API 响应: ${server} → country_code=${countryCode}, as_name=${data.as_name || data.org}`,
-          );
-
-          if (countryCode) {
-            countryMap.set(serverKey(proxy), countryCode);
-          } else {
-            console.log(
-              `[geo-tag] API 未返回 country_code: ${server}，响应: ${JSON.stringify(data)}`,
-            );
-          }
-        } catch (e) {
-          clearTimeout(timer);
-          errorCount++;
-          const reason = e.name === "AbortError" ? "请求超时(3s)" : e.message;
-          console.log(`[geo-tag] 查询失败: ${server}，原因: ${reason}`);
-        }
-      }),
-    );
-  }
-
   // 第二阶段：按 _subName + country_code 分组计数，生成新名称。
   const counterMap = new Map(); // `${subName}|${countryCode}` -> 当前计数
 
   const renamedProxies = proxies.map((proxy) => {
-    const server = proxy.server;
-    const countryCode = server ? countryMap.get(serverKey(proxy)) : null;
+    const countryCode = countryMap.get(proxy);
     const parsedName = parseVkGistName(proxy.name);
     const parsedNameMatched = parsedName?.countryCode === countryCode;
 
@@ -762,17 +678,19 @@ async function operator(proxies, targetPlatform, context) {
       : joinNameParts(baseName, appendSubName(proxy.name));
 
     console.log(`[geo-tag] 重命名: ${proxy.name} → ${newName}`);
-    return { ...proxy, name: newName };
+    const renamedProxy = { ...proxy, name: newName };
+    countryMap.set(renamedProxy, countryCode);
+    return renamedProxy;
   });
 
   console.log(
-    `[geo-tag] 完成。名称命中: ${nameHitCount}，API 查询: ${missCount}，失败: ${errorCount}`,
+    `[geo-tag] 完成。名称命中: ${nameHitCount}，未识别: ${proxies.length - nameHitCount}`,
   );
 
   // hot 参数：只保留热门地区节点
   let result = hotOnly
     ? renamedProxies.filter((p) => {
-        const code = p.server ? countryMap.get(serverKey(p)) : null;
+        const code = countryMap.get(p);
         return code && hotRegions.has(code);
       })
     : renamedProxies;
@@ -783,8 +701,8 @@ async function operator(proxies, targetPlatform, context) {
 
   // 第三阶段：热门地区优先，内部按 country_code 字母序；其余也按字母序；无归属地排最后
   result.sort((a, b) => {
-    const ca = a.server ? countryMap.get(serverKey(a)) : null;
-    const cb = b.server ? countryMap.get(serverKey(b)) : null;
+    const ca = countryMap.get(a);
+    const cb = countryMap.get(b);
     if (!ca && !cb) return 0;
     if (!ca) return 1;
     if (!cb) return -1;
@@ -830,27 +748,4 @@ function getFlagEmoji(countryCode) {
     .replace(/[A-Z]/gu, (char) =>
       String.fromCodePoint(char.charCodeAt(0) + 127397),
     );
-}
-
-/**
- * 用 Cloudflare DoH 将域名解析为 IPv4 地址
- * 返回第一个 A 记录的 IP，失败返回 null
- */
-async function resolveHost(hostname) {
-  try {
-    const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=A`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3000);
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { Accept: "application/dns-json" },
-    });
-    clearTimeout(timer);
-    const data = await response.json();
-    const record = data.Answer?.find((r) => r.type === 1);
-    return record?.data || null;
-  } catch (e) {
-    console.log(`[geo-tag] DoH 解析失败: ${hostname}，原因: ${e.message}`);
-    return null;
-  }
 }
