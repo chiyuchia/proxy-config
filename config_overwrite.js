@@ -5,7 +5,8 @@
  * - 带 `filter` 的策略组按筛选规则追加匹配到的节点；
  * - `全球直连` 保持手工维护，不在这里注入节点；
  * - `中转` 组只从未使用 `dialer-proxy` 的节点中挑选，避免混入链式代理。
- * - `良心云 Hy2` 组按实际协议类型重建成员，只保留可作为第一跳的 Hy2 节点。
+ * - `良心云 Hy2` 和 `良心云 亚太中转` 组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点。
+ * - 专用亚太中转组按筛选结果重建成员，避免保留旧地区或已改为链式代理的节点。
  * - 合并节点时自动去重，避免脚本重复执行后出现重复项。
  */
 function hasText(value) {
@@ -107,23 +108,29 @@ function main(config) {
       return group;
     }
 
-    if (groupName === '✈️ 良心云 Hy2') {
-      // 节点名称不一定包含 Hy2，按协议筛选；重建列表以移除过期或协议已变更的成员。
-      const hy2Proxies = transitProxies.filter((proxy) =>
-        ['hysteria2', 'hy2'].includes(String(proxy.type).toLowerCase())
+    if (groupName === '✈️ 良心云 Hy2' || groupName === '✈️ 良心云 亚太中转') {
+      // 节点名称不一定包含协议，按实际类型筛选；重建列表以移除过期或协议已变更的成员。
+      const allowedTypes = groupName === '✈️ 良心云 Hy2' ? ['hysteria2', 'hy2'] : ['vless'];
+      const protocolProxies = transitProxies.filter((proxy) =>
+        allowedTypes.includes(String(proxy.type).toLowerCase())
       );
       return {
         ...group,
-        proxies: mergeProxyNames([], getExtraProxyNames(group, hy2Proxies)),
+        proxies: mergeProxyNames([], getExtraProxyNames(group, protocolProxies)),
       };
     }
 
     const candidateProxies = getCandidateProxies(groupName, allProxies, transitProxies);
     const extraProxies = getExtraProxyNames(group, candidateProxies);
+    // 专用组不保留旧成员，确保地区或节点的 dialer-proxy 变更后仍满足中转条件。
+    const rebuildTransitGroup = [
+      '✈️ VikingLinks 亚太中转',
+      '✈️ 吹雪云 亚太中转',
+    ].includes(groupName);
 
     return {
       ...group,
-      proxies: mergeProxyNames(group?.proxies, extraProxies),
+      proxies: mergeProxyNames(rebuildTransitGroup ? [] : group?.proxies, extraProxies),
     };
   });
 

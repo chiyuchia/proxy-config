@@ -75,6 +75,8 @@ proxy-groups:
     type: select
     proxies:
       - "✈️ VikingLinks 亚太中转"
+      - "✈️ 良心云 亚太中转"
+      - "✈️ 吹雪云 亚太中转"
       - "✈️ VikingLinks"
       - "✈️ 良心云 Hy2"
 
@@ -334,13 +336,39 @@ proxy-groups:
     tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
     max-failed-times: 3
     expected-status: 204
-    # 按重命名后的国家码限定亚太，仅筛选 Go、IEPL、SH 线路。
+    # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
     # 组名包含“中转”，config_overwrite.js 会排除带 dialer-proxy 的落地节点。
-    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|MO|TW|JP|KR|SG|MY|TH|VN|PH|ID|IN|AU|NZ)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+
+  - name: "✈️ 吹雪云 亚太中转"
+    type: url-test
+    url: "https://cp.cloudflare.com/generate_204"
+    interval: 60
+    timeout: 5000
+    lazy: false
+    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
+    max-failed-times: 3
+    expected-status: 204
+    # 仅筛选 HK、SG、JP、TW 地区且名称包含“电信”的节点；不限制协议类型。
+    # 组名包含“中转”，config_overwrite.js 会排除带 dialer-proxy 的落地节点。
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 良心云"
     type: select
     filter: "(良心云)"
+
+  - name: "✈️ 良心云 亚太中转"
+    type: url-test
+    url: "https://cp.cloudflare.com/generate_204"
+    interval: 60
+    timeout: 5000
+    lazy: false
+    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
+    max-failed-times: 3
+    expected-status: 204
+    # 仅筛选 HK、SG、JP、TW 地区且名称包含 CT 的节点，兼容 CTCU、CTCUCM 标签。
+    # config_overwrite.js 按实际协议类型仅注入 VLESS 节点，并排除带 dialer-proxy 的节点。
+    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 良心云 Hy2"
     type: url-test
