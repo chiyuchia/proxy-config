@@ -1,8 +1,8 @@
 /**
- * Sub-Store「Mihomo 配置」的远程合并脚本，放在 config_overwrite.js 之前。
+ * Sub-Store「Mihomo 配置」的远程合并脚本，放在 scripts/config-overwrite.js 之前。
  * 参数：client=mihomo 或 client=stash（必填）；可选 configBaseUrl、baseUrl、profileUrl、timeout。
  * 三份 YAML 在仓库维护，服务端按客户端读取 base + profile；只保留输入中的订阅 proxies。
- * 本脚本和 config_overwrite.js 各自使用 main(config)，应配置为两个独立的脚本操作。
+ * 本脚本和 scripts/config-overwrite.js 各自使用 main(config)，应配置为两个独立的脚本操作。
  */
 function isConfigMap(value) {
   return Object.prototype.toString.call(value) === '[object Object]';

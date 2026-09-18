@@ -108,7 +108,7 @@ const RURE_KEY = {
 };
 
 /**
- * 用节点名全量匹配地区，参考 rename.js 逻辑
+ * 用节点名全量匹配地区，参考 scripts/rename.js 逻辑
  * 先用 RURE_KEY 预处理替换别名，再依次尝试 ZH、FG、QC、EN 四个数组的 includes 匹配
  * 返回 country_code 或 null
  */

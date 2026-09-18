@@ -335,7 +335,7 @@ test('both live source profiles work with the existing airport and transit node 
       body: fs.readFileSync(path.join(root, 'config', path.basename(new URL(url).pathname)), 'utf8'),
     }));
     const merged = await main({ proxies: plain(proxies) });
-    const overwrite = loadScript('config_overwrite.js', { $arguments: {} }).main;
+    const overwrite = loadScript('scripts/config-overwrite.js', { $arguments: {} }).main;
     const result = overwrite(merged);
     for (const [name, members] of Object.entries(expected)) {
       const group = result['proxy-groups'].find((item) => item.name === name);
@@ -409,7 +409,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
       assert.ok(merged['proxy-groups'].length > 0);
 
       context.$arguments = {};
-      await runWrapped('config_overwrite.js', context);
+      await runWrapped('scripts/config-overwrite.js', context);
       assert.equal(context.main, undefined, 'overwrite main must also stay in its script scope');
       assert.equal(context.compileGroupFilter, undefined);
       const result = parseYaml(context.$content);

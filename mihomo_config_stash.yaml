@@ -337,7 +337,7 @@ proxy-groups:
     max-failed-times: 3
     expected-status: 204
     # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
-    # config_overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
+    # scripts/config-overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
   - name: "✈️ 吹雪云 亚太"
@@ -350,7 +350,7 @@ proxy-groups:
     max-failed-times: 3
     expected-status: 204
     # 仅筛选 HK、SG、JP、TW 地区且名称包含“电信”的节点；不限制协议类型。
-    # config_overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
+    # scripts/config-overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
     filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 良心云"
@@ -367,7 +367,7 @@ proxy-groups:
     max-failed-times: 3
     expected-status: 204
     # 仅筛选 HK、SG、JP、TW 地区且名称包含 CT 的节点，兼容 CTCU、CTCUCM 标签。
-    # config_overwrite.js 按实际协议类型仅注入 VLESS 节点，并排除带 dialer-proxy 的节点。
+    # scripts/config-overwrite.js 按实际协议类型仅注入 VLESS 节点，并排除带 dialer-proxy 的节点。
     filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 良心云 Hy2"
@@ -379,7 +379,7 @@ proxy-groups:
     tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
     max-failed-times: 3
     expected-status: 204
-    # config_overwrite.js 按实际协议类型注入 Hy2 节点，并排除带 dialer-proxy 的节点。
+    # scripts/config-overwrite.js 按实际协议类型注入 Hy2 节点，并排除带 dialer-proxy 的节点。
     filter: "(良心云)"
 
   - name: "🎯 全球直连"

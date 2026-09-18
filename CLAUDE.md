@@ -11,9 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [config/base.yaml](config/base.yaml)：两个客户端共用的网络设置、代理组、规则集和分流规则，公共配置只在这里维护。
 - [config/mihomo.yaml](config/mihomo.yaml)：Mihomo 专用 DNS、嗅探、provider 和代理组差异。
 - [config/stash.yaml](config/stash.yaml)：Stash 专用 DNS 和代理组差异。
-- [scripts/merge-config.js](scripts/merge-config.js)：通过 `async main(config)` 在 Sub-Store 中读取公共配置和指定客户端差异，合并、检查并保留传入节点；必须排在 `config_overwrite.js` 之前执行。
-- [config_overwrite.js](config_overwrite.js)：订阅转换后的覆写脚本，合并并去重代理组成员，按 `filter` 筛选节点；中转组和机场亚太组只使用不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点。
-- [rename.js](rename.js)：订阅节点重命名脚本。
+- [scripts/merge-config.js](scripts/merge-config.js)：通过 `async main(config)` 在 Sub-Store 中读取公共配置和指定客户端差异，合并、检查并保留传入节点；必须排在 `scripts/config-overwrite.js` 之前执行。
+- [scripts/config-overwrite.js](scripts/config-overwrite.js)：订阅转换后的覆写脚本，合并并去重代理组成员，按 `filter` 筛选节点；中转组和机场亚太组只使用不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点。
+- [scripts/rename.js](scripts/rename.js)：订阅节点重命名脚本。
 - [custom_rule/](custom_rule/)：自定义规则集。
 
 VikingLinks、良心云和吹雪云的机场亚太组统一命名为“机场名 亚太”，仅筛选 HK、SG、JP、TW，每次覆写都重建成员，避免旧节点残留。良心云亚太组另要求名称包含 `CT`（含 `CTCU`、`CTCUCM`），吹雪云亚太组另要求名称包含“电信”。
@@ -114,11 +114,11 @@ proxy-config/
 │   ├── mihomo.yaml           # Mihomo 差异
 │   └── stash.yaml            # Stash 差异
 ├── scripts/
-│   └── merge-config.js      # Sub-Store 服务端合并
+│   ├── merge-config.js       # Sub-Store 服务端合并
+│   ├── config-overwrite.js   # 订阅配置覆写
+│   └── rename.js             # 节点重命名
 ├── mihomo_config.yaml        # 迁移前快照，不再维护
 ├── mihomo_config_stash.yaml  # 迁移前快照，不再维护
-├── config_overwrite.js       # 订阅配置覆写
-├── rename.js                 # 节点重命名
 ├── custom_rule/              # 自定义规则集
 ├── tests/                    # 合并与节点处理验证
 ├── README.md                 # Sub-Store 接入与日常维护

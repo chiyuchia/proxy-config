@@ -1,4 +1,4 @@
-# Mihomo 专用差异；与 base.yaml 合并后交给节点注入和 config_overwrite.js。
+# Mihomo 专用差异；与 base.yaml 合并后交给节点注入和 scripts/config-overwrite.js。
 $profile: mihomo
 
 # DNS 的共有项在 base.yaml，以下仅保留 Mihomo 差异。

@@ -1,4 +1,4 @@
-# Stash 专用差异；与 base.yaml 合并后交给节点注入和 config_overwrite.js。
+# Stash 专用差异；与 base.yaml 合并后交给节点注入和 scripts/config-overwrite.js。
 $profile: stash
 
 # Stash 使用国内 DNS，并为 oixCloud 域名单独指定解析。
