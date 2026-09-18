@@ -1,0 +1,232 @@
+# Mihomo 专用差异；与 base.yaml 合并后交给节点注入和 config_overwrite.js。
+$profile: mihomo
+
+# DNS 的共有项在 base.yaml，以下仅保留 Mihomo 差异。
+dns:
+  nameserver-policy: # DNS 分流策略：精准匹配国内域名
+    "geosite:cn": # 只要是中国域名，就直接发给国内腾讯/阿里 DoH 解析 (极速直连)
+      - "https://doh.pub/dns-query"
+      - "https://dns.alidns.com/dns-query"
+  nameserver: # 默认 DNS：解析非国内域名 (强制通过代理节点走，防污染)
+    - "https://1.1.1.1/dns-query#🚀 节点选择"
+    - "https://8.8.8.8/dns-query#🚀 节点选择"
+  proxy-server-nameserver: # 代理节点专用 DNS：始终直连解析，避免 TUN + Fake-IP 循环
+    - "https://doh.pub/dns-query"
+    - "https://dns.alidns.com/dns-query"
+  proxy-server-nameserver-policy:
+    "+.cloud-nodes.com": 124.221.68.73:1053
+
+# Mihomo 的嗅探和 oixCloud provider。
+sniffer:
+  enable: true # 开启流量嗅探，应对软件直接通过纯 IP 发起连接的情况
+  force-dns-mapping: true # 强制将嗅探到的域名与 Fake-IP 对应，防止分流规则失效
+  parse-pure-ip: true # 强行解析纯 IP 请求，尝试从中提取真实域名
+  sniff: # 指定嗅探的协议与端口
+    HTTP:
+      ports:
+        - 80
+        - 443
+    TLS:
+      ports:
+        - 443
+  skip-domain: # 嗅探白名单：排除特定域名的嗅探
+    - "+.push.apple.com" # 放行苹果推送服务，防止消息通知断连或收不到
+
+proxy-providers:
+  oixCloud:
+    type: http
+    path: ./proxy_provider/oixCloud.yaml
+    interval: 86400
+    proxy: DIRECT
+    health-check:
+      enable: true
+      # use 引入的节点由 provider 检查，周期与 Optimized 组保持一致。
+      interval: 60
+      timeout: 5000
+      lazy: false
+      url: https://cp.cloudflare.com/generate_204
+      expected-status: 204
+
+# 同名组按 name 合并，普通数组整段替换；$append / $insert-before 保留公共候选顺序。
+# 本文件内的锚点只用于复用 Mihomo 特有菜单，不依赖跨文件锚点。
+proxy-groups:
+  - name: "🚀 节点选择"
+    url: "https://cp.cloudflare.com/generate_204"
+    use: &oix_provider [oixCloud]
+    proxies:
+      $append:
+        - "✈️ VikingLinks"
+        - "✈️ oixCloud Optimized"
+        - "✈️ oixCloud Edge"
+        - "✈️ 吹雪云"
+        - "✈️ 良心云"
+        - "✈️ 良心云 Hy2"
+        - "✈️ 一元机场"
+
+  - name: "🛡️ Edge 中转"
+    use: *oix_provider
+    proxies: &asia_relays
+      - "✈️ VikingLinks 亚太"
+      - "✈️ oixCloud Optimized"
+      - "✈️ 吹雪云 亚太"
+      - "✈️ 良心云 亚太"
+      - "✈️ VikingLinks"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 良心云 Hy2"
+
+  - name: "🛡️ 亚太中转"
+    use: *oix_provider
+    proxies: *asia_relays
+
+  - name: "🛡️ 美西中转"
+    use: *oix_provider
+    proxies:
+      - "✈️ VikingLinks"
+      - "✈️ oixCloud Optimized"
+      - "✈️ 吹雪云"
+      - "✈️ 良心云"
+      - "✈️ 良心云 Hy2"
+
+  - name: "🏝️ 精品节点"
+    filter: "(自建|合租)"
+
+  - name: "♊ Gemini"
+    use: *oix_provider
+    proxies:
+      $append: &airport_menu
+        - "✈️ VikingLinks"
+        - "✈️ oixCloud Optimized"
+        - "✈️ oixCloud Edge"
+        - "✈️ 吹雪云"
+        - "✈️ 良心云"
+        - "✈️ 一元机场"
+
+  - name: "💬 Ai平台"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "🍎 Apple Push"
+    use: *oix_provider
+    proxies:
+      $insert-before:
+        DIRECT: *airport_menu
+
+  - name: "🎥 奈飞视频"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "📹 油管视频"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "📼 EMBY"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "📲 电报消息"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "🐙 Github"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "🍎 Apple"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "Ⓜ️ Microsoft"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "📢 Google"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "📺 国内媒体"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "🌍 国外媒体"
+    use: *oix_provider
+    proxies:
+      $insert-before:
+        DIRECT: *airport_menu
+
+  - name: "🎮 游戏平台"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "👛 Paypal"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "💰 加密货币"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "🐟 漏网之鱼"
+    use: *oix_provider
+    proxies:
+      $append: *airport_menu
+
+  - name: "🇭🇰 香港节点"
+    use: *oix_provider
+
+  - name: "🇺🇲 美国节点"
+    use: *oix_provider
+
+  - name: "🇸🇬 狮城节点"
+    use: *oix_provider
+
+  - name: "🇯🇵 日本节点"
+    use: *oix_provider
+
+  - name: "🇼🇸 台湾节点"
+    use: *oix_provider
+
+  - name: "🌍 其他节点"
+    use: *oix_provider
+
+  - name: "✈️ oixCloud Optimized"
+    $before: "✈️ 吹雪云 亚太"
+    type: url-test
+    url: "https://cp.cloudflare.com/generate_204"
+    interval: 60
+    timeout: 5000
+    lazy: false
+    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
+    max-failed-times: 3
+    expected-status: 204
+    filter: "(IXP|CIA)"
+    use:
+      - oixCloud
+
+  - name: "✈️ oixCloud Edge"
+    $before: "✈️ 吹雪云 亚太"
+    type: select
+    filter: "(oixCloud Edge)"
+
+  - name: "✈️ 吹雪云"
+    $before: "✈️ 吹雪云 亚太"
+    type: select
+    filter: "(吹雪云)"
+
+  - name: "✈️ 一元机场"
+    $before: "🎯 全球直连"
+    type: select
+    filter: "(一元机场)"

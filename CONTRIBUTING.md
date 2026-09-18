@@ -2,18 +2,30 @@
 
 本文档说明了本项目的开发规范和约定。
 
-项目主要维护 `mihomo_config.yaml` 和 `mihomo_config_stash.yaml` 两个 YAML 模板，以及订阅处理脚本和 `custom_rule/` 中的自定义规则集。模板需要配合订阅转换流程注入实际节点。
+项目维护 `config/base.yaml` 公共配置、`config/mihomo.yaml` 与 `config/stash.yaml` 客户端差异，以及订阅处理脚本和 `custom_rule/` 中的自定义规则集。Sub-Store 使用 `scripts/merge-config.js` 在服务端合并 YAML，再注入实际节点并运行 `config_overwrite.js`。接入方式和合并语法见 [README.md](README.md)。
+
+根目录的两份完整 YAML 仅作为迁移前快照保留，不会自动更新，也不再作为修改入口。公共更改只改 `config/base.yaml`；客户端专用更改写入对应差异文件。
 
 ---
 
 ## 开发流程
 
 1. **修改代码**：在本地进行必要的修改
-2. **验证更改**：检查 YAML 语法、规则集和策略组引用，并验证节点注入结果
+2. **验证更改**：检查两种客户端的合并结果、规则集和策略组引用，并验证节点注入及覆写结果
 3. **手动提交**：使用约定式提交格式进行 `git commit`
 4. **确认后推送**：检查 commit 信息无误后，手动执行 `git push`
 
 > ⚠️ **重要**：提交和推送是两个独立的步骤，必须分别手动执行。
+
+### 本地验证
+
+运行测试需要支持 `node:test` 的 Node.js，以及可导入 `yaml` 的 Python 3（PyYAML）。这些是本地测试依赖；Sub-Store 使用自带的 YAML 解析器，服务端不需要 Python。
+
+```bash
+node --test tests/merge-config.test.js
+```
+
+测试覆盖两种客户端的配置合并、数组与代理组补丁、远程读取和错误处理、节点保留及现有覆写流程。首次迁移应确认合并结果与旧模板的语义一致；今后有意调整配置行为时，应更新相应测试预期，旧模板快照保持不变。
 
 ---
 
@@ -108,11 +120,14 @@ rules:
 
 ### 订阅处理
 
+- `scripts/merge-config.js` 用于 Sub-Store 的“Mihomo 配置”类型，通过 `client=mihomo` / `client=stash` 选择差异文件；必须在 `config_overwrite.js` 之前作为独立脚本执行。合并时保留已有 `config.proxies`，其他输入配置由新结果替换。
+- 三份 YAML 分别解析，不能跨文件引用锚点。公共文件的 `$base` 与差异文件的 `$profile` 标记在输出时移除。
+- 普通映射递归合并，普通数组整体替换，顶层 `proxy-groups` 按 `name` 合并。数组局部增删使用 `$append`、`$prepend`、`$remove` 或 `$insert-before`，不要改变公共规则的优先级。
 - `rename.js` 用于节点重命名。
 - `config_overwrite.js` 合并并去重策略组的 `proxies` 成员，按 `filter` 筛选节点；中转组和机场亚太组只使用不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点，全球直连组保持手工配置。
 - VikingLinks、良心云和吹雪云的机场亚太组统一命名为“机场名 亚太”，仅筛选 HK、SG、JP、TW，每次覆写都重建成员，避免旧节点残留。良心云亚太组另要求名称包含 `CT`（含 `CTCU`、`CTCUCM`），吹雪云亚太组另要求名称包含“电信”。
-- `oixCloudEdgePath` 参数可为 oixCloud provider 注入订阅 URL；主模板本身没有填写该 URL。
-- 修改模板或覆写逻辑后，检查最终生成配置中的组成员和引用，避免仅验证未注入节点的模板。
+- `oixCloudEdgePath` 参数可为 oixCloud provider 注入订阅 URL；Mihomo 差异文件本身没有填写该 URL。
+- 修改公共配置、客户端差异或脚本后，检查最终生成配置中的组成员和引用，避免仅验证未注入节点的合并结果。
 
 ---
 
@@ -120,11 +135,19 @@ rules:
 
 ```
 proxy-config/
-├── mihomo_config.yaml        # Mihomo 模板
-├── mihomo_config_stash.yaml  # Stash 模板
+├── config/
+│   ├── base.yaml             # 公共配置
+│   ├── mihomo.yaml           # Mihomo 差异
+│   └── stash.yaml            # Stash 差异
+├── scripts/
+│   └── merge-config.js      # Sub-Store 服务端合并
+├── mihomo_config.yaml        # 迁移前快照，不再维护
+├── mihomo_config_stash.yaml  # 迁移前快照，不再维护
 ├── config_overwrite.js       # 订阅配置覆写
 ├── rename.js                 # 节点重命名
 ├── custom_rule/              # 自定义规则集
+├── tests/                    # 合并与节点处理验证
+├── README.md                 # Sub-Store 接入与日常维护
 ├── CLAUDE.md                 # 仓库工作指南
 └── CONTRIBUTING.md           # 本文档
 ```

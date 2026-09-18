@@ -1,5 +1,7 @@
-# 迁移前快照：保留供旧订阅读取，不再维护。公共配置请修改 config/base.yaml。
-# Mihomo 差异见 config/mihomo.yaml；Sub-Store 服务端合并接入步骤见 README.md。
+# 两个客户端共用的配置；由 scripts/merge-config.js 与一个客户端差异文件合并。
+# 公共规则、地区筛选、机场亚太组只在这里维护。
+$base: true
+
 # ==========================================
 # 全局配置 (General)
 # ==========================================
@@ -35,36 +37,6 @@ dns:
   default-nameserver: # 启动 DNS：仅用于解析下方 DoH 链接本身的真实 IP
     - 119.29.29.29
     - 223.5.5.5
-  nameserver-policy: # DNS 分流策略：精准匹配国内域名
-    "geosite:cn": # 只要是中国域名，就直接发给国内腾讯/阿里 DoH 解析 (极速直连)
-      - "https://doh.pub/dns-query"
-      - "https://dns.alidns.com/dns-query"
-  nameserver: # 默认 DNS：解析非国内域名 (强制通过代理节点走，防污染)
-    - "https://1.1.1.1/dns-query#🚀 节点选择"
-    - "https://8.8.8.8/dns-query#🚀 节点选择"
-  proxy-server-nameserver: # 代理节点专用 DNS：始终直连解析，避免 TUN + Fake-IP 循环
-    - "https://doh.pub/dns-query"
-    - "https://dns.alidns.com/dns-query"
-  proxy-server-nameserver-policy:
-    "+.cloud-nodes.com": 124.221.68.73:1053
-
-# ==========================================
-# 域名嗅探 (Sniffer)
-# ==========================================
-sniffer:
-  enable: true # 开启流量嗅探，应对软件直接通过纯 IP 发起连接的情况
-  force-dns-mapping: true # 强制将嗅探到的域名与 Fake-IP 对应，防止分流规则失效
-  parse-pure-ip: true # 强行解析纯 IP 请求，尝试从中提取真实域名
-  sniff: # 指定嗅探的协议与端口
-    HTTP:
-      ports:
-        - 80
-        - 443
-    TLS:
-      ports:
-        - 443
-  skip-domain: # 嗅探白名单：排除特定域名的嗅探
-    - "+.push.apple.com" # 放行苹果推送服务，防止消息通知断连或收不到
 
 # ==========================================
 # 全局接管设置 (TUN 模式)
@@ -77,33 +49,12 @@ tun:
   mtu: 1500 # 虚拟网卡最大传输单元，标准 1500
 
 # ==========================================
-# 代理提供者 (Proxy Providers)
-# ==========================================
-proxy-providers:
-  oixCloud:
-    type: http
-    path: ./proxy_provider/oixCloud.yaml
-    interval: 86400
-    proxy: DIRECT
-    health-check:
-      enable: true
-      # use 引入的节点由 provider 检查，周期与 Optimized 组保持一致。
-      interval: 60
-      timeout: 5000
-      lazy: false
-      url: https://cp.cloudflare.com/generate_204
-      expected-status: 204
-
-# ==========================================
-# 代理组 (Proxy Groups)
+# 公共代理组：客户端候选列表的差异见 mihomo.yaml / stash.yaml
 # ==========================================
 proxy-groups:
   - name: "🚀 节点选择"
     type: select
-    url: "https://cp.cloudflare.com/generate_204"
     interval: 300
-    use:
-      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🇭🇰 香港节点"
@@ -112,61 +63,21 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 良心云 Hy2"
-      - "✈️ 一元机场"
 
   - name: "🛡️ Edge 中转"
     type: select
-    use:
-      - oixCloud
-    proxies:
-      - "✈️ VikingLinks 亚太"
-      - "✈️ oixCloud Optimized"
-      - "✈️ 吹雪云 亚太"
-      - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 良心云 Hy2"
 
   - name: "🛡️ 亚太中转"
     type: select
-    use:
-      - oixCloud
-    proxies:
-      - "✈️ VikingLinks 亚太"
-      - "✈️ oixCloud Optimized"
-      - "✈️ 吹雪云 亚太"
-      - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 良心云 Hy2"
 
   - name: "🛡️ 美西中转"
     type: select
-    use:
-      - oixCloud
-    proxies:
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 良心云 Hy2"
 
   - name: "🏝️ 精品节点"
     type: select
-    filter: "(自建|合租)"
 
   - name: "♊ Gemini"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🚀 节点选择"
@@ -176,17 +87,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "💬 Ai平台"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🚀 节点选择"
@@ -196,17 +99,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🍎 Apple Push"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -216,18 +111,10 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
       - DIRECT
 
   - name: "🎥 奈飞视频"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🇸🇬 狮城节点"
       - "🚀 节点选择"
@@ -237,17 +124,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📹 油管视频"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🇺🇲 美国节点"
       - "🚀 节点选择"
@@ -257,17 +136,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📼 EMBY"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -277,17 +148,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📲 电报消息"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🇸🇬 狮城节点"
       - "🚀 节点选择"
@@ -297,17 +160,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🐙 Github"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -317,17 +172,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🍎 Apple"
     type: select
-    use:
-      - oixCloud
     proxies:
       - DIRECT
       - "🚀 节点选择"
@@ -338,17 +185,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "Ⓜ️ Microsoft"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -358,17 +197,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📢 Google"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🏝️ 精品节点"
       - "🚀 节点选择"
@@ -378,17 +209,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📺 国内媒体"
     type: select
-    use:
-      - oixCloud
     proxies:
       - DIRECT
       - "🚀 节点选择"
@@ -399,17 +222,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🌍 国外媒体"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🚀 节点选择"
       - "🏝️ 精品节点"
@@ -419,18 +234,10 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
       - DIRECT
 
   - name: "🎮 游戏平台"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🚀 节点选择"
       - DIRECT
@@ -441,17 +248,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "👛 Paypal"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🇺🇲 美国节点"
       - "🚀 节点选择"
@@ -461,17 +260,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "💰 加密货币"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🇸🇬 狮城节点"
       - "🚀 节点选择"
@@ -481,17 +272,9 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🐟 漏网之鱼"
     type: select
-    use:
-      - oixCloud
     proxies:
       - "🚀 节点选择"
       - DIRECT
@@ -502,48 +285,30 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks"
-      - "✈️ oixCloud Optimized"
-      - "✈️ oixCloud Edge"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🇭🇰 香港节点"
     type: select
     filter: "(港|HK|hk|Hong Kong|HongKong|hongkong)"
-    use:
-      - oixCloud
 
   - name: "🇺🇲 美国节点"
     type: select
     filter: "(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲)"
-    use:
-      - oixCloud
 
   - name: "🇸🇬 狮城节点"
     type: select
     filter: "(新加坡|坡|狮城|SG|Singapore)"
-    use:
-      - oixCloud
 
   - name: "🇯🇵 日本节点"
     type: select
     filter: "(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)"
-    use:
-      - oixCloud
 
   - name: "🇼🇸 台湾节点"
     type: select
     filter: "(台|新北|彰化|TW|Taiwan)"
-    use:
-      - oixCloud
 
   - name: "🌍 其他节点"
     type: select
     filter: "^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan)).*"
-    use:
-      - oixCloud
 
   - name: "✈️ VikingLinks"
     type: select
@@ -561,27 +326,6 @@ proxy-groups:
     # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
     # config_overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
-
-  - name: "✈️ oixCloud Optimized"
-    type: url-test
-    url: "https://cp.cloudflare.com/generate_204"
-    interval: 60
-    timeout: 5000
-    lazy: false
-    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
-    max-failed-times: 3
-    expected-status: 204
-    filter: "(IXP|CIA)"
-    use:
-      - oixCloud
-
-  - name: "✈️ oixCloud Edge"
-    type: select
-    filter: "(oixCloud Edge)"
-
-  - name: "✈️ 吹雪云"
-    type: select
-    filter: "(吹雪云)"
 
   - name: "✈️ 吹雪云 亚太"
     type: url-test
@@ -625,16 +369,15 @@ proxy-groups:
     # config_overwrite.js 按实际协议类型注入 Hy2 节点，并排除带 dialer-proxy 的节点。
     filter: "(良心云)"
 
-  - name: "✈️ 一元机场"
-    type: select
-    filter: "(一元机场)"
-
   - name: "🎯 全球直连"
     type: select
     proxies:
       - DIRECT
       - "🚀 节点选择"
 
+# ==========================================
+# 公共规则集与分流顺序（首条匹配生效）
+# ==========================================
 rule-providers:
   custom_proxy: &classical_yaml_provider
     type: http
@@ -737,7 +480,7 @@ rule-providers:
 
   apple-push:
     <<: *classical_yaml_provider
-    url: "https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Apple%20Push.yaml"
+    url: 'https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Apple%20Push.yaml'
     path: ./ruleset/apple-push.yaml
 
   apple:
@@ -815,6 +558,7 @@ rule-providers:
     path: ./ruleset/proxy-gfw.yaml
     url: "https://cdn.jsdmirror.com/gh/ACL4SSR/ACL4SSR@master/Clash/Providers/ProxyGFWlist.yaml"
 
+# 更具体的规则在前，例如 YouTube 必须先于 Google；最后用 MATCH 兜底。
 rules:
   - "RULE-SET,custom_proxy,🚀 节点选择"
   - "RULE-SET,custom_direct,🎯 全球直连"
