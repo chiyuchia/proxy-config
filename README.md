@@ -140,61 +140,10 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.j
 
 查询每批最多并发 5 个节点，DoH 和 IPinfo 请求分别设置 3 秒超时，脚本没有跨次运行的查询缓存。解析或查询失败时通常保留原节点；开启 `hot` 后，未识别地区的节点会被过滤。
 
-## 日常维护
+## 修改与更新
 
-- 两个客户端的共同代理组、候选顺序、筛选、测速参数和规则，只改 `config/base.yaml`；`oixCloud Edge`、吹雪云和一元机场组也在这里维护。
-- Mihomo 的 DNS、嗅探、oixCloud provider、`✈️ oixCloud Optimized` 组及其 `use` 和菜单引用，改 `config/mihomo.yaml`。
-- Stash 的 DNS 差异只改 `config/stash.yaml`，该文件不维护代理组。
-- 节点协议筛选和组成员生成逻辑，改 `scripts/config-overwrite.js`。
-- 节点地区识别、名称格式和关键词提取，改 `scripts/rename.js`；使用方式见[节点重命名](#节点重命名)。
-- 修改后验证并发布文件，再让 Sub-Store 更新输出。远程资源和 Sub-Store 的缓存可能使刚发布的修改延迟生效。
+修改配置或脚本前，请阅读 [贡献指南](CONTRIBUTING.md)，其中说明了修改位置、配置合并与补丁语法、测速参数复用、规则约束、验证方法和提交规范。
 
-`base.yaml` 需要保留 `$base: true`，两份差异文件分别保留 `$profile: mihomo` 和 `$profile: stash`。这些标记用于检查读取的文件是否正确，输出时会移除。三个文件分别解析，YAML 锚点只能引用同一文件内定义的锚点。
+修改通过验证并发布后，让 Sub-Store 重新生成输出，再更新客户端订阅。远程资源和 Sub-Store 的缓存可能使刚发布的修改延迟生效。
 
-公共测速组通过 `<<: *url_test_defaults` 复用参数，锚点定义在 `base.yaml` 的 VikingLinks 亚太组中；调整公共测速参数时只需修改该定义，各组名称和筛选条件仍单独维护。Mihomo 的 oixCloud provider 健康检查与 Optimized 组通过 `config/mihomo.yaml` 内的 `oix_health_check` 锚点复用测速参数，provider 的 `enable` 与组的 `tolerance` 等专属字段分别保留。
-
-共同代理组沿用 Mihomo 的分组和候选顺序。除 Mihomo 的 oixCloud provider、Optimized 组及相应 `use` 和菜单引用外，两个客户端合并后的 `proxy-groups` 应保持一致；测试会检查这一约定，修改后也需检查注入节点及覆写后的结果。
-
-### 合并约定
-
-普通映射递归合并，标量和普通数组由客户端差异覆盖。数组不会自动去重或排序，`rules` 和候选节点顺序保持原样。实际节点继续由 Sub-Store 注入，三份配置源不要定义顶层 `proxies`。
-
-客户端差异可以独立覆盖 DNS，例如 Stash 的 DNS 设置：
-
-```yaml
-$profile: stash
-dns:
-  nameserver:
-    - https://doh.pub/dns-query
-```
-
-顶层 `proxy-groups` 按 `name` 合并：已有组只需写要修改的字段，新组默认追加到末尾。Mihomo 通过补丁补入 oixCloud provider 和 Optimized 组的引用，例如：
-
-```yaml
-$profile: mihomo
-proxy-groups:
-  - name: "🚀 节点选择"
-    use: [oixCloud]
-    proxies:
-      $insert-before:
-        "✈️ oixCloud Edge": ["✈️ oixCloud Optimized"]
-```
-
-数组补丁还支持 `$prepend`、`$append` 和 `$remove`。共同代理组的候选内容与顺序直接在 `base.yaml` 中维护，客户端补丁仅用于上述 provider 相关差异。
-
-以下为通用补丁语法：用 `{ $delete: true }` 删除字段；删除代理组时保留 `name` 并添加 `$delete: true`。新增代理组可以用 `$before` 或 `$after` 指定相邻组名：
-
-```yaml
-sniffer: { $delete: true }
-proxy-groups:
-  - name: "待删除组"
-    $delete: true
-  - name: "新选择组"
-    $before: "🚀 节点选择"
-    type: select
-    proxies: [DIRECT]
-```
-
-删除策略组时，也要同步修改其他组和规则中的引用。补丁字段只用于服务端合并，不会出现在最终客户端配置中。
-
-开发规范与验证说明见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+各 Agent 共用的工作指令维护在 [AGENTS.md](AGENTS.md)；[CLAUDE.md](CLAUDE.md) 通过 `@AGENTS.md` 导入。使用说明和参数维护在本 README，详细开发规范维护在 CONTRIBUTING。
