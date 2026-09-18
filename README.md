@@ -37,19 +37,19 @@ Mihomo 和 Stash 共用一份基础配置，各自只维护差异。Sub-Store �
 Mihomo 的远程脚本地址：
 
 ```text
-https://cdn.jsdmirror.com/gh/chiyuchia/proxy-config@master/scripts/merge-config.js#client=mihomo
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-config.js#client=mihomo
 ```
 
 Stash 的远程脚本地址：
 
 ```text
-https://cdn.jsdmirror.com/gh/chiyuchia/proxy-config@master/scripts/merge-config.js#client=stash
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-config.js#client=stash
 ```
 
 原有覆写脚本地址（Mihomo 原来使用的 `oixCloudEdgePath` 参数继续放在此脚本上）：
 
 ```text
-https://cdn.jsdmirror.com/gh/chiyuchia/proxy-config@master/config_overwrite.js
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/config_overwrite.js
 ```
 
 Stash 输出不需要添加 `oixCloudEdgePath`；该参数会额外生成 oixCloud provider。
@@ -63,7 +63,7 @@ Stash 输出不需要添加 `oixCloudEdgePath`；该参数会额外生成 oixClo
 | 参数 | 含义 |
 | --- | --- |
 | `client` | 必填，值为 `mihomo` 或 `stash` |
-| `configBaseUrl` | 三份 YAML 的远程目录；默认 `https://cdn.jsdmirror.com/gh/chiyuchia/proxy-config@master/config` |
+| `configBaseUrl` | 三份 YAML 的远程目录；默认 `https://raw.githubusercontent.com/chiyuchia/proxy-config/master/config` |
 | `baseUrl` | 单独指定公共配置地址，优先于 `configBaseUrl` |
 | `profileUrl` | 单独指定客户端差异地址，优先于 `configBaseUrl` |
 | `timeout` | 每次请求的超时毫秒数，默认 `10000` |
@@ -83,7 +83,7 @@ https://example.com/scripts/merge-config.js#client=stash&configBaseUrl=https%3A%
 - 两个客户端共同使用的规则、测速参数、机场亚太组筛选等，只改 `config/base.yaml`。
 - 仅一个客户端使用的 DNS、provider 或候选顺序，改对应的 `config/mihomo.yaml` 或 `config/stash.yaml`。
 - 节点协议筛选和组成员生成逻辑，改 `config_overwrite.js`。
-- 修改后验证并发布文件，再让 Sub-Store 更新输出。CDN 缓存可能使刚发布的修改延迟生效。
+- 修改后验证并发布文件，再让 Sub-Store 更新输出。远程资源和 Sub-Store 的缓存可能使刚发布的修改延迟生效。
 
 `base.yaml` 需要保留 `$base: true`，两份差异文件分别保留 `$profile: mihomo` 和 `$profile: stash`。这些标记用于检查读取的文件是否正确，输出时会移除。三个文件分别解析，YAML 锚点只能引用同一文件内定义的锚点。
 

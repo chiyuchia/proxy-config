@@ -6,7 +6,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
-const defaultConfigUrl = 'https://cdn.jsdmirror.com/gh/chiyuchia/proxy-config@master/config';
+const defaultConfigUrl = 'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/config';
 
 // Sub-Store supplies js-yaml. Keep these tests dependency-free on the JS side;
 // the Python bridge accepts YAML (including anchors) and rejects duplicate keys.

@@ -185,7 +185,7 @@ function mergeConfigDocuments(base, profile, proxies) {
   if (!isConfigMap(profile) || !['mihomo', 'stash'].includes(profile.$profile)) {
     configError('客户端差异必须包含 $profile: mihomo 或 stash');
   }
-  // 标记可检测 CDN 返回 HTML、颠倒的文件或错误的客户端差异，输出中不保留标记。
+  // 标记可检测远程来源返回 HTML、颠倒的文件或错误的客户端差异，输出中不保留标记。
   const { $base, ...common } = base;
   const { $profile, ...overlay } = profile;
   if (Object.hasOwn(common, 'proxies') || Object.hasOwn(overlay, 'proxies')) {
@@ -220,7 +220,7 @@ async function main(config) {
   if (!['mihomo', 'stash'].includes(client)) configError('请设置 client=mihomo 或 client=stash');
   const timeout = args.timeout === undefined ? 10000 : Number(args.timeout);
   if (!Number.isFinite(timeout) || timeout <= 0) configError('timeout 必须是正数（毫秒）');
-  const root = args.configBaseUrl ?? 'https://cdn.jsdmirror.com/gh/chiyuchia/proxy-config@master/config';
+  const root = args.configBaseUrl ?? 'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/config';
   if (typeof root !== 'string') configError('configBaseUrl 必须是 URL 字符串');
   const directory = root.replace(/\/+$/, '');
   const [base, profile] = await Promise.all([

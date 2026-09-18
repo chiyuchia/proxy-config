@@ -22,17 +22,15 @@ VikingLinks、良心云和吹雪云的机场亚太组统一命名为“机场名
 
 根目录的 `mihomo_config.yaml` 和 `mihomo_config_stash.yaml` 只保留为迁移前快照，不随公共源文件更新；后续更改应写入 `config/`，不要继续维护两份快照。
 
-## CDN 配置
+## 资源链接
 
-规则集中的 GitHub 资源链接主要使用 JSDMirror CDN：
+本仓库 `chiyuchia/proxy-config` 的脚本、YAML 和其他资源统一使用 GitHub Raw 链接：
 
-**格式转换：**
 ```
-https://raw.githubusercontent.com/{user}/{repo}/{branch}/{path}
-→ https://cdn.jsdmirror.com/gh/{user}/{repo}@{branch}/{path}
+https://raw.githubusercontent.com/chiyuchia/proxy-config/{branch}/{path}
 ```
 
-修改链接时保留正确的仓库、分支和文件路径，并检查资源是否可访问。
+例如，公共配置使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/master/config/base.yaml`。其他仓库（如 `proxy-rule`、`ACL4SSR`、`blackmatrix7` 和 `dler-io`）保留各自现有的 CDN 链接策略。修改链接时保留正确的仓库、分支和文件路径，并检查资源是否可访问。
 
 ## Clash 规则优先级
 

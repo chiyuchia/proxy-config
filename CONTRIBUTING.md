@@ -72,26 +72,30 @@ node --test tests/merge-config.test.js
 git commit -m "feat(clash-rules): 合并谷歌相关规则集和策略组"
 
 # 详细提交
-git commit -m "perf(rules): 替换 raw.githubusercontent.com 为 JSDMirror CDN 链接
+git commit -m "chore(clash-config): 本仓库资源统一使用 GitHub Raw 链接
 
-将所有 GitHub Raw 链接替换为 JSDMirror CDN 加速链接，提升国内访问速度。
+将 chiyuchia/proxy-config 的脚本和 YAML 资源链接改为 raw.githubusercontent.com。
 
-- 替换 32 个 raw.githubusercontent.com 链接
-- JSDMirror 提供免费的全球 CDN 加速服务
-- 保持原有的规则集路径不变"
+- 同步更新合并脚本默认地址和接入文档
+- 保留原有分支和文件路径
+- 其他仓库继续使用各自现有的资源链接"
 ```
 
 ---
 
-## CDN 配置
+## 资源链接
 
-本项目主要使用 [JSDMirror](https://cdn.jsdmirror.com) CDN 加速 GitHub 资源访问。
+本仓库 `chiyuchia/proxy-config` 的脚本、YAML 和其他资源统一使用 GitHub Raw 链接。
 
 ### 链接格式
 
-| 源格式 | CDN 格式 |
-|---------|----------|
-| `https://raw.githubusercontent.com/{user}/{repo}/{branch}/{path}` | `https://cdn.jsdmirror.com/gh/{user}/{repo}@{branch}/{path}` |
+```
+https://raw.githubusercontent.com/chiyuchia/proxy-config/{branch}/{path}
+```
+
+例如，合并脚本使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-config.js`。
+
+其他仓库（如 `proxy-rule`、`ACL4SSR`、`blackmatrix7` 和 `dler-io`）保留各自现有的 CDN 链接策略。
 
 修改链接时保留正确的仓库、分支和文件路径，并检查资源是否可访问。
 
