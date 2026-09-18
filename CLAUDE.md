@@ -10,11 +10,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - [mihomo_config.yaml](mihomo_config.yaml)：Mihomo 主模板，包含 DNS、TUN、嗅探、代理组、订阅集合和分流规则。
 - [mihomo_config_stash.yaml](mihomo_config_stash.yaml)：Stash 模板，单独维护 DNS 和代理组配置。
-- [config_overwrite.js](config_overwrite.js)：订阅转换后的覆写脚本，合并并去重代理组成员，按 `filter` 筛选节点；中转组只追加不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太中转组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点。
+- [config_overwrite.js](config_overwrite.js)：订阅转换后的覆写脚本，合并并去重代理组成员，按 `filter` 筛选节点；中转组和机场亚太组只使用不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点。
 - [rename.js](rename.js)：订阅节点重命名脚本。
 - [custom_rule/](custom_rule/)：自定义规则集。
 
-VikingLinks、良心云和吹雪云的专用亚太中转组仅筛选 HK、SG、JP、TW，每次覆写都重建成员，避免旧节点残留。良心云亚太组另要求名称包含 `CT`（含 `CTCU`、`CTCUCM`），吹雪云亚太组另要求名称包含“电信”。
+VikingLinks、良心云和吹雪云的机场亚太组统一命名为“机场名 亚太”，仅筛选 HK、SG、JP、TW，每次覆写都重建成员，避免旧节点残留。良心云亚太组另要求名称包含 `CT`（含 `CTCU`、`CTCUCM`），吹雪云亚太组另要求名称包含“电信”。
 
 两个 YAML 文件都是模板，需要配合订阅转换流程注入实际节点。覆写脚本还可通过 `oixCloudEdgePath` 参数补入 oixCloud provider 的订阅 URL；主模板本身未填写该 URL。
 

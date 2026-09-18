@@ -26,8 +26,6 @@ dns:
     - "ntp.*.com" # 网络时间协议服务器
     - "+.market.xiaomi.com" # 小米应用商店(特定网络需求)
     - "localhost.ptlogin2.qq.com" # 腾讯系软件快捷登录必备回环域名
-    - "+.us-nj.122870.xyz" # 家宽节点域名
-    - "+.sys.wpssx.com" # 合租线路 🇲🇾 MY | Evoxt KUL
     - "+.cloud-nodes.com" # oixCloud 域名
     - "+.22b74943-12ad-47f4-b705-f2defb6ffea0.org" # OCTO 域名
     - "+.07c06051-81fd-4aa4-a94e-a0860315df8f.org" # Edge 域名
@@ -74,9 +72,9 @@ proxy-groups:
   - name: "🛡️ 亚太中转"
     type: select
     proxies:
-      - "✈️ VikingLinks 亚太中转"
-      - "✈️ 良心云 亚太中转"
-      - "✈️ 吹雪云 亚太中转"
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 良心云 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ VikingLinks"
       - "✈️ 良心云 Hy2"
 
@@ -327,7 +325,7 @@ proxy-groups:
     type: select
     filter: "(VikingLinks)"
 
-  - name: "✈️ VikingLinks 亚太中转"
+  - name: "✈️ VikingLinks 亚太"
     type: url-test
     url: "https://cp.cloudflare.com/generate_204"
     interval: 60
@@ -337,10 +335,10 @@ proxy-groups:
     max-failed-times: 3
     expected-status: 204
     # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
-    # 组名包含“中转”，config_overwrite.js 会排除带 dialer-proxy 的落地节点。
+    # config_overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
-  - name: "✈️ 吹雪云 亚太中转"
+  - name: "✈️ 吹雪云 亚太"
     type: url-test
     url: "https://cp.cloudflare.com/generate_204"
     interval: 60
@@ -350,14 +348,14 @@ proxy-groups:
     max-failed-times: 3
     expected-status: 204
     # 仅筛选 HK、SG、JP、TW 地区且名称包含“电信”的节点；不限制协议类型。
-    # 组名包含“中转”，config_overwrite.js 会排除带 dialer-proxy 的落地节点。
+    # config_overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
     filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 良心云"
     type: select
     filter: "(良心云)"
 
-  - name: "✈️ 良心云 亚太中转"
+  - name: "✈️ 良心云 亚太"
     type: url-test
     url: "https://cp.cloudflare.com/generate_204"
     interval: 60

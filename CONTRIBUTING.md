@@ -109,8 +109,8 @@ rules:
 ### 订阅处理
 
 - `rename.js` 用于节点重命名。
-- `config_overwrite.js` 合并并去重策略组的 `proxies` 成员，按 `filter` 筛选节点；中转组只追加不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太中转组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点，全球直连组保持手工配置。
-- VikingLinks、良心云和吹雪云的专用亚太中转组仅筛选 HK、SG、JP、TW，每次覆写都重建成员，避免旧节点残留。良心云亚太组另要求名称包含 `CT`（含 `CTCU`、`CTCUCM`），吹雪云亚太组另要求名称包含“电信”。
+- `config_overwrite.js` 合并并去重策略组的 `proxies` 成员，按 `filter` 筛选节点；中转组和机场亚太组只使用不带 `dialer-proxy` 的节点，良心云 Hy2 和亚太组按实际协议重建成员，分别仅保留 Hy2 和 VLESS 节点，全球直连组保持手工配置。
+- VikingLinks、良心云和吹雪云的机场亚太组统一命名为“机场名 亚太”，仅筛选 HK、SG、JP、TW，每次覆写都重建成员，避免旧节点残留。良心云亚太组另要求名称包含 `CT`（含 `CTCU`、`CTCUCM`），吹雪云亚太组另要求名称包含“电信”。
 - `oixCloudEdgePath` 参数可为 oixCloud provider 注入订阅 URL；主模板本身没有填写该 URL。
 - 修改模板或覆写逻辑后，检查最终生成配置中的组成员和引用，避免仅验证未注入节点的模板。
 
