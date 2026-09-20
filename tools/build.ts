@@ -16,7 +16,7 @@ const checkOnly = process.argv.includes('--check');
  * @returns {string} 含注释定界符的原始 JSDoc，不复制文件头或其他函数的说明。
  * @throws {Error} 入口函数缺少 JSDoc，无法生成带完整说明的发布入口。
  */
-function readEntrypointDocumentation(source) {
+function readEntrypointDocumentation(source: string): string {
   const documentation = source.match(
     /\/\*\*(?:(?!\*\/)[\s\S])*\*\/(?=\s*export (?:async )?function (?:main|operator)\()/,
   );
@@ -58,11 +58,11 @@ const scripts = [
 
 for (const { name, description, usage, signature, call } of scripts) {
   const outfile = `scripts/${name}.js`;
-  const source = await readFile(new URL(`../src/entries/${name}.js`, import.meta.url), 'utf8');
+  const source = await readFile(new URL(`../src/entries/${name}.ts`, import.meta.url), 'utf8');
   const entryDocumentation = readEntrypointDocumentation(source);
   const result = await build({
     absWorkingDir: root,
-    entryPoints: [`src/entries/${name}.js`],
+    entryPoints: [`src/entries/${name}.ts`],
     outfile,
     bundle: true,
     write: false,
@@ -70,6 +70,8 @@ for (const { name, description, usage, signature, call } of scripts) {
     format: 'iife',
     globalName: '__proxyConfigScript',
     target: 'es2022',
+    // 避免在 Sub-Store 的外层作用域新增严格模式指令；类型严格检查仍由 tsc 执行。
+    tsconfigRaw: { compilerOptions: { alwaysStrict: false } },
     charset: 'utf8',
     minify: false,
     // 保留带 @preserve 的函数说明，使发布脚本与源码均可直接阅读。
@@ -82,7 +84,7 @@ for (const { name, description, usage, signature, call } of scripts) {
         ` * 入口：${signature}；接入与参数见 README.md。`,
         ' *',
         ' * 此文件由 npm run build 自动生成，请修改 src/ 中的源码。',
-        ` * 源码入口：src/entries/${name}.js。`,
+        ` * 源码入口：src/entries/${name}.ts。`,
         ' */',
       ].join('\n'),
     },
@@ -94,7 +96,7 @@ for (const { name, description, usage, signature, call } of scripts) {
   const output = result.outputFiles[0];
   if (checkOnly) {
     const current = await readFile(output.path, 'utf8').catch((error) => {
-      if (error.code === 'ENOENT') return null;
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
       throw error;
     });
     if (current !== output.text) {

@@ -10,7 +10,37 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { parse, stringify } from 'yaml';
-import { mergeConfigDocuments } from '../src/merge-config/index.js';
+import { mergeConfigDocuments } from '../src/merge-config/index.ts';
+import type {
+  HttpRequest,
+  HttpResponse,
+  MergedConfig,
+  ProxyConfig,
+  ProxyGroup,
+  ProxyNode,
+  ScriptArguments,
+} from '../src/types.ts';
+
+interface PublishedScripts {
+  'scripts/merge-config.js': typeof import('../src/entries/merge-config.ts');
+  'scripts/config-overwrite.js': typeof import('../src/entries/config-overwrite.ts');
+  'scripts/dialer-proxy.js': typeof import('../src/entries/dialer-proxy.ts');
+  'scripts/rename.js': typeof import('../src/entries/rename.ts');
+}
+type MergeMain = PublishedScripts['scripts/merge-config.js']['main'];
+interface FileRuntime {
+  $content: string;
+  $arguments: ScriptArguments;
+  main?: unknown;
+  mergeConfigDocuments?: unknown;
+  compileGroupFilter?: unknown;
+}
+type HttpResponder = (request: HttpRequest) => HttpResponse | Promise<HttpResponse>;
+interface FixtureConfig extends MergedConfig {
+  $base?: boolean;
+  dns: { enable: boolean; nameserver: string[]; 'fake-ip-filter'?: string[] };
+  'proxy-groups': (ProxyGroup & { proxies: string[] })[];
+}
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const defaultConfigUrl = 'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs';
@@ -21,7 +51,7 @@ const defaultConfigUrl = 'https://raw.githubusercontent.com/chiyuchia/proxy-conf
  * @returns {*} 解析后的文档值，空文档返回解析器对应的空值。
  * @throws {Error} 文本语法错误或存在重复键时抛出。
  */
-function parseYaml(source) {
+function parseYaml(source: string): unknown {
   return parse(source, { merge: true, uniqueKeys: true });
 }
 
@@ -31,8 +61,8 @@ function parseYaml(source) {
  * @returns {*} JSON 表示对应的普通对象、数组或原始值。
  * @throws {Error} 输入无法序列化或无法解析为 JSON 时抛出。
  */
-function plain(value) {
-  return JSON.parse(JSON.stringify(value));
+function plain<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 /**
@@ -42,19 +72,22 @@ function plain(value) {
  * @returns {import('node:vm').Context} 已执行脚本并包含入口函数的 VM 上下文。
  * @throws {Error} 文件读取、脚本解析或执行失败时抛出。
  */
-function loadScript(file, globals = {}) {
+function loadScript<K extends keyof PublishedScripts>(
+  file: K,
+  globals: Record<string, unknown> = {},
+): PublishedScripts[K] {
   const context = vm.createContext({ console, ...globals });
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, {
     filename: file,
   });
-  return context;
+  return context as unknown as PublishedScripts[K];
 }
 
 /**
  * 为合并单元测试创建独立的公共配置，包含可覆盖的 DNS、代理组及规则引用。
  * @returns {Object} 带 $base 标记且无注入节点的全新公共配置。
  */
-function fixture() {
+function fixture(): FixtureConfig {
   return {
     $base: true,
     mode: 'rule',
@@ -83,7 +116,7 @@ function fixture() {
  * @returns {Object} 完成合并与校验的新配置。
  * @throws {Error} 来源标记、补丁或合并后引用不合法时抛出。
  */
-function merge(base, profile) {
+function merge(base: unknown, profile: unknown): MergedConfig {
   return mergeConfigDocuments(base, profile);
 }
 
@@ -93,8 +126,11 @@ function merge(base, profile) {
  * @param {Function} responder 接收请求对象、返回响应或响应 Promise 的模拟处理函数。
  * @returns {{calls: Object[], main: Function}} 请求记录及已加载的异步配置合并入口。
  */
-function runtime(args, responder) {
-  const calls = [];
+function runtime(
+  args: ScriptArguments,
+  responder: HttpResponder,
+): { calls: HttpRequest[]; main: MergeMain } {
+  const calls: HttpRequest[] = [];
   const context = loadScript('scripts/merge-config.js', {
     $arguments: args,
     ProxyUtils: { yaml: { safeLoad: parseYaml } },
@@ -106,7 +142,7 @@ function runtime(args, responder) {
          * @returns {Promise<Object>} 模拟处理函数提供的 HTTP 响应。
          * @throws {Error} 模拟处理函数抛错或拒绝时向调用者传播。
          */
-        get: async (request) => {
+        get: async (request: HttpRequest): Promise<HttpResponse> => {
           calls.push(request);
           return responder(request);
         },
@@ -122,13 +158,13 @@ function runtime(args, responder) {
  * @param {Object} profile 其他请求返回的客户端差异配置。
  * @returns {Function} 接收含 url 的请求对象并返回 HTTP 响应对象的函数。
  */
-function respondWith(base, profile) {
+function respondWith(base: unknown, profile: unknown): (request: HttpRequest) => HttpResponse {
   /**
    * 将选定配置编码为 JSON 响应体，供兼容 JSON 的 YAML 解析器读取。
    * @param {{url: string}} request 请求对象，解构后的 url 用于选择配置。
    * @returns {{statusCode: number, body: string}} 状态码为 200 的模拟 HTTP 响应。
    */
-  return ({ url }) => ({
+  return ({ url }: HttpRequest): HttpResponse => ({
     statusCode: 200,
     body: JSON.stringify(url.endsWith('/base.yaml') ? base : profile),
   });
@@ -140,13 +176,13 @@ function respondWith(base, profile) {
  * @returns {{mihomo: Object, stash: Object}} 转为普通对象的两端合并结果。
  * @throws {Error} 模板读取、解析或合并校验失败时抛出。
  */
-function liveConfigs(proxies) {
+function liveConfigs(proxies?: ProxyNode[]): Record<'mihomo' | 'stash', MergedConfig> {
   /**
    * 读取并解析 configs 目录中的指定 YAML 模板。
    * @param {string} name 不含扩展名的配置文件名。
    * @returns {Object} 解析后的公共或客户端配置。
    */
-  const read = (name) =>
+  const read = (name: string): unknown =>
     parseYaml(fs.readFileSync(path.join(root, 'configs', `${name}.yaml`), 'utf8'));
   const base = read('base');
   return Object.fromEntries(
@@ -154,7 +190,7 @@ function liveConfigs(proxies) {
       client,
       plain(mergeConfigDocuments(base, read(client), proxies)),
     ]),
-  );
+  ) as Record<'mihomo' | 'stash', MergedConfig>;
 }
 
 /**
@@ -162,7 +198,7 @@ function liveConfigs(proxies) {
  * @param {Object} config 含 proxy-groups 的客户端合并或最终配置。
  * @returns {Object[]} 去除独有组、其菜单引用和 oixCloud use 的代理组副本。
  */
-function sharedGroups(config) {
+function sharedGroups(config: MergedConfig): ProxyGroup[] {
   return plain(config['proxy-groups'])
     .filter(({ name }) => name !== '✈️ oixCloud Optimized')
     .map((group) => {
@@ -185,7 +221,7 @@ defaults: &defaults
 group:
   <<: *defaults
   interval: 120
-`);
+`) as { group: { interval: number; url: string } };
   assert.deepEqual(document.group, { interval: 120, url: 'https://example.com/generate_204' });
   assert.throws(() => parseYaml('mode: rule\nmode: global\n'));
 });
@@ -209,7 +245,7 @@ test('maps merge recursively, lists replace, fields delete, and sources stay unt
   assert.equal('$base' in result, false);
   assert.equal('$profile' in result, false);
   assert.deepEqual({ base, profile }, originals);
-  result['proxy-groups'][0].proxies.push('DIRECT');
+  result['proxy-groups'][0].proxies!.push('DIRECT');
   assert.deepEqual({ base, profile }, originals, 'nested arrays must also be copied');
 });
 
@@ -225,7 +261,7 @@ test('array edits apply remove, prepend, append, then insert-before in order', (
       },
     },
   });
-  assert.deepEqual(plain(result.dns.nameserver), [
+  assert.deepEqual(plain((result.dns as FixtureConfig['dns']).nameserver), [
     'first',
     'near-anchor',
     'anchor',
@@ -274,10 +310,10 @@ test('invalid array and group placement targets fail instead of changing precede
 
 test('unsafe property names and unknown directives are rejected at nested paths', () => {
   for (const key of ['__proto__', 'constructor', 'prototype', '$apend']) {
-    const profile = JSON.parse(`{"$profile":"mihomo","dns":{"${key}":{}}}`);
-    assert.throws(() => merge(fixture(), profile), undefined, key);
+    const profile: unknown = JSON.parse(`{"$profile":"mihomo","dns":{"${key}":{}}}`);
+    assert.throws(() => merge(fixture(), profile), key);
   }
-  assert.equal({}.polluted, undefined);
+  assert.equal(({} as Record<string, unknown>).polluted, undefined);
   assert.throws(() => merge({ ...fixture(), $unknown: true }, { $profile: 'mihomo' }));
 });
 
@@ -325,7 +361,7 @@ test('main selects the requested profile and preserves only injected proxies fro
       [`${defaultConfigUrl}/base.yaml`, `${defaultConfigUrl}/${client}.yaml`].sort(),
     );
     assert.deepEqual(plain(result.proxies), input.proxies);
-    assert.equal(result.dns.enable, true);
+    assert.equal((result.dns as FixtureConfig['dns']).enable, true);
     assert.equal('stale-key' in result, false);
     assert.deepEqual(plain(result.rules), fixture().rules);
     assert.deepEqual(input, before, 'the incoming config should not be mutated');
@@ -433,16 +469,16 @@ test('live profiles share group definitions and menu order except for the Mihomo
         group.name !== '✈️ oixCloud Optimized' && !group.proxies?.includes('✈️ oixCloud Optimized'),
     ),
   );
-  assert.equal(mihomo['proxy-providers'].oixCloud.type, 'http');
-  const optimized = mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized');
+  assert.equal(mihomo['proxy-providers']!.oixCloud.type, 'http');
+  const optimized = mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized')!;
   assert.equal(optimized.type, 'url-test');
   assert.equal(optimized.filter, '(IXP|CIA)');
   assert.deepEqual(optimized.use, ['oixCloud']);
-  const mihomoMain = mihomo['proxy-groups'].find(({ name }) => name === '🚀 节点选择');
+  const mihomoMain = mihomo['proxy-groups'].find(({ name }) => name === '🚀 节点选择')!;
   assert.deepEqual(mihomoMain.use, ['oixCloud']);
   assert.equal(
-    mihomoMain.proxies.indexOf('✈️ oixCloud Optimized'),
-    mihomoMain.proxies.indexOf('✈️ VikingLinks') + 1,
+    mihomoMain.proxies!.indexOf('✈️ oixCloud Optimized'),
+    mihomoMain.proxies!.indexOf('✈️ VikingLinks') + 1,
   );
 
   const groups = new Map(sharedGroups(stash).map((group) => [group.name, group]));
@@ -462,15 +498,15 @@ test('live profiles share group definitions and menu order except for the Mihomo
     '✈️ 良心云',
     '✈️ 良心云 Hy2',
   ];
-  assert.deepEqual(groups.get('🛡️ Edge 中转').proxies, asiaRelays);
-  assert.deepEqual(groups.get('🛡️ 亚太中转').proxies, asiaRelays);
-  assert.deepEqual(groups.get('🛡️ 美西中转').proxies, [
+  assert.deepEqual(groups.get('🛡️ Edge 中转')!.proxies, asiaRelays);
+  assert.deepEqual(groups.get('🛡️ 亚太中转')!.proxies, asiaRelays);
+  assert.deepEqual(groups.get('🛡️ 美西中转')!.proxies, [
     '✈️ VikingLinks',
     '✈️ 吹雪云',
     '✈️ 良心云',
     '✈️ 良心云 Hy2',
   ]);
-  assert.deepEqual(groups.get('🚀 节点选择').proxies, [
+  assert.deepEqual(groups.get('🚀 节点选择')!.proxies, [
     '🏝️ 精品节点',
     '🇭🇰 香港节点',
     '🇺🇲 美国节点',
@@ -482,8 +518,8 @@ test('live profiles share group definitions and menu order except for the Mihomo
     '✈️ 良心云 Hy2',
     '✈️ 一元机场',
   ]);
-  assert.equal(groups.get('🚀 节点选择').url, 'https://cp.cloudflare.com/generate_204');
-  assert.equal(groups.get('🏝️ 精品节点').filter, '(自建|合租)');
+  assert.equal(groups.get('🚀 节点选择')!.url, 'https://cp.cloudflare.com/generate_204');
+  assert.equal(groups.get('🏝️ 精品节点')!.filter, '(自建|合租)');
   for (const name of [
     '♊ Gemini',
     '💬 Ai平台',
@@ -503,7 +539,7 @@ test('live profiles share group definitions and menu order except for the Mihomo
     '💰 加密货币',
     '🐟 漏网之鱼',
   ]) {
-    const menu = groups.get(name).proxies;
+    const menu = groups.get(name)!.proxies!;
     const hasDirectTail = ['🍎 Apple Push', '🌍 国外媒体'].includes(name);
     assert.deepEqual(
       menu.slice(-(airportMenu.length + Number(hasDirectTail))),
@@ -516,8 +552,8 @@ test('live profiles share group definitions and menu order except for the Mihomo
     ['✈️ 吹雪云', '(吹雪云)'],
     ['✈️ 一元机场', '(一元机场)'],
   ]) {
-    assert.equal(groups.get(name).type, 'select');
-    assert.equal(groups.get(name).filter, filter);
+    assert.equal(groups.get(name)!.type, 'select');
+    assert.equal(groups.get(name)!.filter, filter);
   }
 });
 
@@ -547,16 +583,16 @@ test('the same injected nodes produce matching group members in both live profil
       ['🏝️ 精品节点', ['自建 US', '合租 HK']],
     ]) {
       assert.deepEqual(
-        plain(config['proxy-groups'].find((group) => group.name === name).proxies),
+        plain(config['proxy-groups'].find((group) => group.name === name)!.proxies),
         expected,
       );
     }
   }
   assert.equal(stash['proxy-providers'], undefined);
   assert.ok(stash['proxy-groups'].every((group) => !group.use?.length));
-  assert.ok(mihomo['proxy-providers'].oixCloud);
+  assert.ok(mihomo['proxy-providers']!.oixCloud);
   assert.deepEqual(
-    plain(mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized').use),
+    plain(mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized')!.use),
     ['oixCloud'],
   );
 });
@@ -630,7 +666,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
    * @returns {Promise<void>} 文件处理完成后兑现的 Promise。
    * @throws {Error} 文件读取失败时抛出；异步脚本或序列化错误使 Promise 拒绝。
    */
-  const runWrapped = (file, context) =>
+  const runWrapped = (file: string, context: vm.Context): Promise<void> =>
     vm.runInContext(
       `
     (async function () {
@@ -649,7 +685,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
    * @param {*} value 待检查的配置值。
    * @returns {*} 发现指令返回 true；未发现返回 false，假值输入原样返回。
    */
-  const hasDirective = (value) =>
+  const hasDirective = (value: unknown): unknown =>
     value &&
     typeof value === 'object' &&
     Object.entries(value).some(([key, child]) => key.startsWith('$') || hasDirective(child));
@@ -660,9 +696,9 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
       { input: {} },
       { input: { proxies: [node] } },
       { input: {}, injected: [node] },
-    ]) {
+    ] as { input: ProxyConfig; injected?: ProxyNode[] }[]) {
       let dumpCount = 0;
-      const requests = [];
+      const requests: string[] = [];
       const context = vm.createContext({
         console,
         $content: stringify(input),
@@ -676,7 +712,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
              * @returns {string} 序列化后的 YAML 文本。
              * @throws {Error} 收到 Promise 或 YAML 序列化失败时抛出。
              */
-            safeDump: (value) => {
+            safeDump: (value: unknown): string => {
               assert.notEqual(
                 Object.prototype.toString.call(value),
                 '[object Promise]',
@@ -695,7 +731,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
              * @returns {Promise<{statusCode: number, body: string}>} 含模板文本的成功响应。
              * @throws {Error} URL 无效或本地模板读取失败时使 Promise 拒绝。
              */
-            get: async ({ url }) => {
+            get: async ({ url }: HttpRequest): Promise<HttpResponse> => {
               requests.push(url);
               await Promise.resolve();
               return {
@@ -708,17 +744,20 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
             },
           },
         },
-      });
+      }) as unknown as FileRuntime;
 
       await runWrapped('scripts/merge-config.js', context);
       assert.equal(context.main, undefined, 'merge main must stay in its script scope');
       assert.equal(context.mergeConfigDocuments, undefined);
-      const merged = parseYaml(context.$content);
+      const merged = parseYaml(context.$content) as MergedConfig;
       assert.equal(hasDirective(merged), false, 'source markers and patch operators must not leak');
       assert.deepEqual(merged.proxies ?? [], input.proxies ?? []);
       assert.ok(merged['proxy-groups'].length > 0);
       assert.ok(
-        merged['proxy-groups'].every((group) => group['x-substore']?.members?.mode),
+        merged['proxy-groups'].every(
+          (group) =>
+            (group['x-substore'] as { members?: { mode?: unknown } } | undefined)?.members?.mode,
+        ),
         'member policies must survive serialization between independent scripts',
       );
       if (injected) {
@@ -731,14 +770,14 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
       await runWrapped('scripts/config-overwrite.js', context);
       assert.equal(context.main, undefined, 'overwrite main must also stay in its script scope');
       assert.equal(context.compileGroupFilter, undefined);
-      const result = parseYaml(context.$content);
+      const result = parseYaml(context.$content) as MergedConfig;
       assert.equal(dumpCount, 2);
       assert.equal(requests.length, 2);
       assert.deepEqual(result.proxies ?? [], expectedProxies);
       assert.equal(hasDirective(result), false);
       assert.ok(result['proxy-groups'].every((group) => !Object.hasOwn(group, 'x-substore')));
       assert.deepEqual(result.rules, merged.rules);
-      const airport = result['proxy-groups'].find(({ name }) => name === '✈️ 良心云 亚太');
+      const airport = result['proxy-groups'].find(({ name }) => name === '✈️ 良心云 亚太')!;
       assert.deepEqual(
         airport.proxies,
         expectedProxies.map(({ name }) => name),
@@ -777,8 +816,8 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
     { name: 'SG CT', type: 'hysteria2', _subName: '良心云', server: 'hy2.example.com' },
     { name: 'JP 电信', type: 'ss', _subName: '吹雪云', server: 'chuixue.example.com' },
   ];
-  const selfHosted = [];
-  const airports = [...directProxies];
+  const selfHosted: ProxyNode[] = [];
+  const airports: ProxyNode[] = [...directProxies];
   for (const { mode, proxies } of sources) {
     const { operator } = loadScript('scripts/dialer-proxy.js', { $arguments: { mode } });
     const destination = mode === 'self-hosted' ? selfHosted : airports;
@@ -810,7 +849,7 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
     } else {
       assert.notEqual(proxy.name, originalNames.get(proxy.server), 'airport nodes are renamed');
     }
-    assert.equal(proxy['dialer-proxy'], expectedDialers.get(proxy.server), proxy.server);
+    assert.equal(proxy['dialer-proxy'], expectedDialers.get(proxy.server!), proxy.server);
   }
 
   /**
@@ -818,8 +857,8 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
    * @param {...string} servers 要匹配的服务器地址。
    * @returns {string[]} 按当前节点数组顺序排列的匹配节点名称。
    */
-  const namesFor = (...servers) =>
-    proxies.filter(({ server }) => servers.includes(server)).map(({ name }) => name);
+  const namesFor = (...servers: string[]): string[] =>
+    proxies.filter(({ server }) => servers.includes(server!)).map(({ name }) => name);
   const relayGroups = ['🛡️ Edge 中转', '🛡️ 亚太中转', '🛡️ 美西中转'];
   const dedicatedGroups = [
     '✈️ VikingLinks 亚太',
@@ -840,7 +879,7 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
     assert.deepEqual(config.rules, originalRules, `${client}: rule priority remains intact`);
     for (const [name, originalMembers] of originalGroups) {
       assert.deepEqual(
-        plain(groups.get(name).proxies.slice(0, originalMembers.length)),
+        plain(groups.get(name)!.proxies!.slice(0, originalMembers.length)),
         originalMembers,
         `${client}: ${name} retains its configured candidate order`,
       );
@@ -849,11 +888,11 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
       if (proxy['dialer-proxy']) {
         assert.ok(groups.has(proxy['dialer-proxy']), `${client}: ${proxy.name} has a valid relay`);
         for (const name of [...relayGroups, ...dedicatedGroups]) {
-          assert.ok(!groups.get(name).proxies.includes(proxy.name), `${client}: ${name}`);
+          assert.ok(!groups.get(name)!.proxies!.includes(proxy.name), `${client}: ${name}`);
         }
       } else {
         for (const name of relayGroups) {
-          assert.ok(groups.get(name).proxies.includes(proxy.name), `${client}: ${name}`);
+          assert.ok(groups.get(name)!.proxies!.includes(proxy.name), `${client}: ${name}`);
         }
       }
     }
@@ -865,8 +904,12 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
       ['✈️ 良心云 亚太', ['liangxin.example.com']],
       ['✈️ 吹雪云 亚太', ['chuixue.example.com']],
       ['✈️ 良心云 Hy2', ['hy2.example.com']],
-    ]) {
-      assert.deepEqual(plain(groups.get(name).proxies), namesFor(...servers), `${client}: ${name}`);
+    ] as [string, string[]][]) {
+      assert.deepEqual(
+        plain(groups.get(name)!.proxies),
+        namesFor(...servers),
+        `${client}: ${name}`,
+      );
     }
   }
   assert.deepEqual(sharedGroups(configs.stash), sharedGroups(configs.mihomo));

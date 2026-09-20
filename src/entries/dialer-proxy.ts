@@ -2,7 +2,8 @@
  * @file Sub-Store 订阅中转设置入口，在来源订阅中处理节点，再供配置文件注入使用。
  */
 
-import { assignDialerProxy } from '../dialer-proxy/index.js';
+import { assignDialerProxy } from '../dialer-proxy/index.ts';
+import type { ProxyNode } from '../types.ts';
 
 /**
  * 读取 Sub-Store 的 $arguments.mode，为来源订阅节点设置中转。
@@ -13,6 +14,10 @@ import { assignDialerProxy } from '../dialer-proxy/index.js';
  * @returns {Array<Object>} 保持输入顺序的新数组，元素引用及节点名称保持不变。
  * @throws {Error} mode 缺失或不是 self-hosted、edge。
  */
-export function operator(proxies, targetPlatform, context) {
+export function operator(
+  proxies: ProxyNode[],
+  targetPlatform: string,
+  context: unknown,
+): ProxyNode[] {
   return assignDialerProxy(proxies, typeof $arguments === 'undefined' ? {} : $arguments);
 }

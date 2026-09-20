@@ -4,7 +4,7 @@
  * 入口：async function main(config)；接入与参数见 README.md。
  *
  * 此文件由 npm run build 自动生成，请修改 src/ 中的源码。
- * 源码入口：src/entries/merge-config.js。
+ * 源码入口：src/entries/merge-config.ts。
  */
 var __proxyConfigScript = (() => {
   var __defProp = Object.defineProperty;
@@ -25,13 +25,13 @@ var __proxyConfigScript = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/entries/merge-config.js
+  // src/entries/merge-config.ts
   var merge_config_exports = {};
   __export(merge_config_exports, {
     main: () => main
   });
 
-  // src/merge-config/value.js
+  // src/merge-config/value.ts
   /**
    * 通过对象类型标签判断值是否可按配置映射处理，不检查其键或内部成员。
    *
@@ -102,7 +102,7 @@ var __proxyConfigScript = (() => {
     return value;
   }
 
-  // src/merge-config/validation.js
+  // src/merge-config/validation.ts
   /**
    * 检查代理组列表及名称的有效性，收集名称并拒绝同一列表中的重复项。
    * 名称只用 trim 判断是否为空，重复比较仍使用原始字符串，不修改任何组。
@@ -171,7 +171,7 @@ var __proxyConfigScript = (() => {
     }
   }
 
-  // src/merge-config/patch.js
+  // src/merge-config/patch.ts
   /**
    * 判断映射是否声明字段删除操作，仅检查自有 $delete 键，不验证其取值或额外字段。
    *
@@ -220,7 +220,10 @@ var __proxyConfigScript = (() => {
       );
     }
     if (Object.hasOwn(patch, "$prepend")) {
-      result = [...copyConfigValue(requireArray(patch.$prepend, `${path}.$prepend`)), ...result];
+      result = [
+        ...copyConfigValue(requireArray(patch.$prepend, `${path}.$prepend`)),
+        ...result
+      ];
     }
     if (Object.hasOwn(patch, "$append")) {
       result.push(...copyConfigValue(requireArray(patch.$append, `${path}.$append`)));
@@ -323,7 +326,7 @@ var __proxyConfigScript = (() => {
     return result;
   }
 
-  // src/merge-config/index.js
+  // src/merge-config/index.ts
   /**
    * 校验来源标记，合并公共模板与客户端差异，再复制注入节点并校验当前配置引用。
    * 不修改输入；移除来源标记，保留供后续覆写使用的成员生成声明。
@@ -353,7 +356,7 @@ var __proxyConfigScript = (() => {
     return merged;
   }
 
-  // src/merge-config/source.js
+  // src/merge-config/source.ts
   var DEFAULT_CONFIG_URL = "https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs";
   /**
    * 规范化客户端名称和超时值，并按单独地址优先于公共目录的规则解析配置来源。
@@ -405,7 +408,8 @@ var __proxyConfigScript = (() => {
     const response = await get({ url, timeout });
     const status = Number(response?.statusCode ?? response?.status);
     if (!(status >= 200 && status < 300)) configError(`${label} 下载失败：HTTP ${status}`);
-    if (typeof response.body !== "string" || !response.body.trim()) configError(`${label} 内容为空`);
+    if (typeof response.body !== "string" || !response.body.trim())
+      configError(`${label} 内容为空`);
     try {
       return parseYaml(response.body);
     } catch (error) {
@@ -431,11 +435,13 @@ var __proxyConfigScript = (() => {
       readConfigSource(baseUrl, "base.yaml", timeout, runtime),
       readConfigSource(profileUrl, `${client}.yaml`, timeout, runtime)
     ]);
-    if (profile?.$profile !== client) configError(`客户端差异与 client=${client} 不一致`);
+    if (profile?.$profile !== client) {
+      configError(`客户端差异与 client=${client} 不一致`);
+    }
     return mergeConfigDocuments(base, profile, config?.proxies);
   }
 
-  // src/entries/merge-config.js
+  // src/entries/merge-config.ts
   /**
    * 适配 Sub-Store 的脚本参数、HTTP 和 YAML 接口，下载并合并公共配置与客户端差异。
    * @preserve

@@ -262,7 +262,7 @@ const RETAIN_PIPE_TAG_PATTERNS = [/^(?:CM|CT|CU)+$/i, /^(?:\d+(?:\.\d+)?|\.\d+)x
  * @param {*} name 原节点名；假值按空字符串处理，其余值转为字符串。
  * @returns {string[]} 去除首尾空白的匹配标签；没有后续分段或匹配时返回空数组。
  */
-function extractRetainPipeTags(name) {
+function extractRetainPipeTags(name: unknown): string[] {
   const parts = String(name || '')
     .split('|')
     .map((s) => s.trim())
@@ -283,8 +283,8 @@ function extractRetainPipeTags(name) {
  * @returns {string[]} 整理后的命中词；未命中时返回空数组。
  * @throws {SyntaxError} 内置或自定义关键词不能编译为正则时抛出。
  */
-export function extractRetainKeywords(name, retainKeys) {
-  const hits = [];
+export function extractRetainKeywords(name: string, retainKeys: string[]): string[] {
+  const hits: string[] = [];
   const nameLower = name.toLowerCase();
   /**
    * 将非空且未出现过的原文片段追加到当前 hits 数组。
@@ -293,7 +293,7 @@ export function extractRetainKeywords(name, retainKeys) {
    * @param {string} value 待保留的原文片段，使用大小写敏感的完全相等判断去重。
    * @returns {void} 无返回值，直接更新外层 hits 数组。
    */
-  const pushOriginal = (value) => {
+  const pushOriginal = (value: string): void => {
     if (value && !hits.includes(value)) hits.push(value);
   };
   /**
@@ -305,7 +305,7 @@ export function extractRetainKeywords(name, retainKeys) {
    * @returns {void} 无返回值；命中时通过 pushOriginal 更新外层 hits 数组。
    * @throws {SyntaxError} 关键词不能编译为正则时抛出。
    */
-  const pushHit = (kw) => {
+  const pushHit = (kw: string): void => {
     const kwLower = kw.toLowerCase();
     // 英文关键词加单词边界，避免匹配单词内部（如 ist 命中 Registry）
     const isAscii = /^[A-Za-z0-9]+$/.test(kw);

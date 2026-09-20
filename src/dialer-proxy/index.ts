@@ -3,6 +3,8 @@
  * 自建模式按原始名称分配中转；Edge 模式供 oixCloud Edge 和一元机场共用。
  */
 
+import type { ProxyNode, ScriptArguments } from '../types.ts';
+
 /**
  * 按来源模式就地设置节点的 dialer-proxy，保留原节点名称和输入顺序。
  * edge 为全部节点设置 Edge 中转；self-hosted 仅处理名称含“落地”的节点，
@@ -14,7 +16,10 @@
  * @returns {Array<Object>} 新数组，元素仍为原节点对象；命中节点的中转字段已被覆盖。
  * @throws {Error} mode 缺失或不受支持；模式校验失败时不会修改任何节点。
  */
-export function assignDialerProxy(proxies, args = {}) {
+export function assignDialerProxy<T extends ProxyNode>(
+  proxies: T[],
+  args: ScriptArguments | null = {},
+): T[] {
   const mode = args?.mode;
   if (mode !== 'self-hosted' && mode !== 'edge') {
     throw new Error('[dialer-proxy] mode 必须为 self-hosted 或 edge');

@@ -4,7 +4,7 @@
  * 入口：function operator(proxies, targetPlatform, context)；接入与参数见 README.md。
  *
  * 此文件由 npm run build 自动生成，请修改 src/ 中的源码。
- * 源码入口：src/entries/dialer-proxy.js。
+ * 源码入口：src/entries/dialer-proxy.ts。
  */
 var __proxyConfigScript = (() => {
   var __defProp = Object.defineProperty;
@@ -25,13 +25,13 @@ var __proxyConfigScript = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/entries/dialer-proxy.js
+  // src/entries/dialer-proxy.ts
   var dialer_proxy_exports = {};
   __export(dialer_proxy_exports, {
     operator: () => operator
   });
 
-  // src/dialer-proxy/index.js
+  // src/dialer-proxy/index.ts
   /**
    * 按来源模式就地设置节点的 dialer-proxy，保留原节点名称和输入顺序。
    * edge 为全部节点设置 Edge 中转；self-hosted 仅处理名称含“落地”的节点，
@@ -58,7 +58,7 @@ var __proxyConfigScript = (() => {
     });
   }
 
-  // src/entries/dialer-proxy.js
+  // src/entries/dialer-proxy.ts
   /**
    * 读取 Sub-Store 的 $arguments.mode，为来源订阅节点设置中转。
    * @preserve

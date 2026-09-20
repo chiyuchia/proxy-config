@@ -3,7 +3,8 @@
  * 适配脚本参数、HTTP 和 YAML 全局对象；作为独立操作在 config-overwrite 前执行。
  */
 
-import { loadMergedConfig } from '../merge-config/source.js';
+import { loadMergedConfig } from '../merge-config/source.ts';
+import type { MergedConfig, ProxyConfig } from '../types.ts';
 
 /**
  * 适配 Sub-Store 的脚本参数、HTTP 和 YAML 接口，下载并合并公共配置与客户端差异。
@@ -12,7 +13,7 @@ import { loadMergedConfig } from '../merge-config/source.js';
  * @returns {Promise<Object>} 完成来源、补丁和引用校验的新配置，仍保留成员生成声明供后续覆写。
  * @throws {Error} 参数、远程请求、YAML 来源、补丁或引用无效时，返回的 Promise 拒绝。
  */
-export async function main(config) {
+export async function main(config: ProxyConfig | null | undefined): Promise<MergedConfig> {
   const args = typeof $arguments === 'object' && $arguments ? $arguments : {};
   return loadMergedConfig(config, args, {
     /**

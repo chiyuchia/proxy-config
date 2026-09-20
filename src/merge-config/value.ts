@@ -3,6 +3,8 @@
  * 仅接受映射、数组与普通标量，复制时拒绝可能影响对象原型的配置键。
  */
 
+import type { ConfigMap } from '../types.ts';
+
 /**
  * 通过对象类型标签判断值是否可按配置映射处理，不检查其键或内部成员。
  *
@@ -10,7 +12,7 @@
  * @param {*} value 待判断的值，可为任意类型。
  * @returns {boolean} 对象类型标签为 `[object Object]` 时返回 true，否则返回 false。
  */
-export function isConfigMap(value) {
+export function isConfigMap(value: unknown): value is ConfigMap {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
 
@@ -22,7 +24,7 @@ export function isConfigMap(value) {
  * @returns {never} 始终抛出异常，不正常返回。
  * @throws {Error} 消息带有 `[merge-config]` 前缀的配置错误。
  */
-export function configError(message) {
+export function configError(message: string): never {
   throw new Error(`[merge-config] ${message}`);
 }
 
@@ -34,7 +36,7 @@ export function configError(message) {
  * @returns {void} 键不在禁止列表中时正常返回。
  * @throws {Error} 键为 __proto__、constructor 或 prototype 时抛出配置错误。
  */
-export function checkConfigKey(key) {
+export function checkConfigKey(key: string): void {
   if (['__proto__', 'constructor', 'prototype'].includes(key)) {
     configError(`不允许的配置键：${key}`);
   }
@@ -48,10 +50,10 @@ export function checkConfigKey(key) {
  * @returns {Object<string, *>|Array<*>|string|boolean|number|null} 独立的容器副本或原标量值。
  * @throws {Error} 遇到禁止的映射键或不支持的值类型时抛出配置错误。
  */
-export function copyConfigValue(value) {
+export function copyConfigValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(copyConfigValue);
   if (isConfigMap(value)) {
-    const result = {};
+    const result: ConfigMap = {};
     for (const [key, item] of Object.entries(value)) {
       checkConfigKey(key);
       result[key] = copyConfigValue(item);
@@ -72,7 +74,7 @@ export function copyConfigValue(value) {
  * @returns {Array<*>} 传入的原数组引用，不创建副本。
  * @throws {Error} value 不是数组时抛出配置错误。
  */
-export function requireArray(value, path) {
+export function requireArray(value: unknown, path: string): unknown[] {
   if (!Array.isArray(value)) configError(`${path} 必须是数组`);
   return value;
 }

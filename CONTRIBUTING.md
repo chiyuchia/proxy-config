@@ -16,7 +16,8 @@
 | 自建落地及机场节点的 `dialer-proxy` 设置 | `src/dialer-proxy/` |
 | 节点地区识别、名称格式和关键词提取 | `src/rename/` |
 | Sub-Store 入口与全局对象适配 | `src/entries/` |
-| 单文件脚本构建 | `tools/build.js` |
+| 共享配置类型与 Sub-Store 全局声明 | `src/types.ts`、`src/sub-store.d.ts` |
+| 单文件脚本构建 | `tools/build.ts` |
 | 自定义规则集内容 | `rules/` |
 
 共同代理组沿用 Mihomo 的分组和候选顺序，只在 `configs/base.yaml` 维护，包括 oixCloud Edge、吹雪云和一元机场组。`configs/stash.yaml` 不维护代理组；Mihomo 的代理组补丁仅用于 oixCloud provider 相关差异。
@@ -25,7 +26,7 @@
 
 ### 脚本开发
 
-脚本使用 JavaScript ES Modules 维护，按职责拆分源码，再由 esbuild 打包到 `scripts/`。`scripts/*.js` 是纳入版本控制的发布产物，请修改 `src/` 后在本地构建并验证，不要直接修改生成文件。源码可单独提交，也可连同重新生成的产物一起提交；`master` 的产物由[自动构建与发布](#自动构建与发布)流程补齐。
+源码、构建工具和测试使用 TypeScript ES Modules 维护，按职责拆分，再由 esbuild 将四个入口打包到 `scripts/`。`scripts/*.js` 是供 Sub-Store 运行并纳入版本控制的 JavaScript 发布产物，请修改 `src/` 后在本地构建并验证，不要直接修改生成文件。源码可单独提交，也可连同重新生成的产物一起提交；`master` 的产物由[自动构建与发布](#自动构建与发布)流程补齐。
 
 ```text
 src/
@@ -34,11 +35,17 @@ src/
   config-overwrite/  组成员筛选与重建、provider URL 注入
   dialer-proxy/      中转模式参数、原节点名匹配与 dialer-proxy 设置
   rename/            地区数据、别名、关键词、参数、识别与名称格式
-tools/build.js       将四个入口分别打包为 scripts/*.js
-tests/              核心逻辑测试与发布脚本的 Sub-Store 运行环境模拟
+  types.ts           共享节点、代理组、配置和运行时接口
+  sub-store.d.ts     Sub-Store 注入的全局对象声明，仅用于类型检查
+tools/build.ts       将四个入口分别打包为 scripts/*.js
+tests/*.test.ts      核心逻辑测试与发布脚本的 Sub-Store 运行环境模拟
+tests/type-contracts.ts  仅在类型检查阶段验证的输入输出类型契约
+tsconfig.json        源码、构建工具和测试的严格类型检查配置
 ```
 
 核心逻辑通过参数接收配置、脚本参数、HTTP/YAML 等依赖；`$arguments`、`$substore`、`ProxyUtils` 只在入口适配。新增规则先确定所属模块，地区信息按一条记录维护代码、中文名、英文名和旗帜，保留记录及匹配顺序。
+
+内部模块使用显式 `.ts` 导入，纯类型依赖使用 `import type`。`tsc --noEmit` 对源码、构建工具和测试启用 `strict` 检查；esbuild 负责移除类型并打包，不代替类型检查。外部 YAML 和未经校验的字段使用 `unknown`，经现有校验后收窄；不要用 `any` 或禁用类型检查来绕过边界。Node.js 类型只用于本地工具和测试，发布脚本运行时仍仅依赖声明的 Sub-Store 接口。
 
 具名函数和运行时适配方法使用中文 JSDoc，说明功能、每个参数及返回值，并注明默认值、输入修改和异常等行为。简单的内联数组回调和测试用例回调由所属函数说明或测试描述解释。`src/` 中的函数注释添加 `@preserve`，构建时保留到发布脚本；发布文件的外层 `main` / `operator` 自动复用源码入口的 JSDoc，无需单独维护。
 
@@ -194,7 +201,7 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/{branch}/{path}
 
 ## 本地验证
 
-开发环境需要 Node.js 22 或更高版本及 npm。首次安装或锁文件更新后运行 `npm ci`；构建、格式化和测试依赖由 `package-lock.json` 固定，只用于本地开发与 CI。Sub-Store 继续使用自带的 YAML 解析器。
+开发环境需要 Node.js 22 或更高版本及 npm。首次安装或锁文件更新后运行 `npm ci`；TypeScript、tsx、构建、格式化和测试依赖由 `package-lock.json` 固定，只用于本地开发与 CI。构建工具和测试通过 tsx 执行，不依赖 Node.js 的原生 TypeScript 支持。Sub-Store 继续运行 JavaScript 发布文件并使用自带的 YAML 解析器。
 
 发布流程测试还需要 Git 和 Bash，只在临时目录创建本地仓库，不访问项目远端。
 
@@ -205,10 +212,11 @@ npm run build
 npm run check
 ```
 
-`npm run check` 依次检查格式、源码与 `scripts/` 产物一致性并执行测试，不会修改文件。日常调试可单独运行 `npm test`，它测试当前源码与已有发布产物；修改源码后须先构建再做完整检查。GitHub Actions 对所有推送和 PR 依次执行 `npm ci`、`npm run build`、`npm run check`，检查本次构建结果，不要求提交前已更新产物。
+`npm run check` 依次检查格式、严格类型、源码与 `scripts/` 产物一致性并执行测试，不会修改文件。可单独运行 `npm run typecheck` 检查类型，或运行 `npm test` 测试当前 TypeScript 源码与已有 JavaScript 发布产物；修改源码后须先构建再做完整检查。GitHub Actions 对所有推送和 PR 依次执行 `npm ci`、`npm run build`、`npm run check`，同样包含类型检查，不要求提交前已更新产物。
 
 测试覆盖：
 
+- 覆写输出移除内部声明后的类型，以及节点附加字段和其他配置字段的类型保留。
 - 两种客户端的配置合并、共同代理组定义和候选顺序一致性，以及相同注入节点下的组成员一致性；仅排除 Mihomo 的 oixCloud provider、Optimized 组及相应 `use` 和菜单引用。
 - 数组与代理组补丁、来源标记、节点保留、重复组名和无效引用等检查。
 - 远程读取、URL 与超时参数、请求和 YAML 错误处理，以及 Sub-Store 独立脚本的异步执行与序列化流程。

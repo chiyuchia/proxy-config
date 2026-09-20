@@ -4,7 +4,7 @@
  * 入口：async function operator(proxies, targetPlatform, context)；接入与参数见 README.md。
  *
  * 此文件由 npm run build 自动生成，请修改 src/ 中的源码。
- * 源码入口：src/entries/rename.js。
+ * 源码入口：src/entries/rename.ts。
  */
 var __proxyConfigScript = (() => {
   var __defProp = Object.defineProperty;
@@ -25,13 +25,13 @@ var __proxyConfigScript = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/entries/rename.js
+  // src/entries/rename.ts
   var rename_exports = {};
   __export(rename_exports, {
     operator: () => operator
   });
 
-  // src/rename/regions.js
+  // src/rename/regions.ts
   var REGIONS = [
     { code: "CN", chineseName: "中国", englishName: "China", flag: "🇨🇳" },
     { code: "HK", chineseName: "香港", englishName: "Hong Kong", flag: "🇭🇰" },
@@ -229,10 +229,12 @@ var __proxyConfigScript = (() => {
     { code: "BM", chineseName: "百慕达", englishName: "Bermuda", flag: "🇧🇲" },
     { code: "TL", chineseName: "东帝汶", englishName: "Timor-Leste", flag: "🇹🇱" }
   ];
-  var REGIONS_BY_CODE = new Map(REGIONS.map((region) => [region.code, region]));
+  var REGIONS_BY_CODE = new Map(
+    REGIONS.map((region) => [region.code, region])
+  );
   var HOT_REGIONS = /* @__PURE__ */ new Set(["HK", "TW", "CN", "JP", "SG", "US"]);
 
-  // src/rename/options.js
+  // src/rename/options.ts
   var DEFAULT_FILTER_WORDS = [
     "过期",
     "剩余",
@@ -293,17 +295,6 @@ var __proxyConfigScript = (() => {
     return text.split("|").map((word) => word.trim()).filter((word) => word && word !== "1" && word.toLowerCase() !== "true");
   }
   /**
-   * @preserve
-   * @typedef {Object} RenameOptions
-   * @property {boolean} removeOriginalName 是否移除原名，默认 true。
-   * @property {boolean} removeUniqueSequence 是否移除唯一完整名称的 01 序号，默认 false。
-   * @property {Set<string>|null} hotRegions 允许保留的地区集合；null 表示不按地区过滤。
-   * @property {RegExp|null} filterPattern 信息节点过滤正则；null 表示不执行名称过滤。
-   * @property {RegExp|null} blockPattern 识别地区前移除文本的正则；null 表示不屏蔽。
-   * @property {string[]|null} retainKeywords 追加到内置词表的关键词；null 表示禁用保留词。
-   * @property {string[]} outputFields 按输出顺序排列的 FG、ZH、EN、QC 字段，默认 FG、EN。
-   */
-  /**
    * 将 Sub-Store 参数归一化为过滤、地区选择、关键词保留和命名选项。
    * remove/one 使用 JavaScript 真值语义，filter/block 解码 URL 文本，retain 单独识别 false/0。
    *
@@ -333,7 +324,7 @@ var __proxyConfigScript = (() => {
     };
   }
 
-  // src/rename/aliases.js
+  // src/rename/aliases.ts
   var REGION_ALIASES = {
     香港: /Hongkong|HONG KONG|HKG|港(?!.*线)/gi,
     台湾: /新台|新北|TPE|TSA|台(?!.*线)/g,
@@ -393,7 +384,7 @@ var __proxyConfigScript = (() => {
     巴西: /GRU|GIG/g
   };
 
-  // src/rename/identify.js
+  // src/rename/identify.ts
   /**
    * 先替换地区别名，再依次匹配中文名、国旗、英文全称和地区代码。
    * 各阶段均按地区表顺序返回首个命中；别名替换后的代码匹配忽略大小写并限制字母边界。
@@ -430,14 +421,6 @@ var __proxyConfigScript = (() => {
     if (REGIONS_BY_CODE.has(upper)) return upper;
     return upper === "UK" ? "GB" : null;
   }
-  /**
-   * @preserve
-   * @typedef {Object} VikingName
-   * @property {string} countryCode 用于识别和分组的标准地区代码。
-   * @property {string} displayCode 原名中的大写展示代码，保留 UK 等写法。
-   * @property {string} flag 原名开头的旗帜；未提供时为空字符串。
-   * @property {string} suffix 用空格拼接的线路和服务商，不包含原序号。
-   */
   /**
    * 解析 COUNTRY-NN-PROVIDER 或 COUNTRY-LINE-NN-PROVIDER 格式。
    * 不检查订阅来源；允许开头带国旗，序号为一至三位数字，服务商可包含连字符分段。
@@ -493,7 +476,7 @@ var __proxyConfigScript = (() => {
     return vikingName?.countryCode || matchNameToCode(withoutDomains);
   }
 
-  // src/rename/keywords.js
+  // src/rename/keywords.ts
   var RETAIN_KEYWORDS = [
     // 日本
     "东京",
@@ -805,7 +788,7 @@ var __proxyConfigScript = (() => {
     );
   }
 
-  // src/rename/format.js
+  // src/rename/format.ts
   /**
    * 将地区代码中的英文字母转为区域指示符，TW 按现有展示约定使用萨摩亚旗帜。
    *
@@ -824,7 +807,7 @@ var __proxyConfigScript = (() => {
    *
    * @preserve
    * @param {string} countryCode 已识别的标准地区代码。
-   * @param {import('./identify.js').VikingName|null} vikingName Viking 解析结果；null 使用标准地区展示。
+   * @param {import('./identify.ts').VikingName|null} vikingName Viking 解析结果；null 使用标准地区展示。
    * @param {string[]} outputFields 输出字段顺序，可包含 FG、ZH、EN、QC。
    * @returns {string} 用空格连接的地区标签。
    */
@@ -848,7 +831,7 @@ var __proxyConfigScript = (() => {
    * @param {string} [proxy._subName] 追加到名称末尾的订阅名；假值不追加。
    * @param {string} countryCode 已识别的标准地区代码。
    * @param {number} sequence 当前订阅及地区分组中的序号，从 1 开始。
-   * @param {import('./options.js').RenameOptions} options 已解析的输出格式和保留选项。
+   * @param {import('./options.ts').RenameOptions} options 已解析的输出格式和保留选项。
    * @returns {string} 格式化后的完整节点名称。
    * @throws {SyntaxError} 需要提取关键词且某个关键词无法编译为正则时抛出。
    */
@@ -909,7 +892,7 @@ var __proxyConfigScript = (() => {
     }
   }
 
-  // src/rename/index.js
+  // src/rename/index.ts
   /**
    * 按热门地区、其他已识别地区、未知地区排序，已识别节点再按地区代码和最终名称排序。
    * 两个未知节点视为相等，以便稳定排序保留它们的输入顺序。
@@ -993,7 +976,7 @@ var __proxyConfigScript = (() => {
     return result;
   }
 
-  // src/entries/rename.js
+  // src/entries/rename.ts
   /**
    * 使用 Sub-Store 的 $arguments 和控制台日志，按节点名称识别地区并整理名称。
    * @preserve

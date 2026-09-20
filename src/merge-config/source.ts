@@ -3,8 +3,16 @@
  * 通过调用者提供的 HTTP 和 YAML 能力读取来源，校验响应及客户端后执行合并。
  */
 
-import { mergeConfigDocuments } from './index.js';
-import { configError } from './value.js';
+import { mergeConfigDocuments } from './index.ts';
+import { configError } from './value.ts';
+import type { ConfigRuntime, MergedConfig, ProxyConfig, ScriptArguments } from '../types.ts';
+
+interface ConfigOptions {
+  client: 'mihomo' | 'stash';
+  timeout: number;
+  baseUrl: unknown;
+  profileUrl: unknown;
+}
 
 const DEFAULT_CONFIG_URL =
   'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs';
@@ -23,7 +31,7 @@ const DEFAULT_CONFIG_URL =
  * @returns {{client: string, timeout: number, baseUrl: *, profileUrl: *}} 客户端、超时和两个来源地址。
  * @throws {Error} 客户端不支持、超时无法转为有限正数或公共目录不是字符串时抛出配置错误。
  */
-export function resolveConfigOptions(args) {
+export function resolveConfigOptions(args: ScriptArguments): ConfigOptions {
   const client = typeof args.client === 'string' ? args.client.trim().toLowerCase() : '';
   if (!['mihomo', 'stash'].includes(client)) configError('请设置 client=mihomo 或 client=stash');
   const timeout = args.timeout === undefined ? 10000 : Number(args.timeout);
@@ -32,7 +40,7 @@ export function resolveConfigOptions(args) {
   if (typeof root !== 'string') configError('configBaseUrl 必须是 URL 字符串');
   const directory = root.replace(/\/+$/, '');
   return {
-    client,
+    client: client as ConfigOptions['client'],
     timeout,
     baseUrl: args.baseUrl ?? `${directory}/base.yaml`,
     profileUrl: args.profileUrl ?? `${directory}/${client}.yaml`,
@@ -53,18 +61,26 @@ export function resolveConfigOptions(args) {
  * @returns {Promise<*>} YAML 解析得到的值；来源标记及配置结构由后续步骤检查。
  * @throws {Error} 地址协议无效、下载失败、响应为空或 YAML 解析失败时拒绝返回的 Promise。
  */
-export async function readConfigSource(url, label, timeout, { get, parseYaml }) {
+export async function readConfigSource(
+  url: unknown,
+  label: string,
+  timeout: number,
+  { get, parseYaml }: ConfigRuntime,
+): Promise<unknown> {
   if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
     configError(`${label} 必须使用 HTTP(S) URL`);
   }
   const response = await get({ url, timeout });
   const status = Number(response?.statusCode ?? response?.status);
   if (!(status >= 200 && status < 300)) configError(`${label} 下载失败：HTTP ${status}`);
-  if (typeof response.body !== 'string' || !response.body.trim()) configError(`${label} 内容为空`);
+  // 未返回响应时 status 为 NaN，已被上方检查拒绝；这里保留原有响应体读取顺序。
+  if (typeof response!.body !== 'string' || !response!.body.trim())
+    configError(`${label} 内容为空`);
   try {
-    return parseYaml(response.body);
+    return parseYaml(response!.body);
   } catch (error) {
-    configError(`${label} YAML 解析失败：${error.message}`);
+    // 保留原有 error.message 读取行为，不假定解析器只会抛出 Error，也不更改异常回退格式。
+    configError(`${label} YAML 解析失败：${(error as { message?: unknown }).message}`);
   }
 }
 
@@ -81,12 +97,19 @@ export async function readConfigSource(url, label, timeout, { get, parseYaml }) 
  * @returns {Promise<Object<string, *>>} 校验并合并后的新配置，其容器与输入配置独立。
  * @throws {Error} 参数、下载、解析、客户端标记、补丁或配置校验失败时拒绝返回的 Promise。
  */
-export async function loadMergedConfig(config, args, runtime) {
+export async function loadMergedConfig(
+  config: ProxyConfig | null | undefined,
+  args: ScriptArguments,
+  runtime: ConfigRuntime,
+): Promise<MergedConfig> {
   const { client, timeout, baseUrl, profileUrl } = resolveConfigOptions(args);
   const [base, profile] = await Promise.all([
     readConfigSource(baseUrl, 'base.yaml', timeout, runtime),
     readConfigSource(profileUrl, `${client}.yaml`, timeout, runtime),
   ]);
-  if (profile?.$profile !== client) configError(`客户端差异与 client=${client} 不一致`);
+  // 此处只读取标记；完整映射检查仍留在合并步骤，避免提前改变错误路径。
+  if ((profile as { $profile?: unknown } | null | undefined)?.$profile !== client) {
+    configError(`客户端差异与 client=${client} 不一致`);
+  }
   return mergeConfigDocuments(base, profile, config?.proxies);
 }

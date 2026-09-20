@@ -3,7 +3,19 @@
  * x-substore 仅用于合并与覆写之间传递指令，最终客户端配置中移除。
  */
 
-const MEMBER_MODES = new Set(['append', 'replace', 'manual']);
+import type { ConfigMap, ProxyGroup } from '../types.ts';
+
+/** 成员生成方式，必须在模板中显式声明。 */
+export type MemberMode = 'append' | 'replace' | 'manual';
+
+/** 通过校验并规范化后的成员生成策略。 */
+export interface MemberPolicy {
+  mode: MemberMode;
+  excludeDialer: boolean;
+  types: Set<string> | null;
+}
+
+const MEMBER_MODES = new Set<string>(['append', 'replace', 'manual']);
 const MEMBER_FIELDS = new Set(['mode', 'exclude-dialer', 'types']);
 
 /**
@@ -15,7 +27,7 @@ const MEMBER_FIELDS = new Set(['mode', 'exclude-dialer', 'types']);
  * @returns {never} 始终抛出错误，不正常返回。
  * @throws {Error} 带 config-overwrite 前缀的声明校验错误。
  */
-function policyError(group, field, message) {
+function policyError(group: ProxyGroup | null | undefined, field: string, message: string): never {
   throw new Error(`[config-overwrite] ${group?.name || '未命名代理组'}.${field} ${message}`);
 }
 
@@ -28,7 +40,11 @@ function policyError(group, field, message) {
  * @returns {void} 校验通过时不返回值。
  * @throws {Error} 字段缺失、为 null、数组或非对象值。
  */
-function requireMap(value, group, field) {
+function requireMap(
+  value: unknown,
+  group: ProxyGroup | null | undefined,
+  field: string,
+): asserts value is ConfigMap {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     policyError(group, field, '必须为映射；请从合并后的模板生成，不要重复覆写最终配置');
   }
@@ -43,7 +59,7 @@ function requireMap(value, group, field) {
  *   成员策略；excludeDialer 默认为 false，types 去除首尾空白并转为小写集合，省略时为 null。
  * @throws {Error} 声明缺失、字段未知，或 mode、exclude-dialer、types 的类型或值无效。
  */
-export function readMemberPolicy(group) {
+export function readMemberPolicy(group: ProxyGroup): MemberPolicy {
   const metadata = group?.['x-substore'];
   requireMap(metadata, group, 'x-substore');
   for (const key of Object.keys(metadata)) {
@@ -56,13 +72,13 @@ export function readMemberPolicy(group) {
   for (const key of Object.keys(policy)) {
     if (!MEMBER_FIELDS.has(key)) policyError(group, `${field}.${key}`, '是未知字段');
   }
-  if (!MEMBER_MODES.has(policy.mode)) {
+  if (!MEMBER_MODES.has(policy.mode as string)) {
     policyError(group, `${field}.mode`, '必须为 append、replace 或 manual');
   }
   if (Object.hasOwn(policy, 'exclude-dialer') && typeof policy['exclude-dialer'] !== 'boolean') {
     policyError(group, `${field}.exclude-dialer`, '必须为布尔值');
   }
-  let types = null;
+  let types: Set<string> | null = null;
   if (Object.hasOwn(policy, 'types')) {
     if (
       !Array.isArray(policy.types) ||
@@ -71,7 +87,12 @@ export function readMemberPolicy(group) {
     ) {
       policyError(group, `${field}.types`, '必须为非空协议名称数组；不限协议时省略该字段');
     }
-    types = new Set(policy.types.map((type) => type.trim().toLowerCase()));
+    // 上方逐项确认了非空字符串，保留原有校验顺序后再收窄数组元素类型。
+    types = new Set((policy.types as string[]).map((type) => type.trim().toLowerCase()));
   }
-  return { mode: policy.mode, excludeDialer: policy['exclude-dialer'] ?? false, types };
+  return {
+    mode: policy.mode as MemberMode,
+    excludeDialer: (policy['exclude-dialer'] as boolean | undefined) ?? false,
+    types,
+  };
 }

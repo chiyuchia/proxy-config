@@ -4,17 +4,38 @@
  */
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import test from 'node:test';
+import test, { type TestContext } from 'node:test';
 import { parse } from 'yaml';
+
+interface WorkflowStep {
+  id?: string;
+  uses?: string;
+  run?: string;
+  env?: Record<string, string>;
+  with?: Record<string, unknown>;
+}
+
+interface Workflow {
+  on: Record<string, unknown>;
+  jobs: {
+    check: { steps: WorkflowStep[] };
+    publish: {
+      needs: string | string[];
+      if: string;
+      permissions: { contents: string };
+      steps: WorkflowStep[];
+    };
+  };
+}
 
 const workflow = parse(
   fs.readFileSync(new URL('../.github/workflows/check.yml', import.meta.url), 'utf8'),
-);
-const publishStep = workflow.jobs.publish.steps.find((step) => step.id === 'publish-scripts');
+) as Workflow;
+const publishStep = workflow.jobs.publish.steps.find((step) => step.id === 'publish-scripts')!;
 const publishedFiles = [
   'scripts/config-overwrite.js',
   'scripts/dialer-proxy.js',
@@ -29,7 +50,7 @@ const publishedFiles = [
  * @returns {Object} 仓库路径、源提交及构建、Git 操作、竞争提交和发布辅助函数。
  * @throws {Error} 临时文件操作或初始化 Git 命令失败时抛出。
  */
-function fixture(t) {
+function fixture(t: TestContext) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'proxy-config-publish-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const checkout = path.join(directory, 'checkout');
@@ -38,7 +59,7 @@ function fixture(t) {
   fs.mkdirSync(hooks);
 
   // 不继承用户的 Git 目录、身份、签名或 hook 配置，所有提交都只发生在测试仓库。
-  const env = Object.fromEntries(
+  const env: NodeJS.ProcessEnv = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
   );
   Object.assign(env, {
@@ -68,7 +89,7 @@ function fixture(t) {
    * @returns {string} 去除首尾空白的标准输出。
    * @throws {Error} 无法启动进程或 Git 返回非零状态时抛出。
    */
-  function git(args, cwd = checkout) {
+  function git(args: string[], cwd: string = checkout): string {
     const result = spawnSync('git', args, { cwd, env, encoding: 'utf8' });
     assert.ifError(result.error);
     assert.equal(result.status, 0, `git ${args.join(' ')}\n${result.stdout}${result.stderr}`);
@@ -82,7 +103,7 @@ function fixture(t) {
    * @param {string} [cwd=checkout] 文件所属目录，默认使用测试工作仓库。
    * @returns {void} 通过文件系统写入生效，无返回值。
    */
-  function write(file, content, cwd = checkout) {
+  function write(file: string, content: string, cwd: string = checkout): void {
     const target = path.join(cwd, file);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, content);
@@ -90,7 +111,7 @@ function fixture(t) {
 
   git(['init', '--bare', '--initial-branch=master', remote], directory);
   git(['init', '--initial-branch=master', checkout], directory);
-  for (const file of [...publishedFiles, 'scripts/unrelated.js', 'src/index.js', 'README.md']) {
+  for (const file of [...publishedFiles, 'scripts/unrelated.js', 'src/index.ts', 'README.md']) {
     write(file, `initial ${file}\n`);
   }
   git(['add', '.']);
@@ -104,7 +125,7 @@ function fixture(t) {
    * 改写约定的四个发布文件，模拟构建产生待提交的产物差异。
    * @returns {void} 仅更新测试工作仓库中的文件。
    */
-  function build() {
+  function build(): void {
     for (const file of publishedFiles) write(file, `generated ${file}\n`);
   }
 
@@ -114,7 +135,7 @@ function fixture(t) {
    * @returns {string} 新竞争提交的完整 SHA。
    * @throws {Error} 克隆、文件写入、提交或推送失败时抛出。
    */
-  function competingCommit(branch = 'master') {
+  function competingCommit(branch: string = 'master'): string {
     const competitor = path.join(directory, 'competitor');
     git(['clone', remote, competitor], directory);
     write('README.md', 'newer source commit\n', competitor);
@@ -131,8 +152,8 @@ function fixture(t) {
    * @returns {import('node:child_process').SpawnSyncReturns<string>} Bash 的退出状态及输出。
    * @throws {Error} 无法启动 Bash 进程时抛出。
    */
-  function publish(extraEnv = {}) {
-    const result = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', publishStep.run], {
+  function publish(extraEnv: Record<string, string> = {}): SpawnSyncReturns<string> {
+    const result = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', publishStep.run!], {
       cwd: checkout,
       env: { ...env, SOURCE_COMMIT: sourceCommit, ...extraEnv },
       encoding: 'utf8',
@@ -145,7 +166,7 @@ function fixture(t) {
    * 读取测试裸远端的 master 提交，不访问网络或修改分支。
    * @returns {string} 远端 master 当前指向的完整提交 SHA。
    */
-  function remoteHead() {
+  function remoteHead(): string {
     return git(['--git-dir', remote, 'rev-parse', 'refs/heads/master']);
   }
 
@@ -158,7 +179,7 @@ function fixture(t) {
  * @returns {void} 断言成功时无返回值。
  * @throws {Error} 进程退出状态不为零时抛出断言错误。
  */
-function assertSuccess(result) {
+function assertSuccess(result: SpawnSyncReturns<string>): void {
   assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
 }
 
@@ -171,11 +192,11 @@ test('publishing requires successful checks and a push to master', () => {
     "github.event_name == 'push' && github.ref == 'refs/heads/master'",
   );
   assert.equal(workflow.jobs.publish.permissions.contents, 'write');
-  assert.equal(publishStep.env.SOURCE_COMMIT, '${{ github.sha }}');
+  assert.equal(publishStep.env!.SOURCE_COMMIT, '${{ github.sha }}');
   const upload = workflow.jobs.check.steps.find((step) =>
     step.uses?.startsWith('actions/upload-artifact@'),
   );
-  assert.deepEqual(upload.with.path.trim().split('\n').sort(), publishedFiles);
+  assert.deepEqual((upload!.with!.path as string).trim().split('\n').sort(), publishedFiles);
 });
 
 test('unchanged scripts do not create a publication commit', (t) => {
@@ -189,7 +210,7 @@ test('unchanged scripts do not create a publication commit', (t) => {
 test('publication commits only the generated scripts', (t) => {
   const repo = fixture(t);
   repo.build();
-  repo.write('src/index.js', 'uncommitted source\n');
+  repo.write('src/index.ts', 'uncommitted source\n');
   repo.write('scripts/unrelated.js', 'uncommitted extra script\n');
   repo.write('README.md', 'uncommitted documentation\n');
 
@@ -205,7 +226,7 @@ test('publication commits only the generated scripts', (t) => {
   for (const file of publishedFiles) {
     assert.equal(repo.git(['show', `HEAD:${file}`]), `generated ${file}`);
   }
-  for (const file of ['src/index.js', 'scripts/unrelated.js', 'README.md']) {
+  for (const file of ['src/index.ts', 'scripts/unrelated.js', 'README.md']) {
     assert.equal(repo.git(['show', `HEAD:${file}`]), `initial ${file}`);
     assert.notEqual(repo.git(['diff', '--', file]), '');
   }

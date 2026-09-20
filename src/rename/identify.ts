@@ -3,8 +3,9 @@
  * 按既定优先级匹配别名、地区名、旗帜和代码，仅使用名称，不访问网络。
  */
 
-import { REGION_ALIASES } from './aliases.js';
-import { REGIONS, REGIONS_BY_CODE } from './regions.js';
+import { REGION_ALIASES } from './aliases.ts';
+import { REGIONS, REGIONS_BY_CODE } from './regions.ts';
+import type { ProxyNode } from '../types.ts';
 
 /**
  * 先替换地区别名，再依次匹配中文名、国旗、英文全称和地区代码。
@@ -14,13 +15,13 @@ import { REGIONS, REGIONS_BY_CODE } from './regions.js';
  * @param {string} name 待识别的节点名称。
  * @returns {string|null} 命中的标准地区代码；没有匹配时返回 null。
  */
-export function matchNameToCode(name) {
+export function matchNameToCode(name: string): string | null {
   let processed = name;
   for (const [target, pattern] of Object.entries(REGION_ALIASES)) {
     if (pattern.test(processed)) processed = processed.replace(pattern, target);
   }
 
-  for (const field of ['chineseName', 'flag', 'englishName']) {
+  for (const field of ['chineseName', 'flag', 'englishName'] as const) {
     for (const region of REGIONS) {
       if (processed.includes(region[field])) return region.code;
     }
@@ -39,20 +40,23 @@ export function matchNameToCode(name) {
  * @param {*} code 待归一化的代码；假值按空字符串处理。
  * @returns {string|null} 地区表中存在的标准代码；未知代码返回 null。
  */
-function normalizeCountryCode(code) {
+function normalizeCountryCode(code: unknown): string | null {
   const upper = String(code || '').toUpperCase();
   if (REGIONS_BY_CODE.has(upper)) return upper;
   return upper === 'UK' ? 'GB' : null;
 }
 
-/**
- * @preserve
- * @typedef {Object} VikingName
- * @property {string} countryCode 用于识别和分组的标准地区代码。
- * @property {string} displayCode 原名中的大写展示代码，保留 UK 等写法。
- * @property {string} flag 原名开头的旗帜；未提供时为空字符串。
- * @property {string} suffix 用空格拼接的线路和服务商，不包含原序号。
- */
+/** Viking 格式解析得到的地区标记与命名后缀。 */
+export interface VikingName {
+  /** 用于识别和分组的标准地区代码。 */
+  countryCode: string;
+  /** 原名中的大写展示代码，保留 UK 等写法。 */
+  displayCode: string;
+  /** 原名开头的旗帜；未提供时为空字符串。 */
+  flag: string;
+  /** 用空格拼接的线路和服务商，不包含原序号。 */
+  suffix: string;
+}
 
 /**
  * 解析 COUNTRY-NN-PROVIDER 或 COUNTRY-LINE-NN-PROVIDER 格式。
@@ -62,7 +66,7 @@ function normalizeCountryCode(code) {
  * @param {*} name 原节点名；假值按空字符串处理，其余值转为字符串并去除首尾空白。
  * @returns {VikingName|null} 标准代码、展示代码、原旗帜及后缀；格式或地区无效时返回 null。
  */
-export function parseVikingName(name) {
+export function parseVikingName(name: unknown): VikingName | null {
   const trimmed = String(name || '').trim();
   const flagMatch = trimmed.match(/^([\u{1F1E6}-\u{1F1FF}]{2})\s*/u);
   const rawName = flagMatch ? trimmed.slice(flagMatch[0].length) : trimmed;
@@ -77,7 +81,7 @@ export function parseVikingName(name) {
   if (!countryCode) return null;
 
   let line = '';
-  let providerParts = [];
+  let providerParts: string[] = [];
   if (/^\d{1,3}$/.test(parts[1])) {
     providerParts = parts.slice(2);
   } else if (parts.length >= 4 && /^\d{1,3}$/.test(parts[2])) {
@@ -108,7 +112,7 @@ export function parseVikingName(name) {
  * @param {RegExp|null} [blockPattern] 识别前移除名称片段的正则；省略或 null 时不屏蔽。
  * @returns {string|null} 命中的标准地区代码；无法识别时返回 null。
  */
-export function identifyCountry(proxy, blockPattern) {
+export function identifyCountry(proxy: ProxyNode, blockPattern?: RegExp | null): string | null {
   if (!proxy.server) return null;
   const cleanName = blockPattern ? proxy.name.replace(blockPattern, '') : proxy.name;
   // Viking 格式先于域名剥离解析，避免改变线路或提供商名称的分段。

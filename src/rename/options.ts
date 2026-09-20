@@ -3,7 +3,11 @@
  * 保留 Sub-Store 的布尔值与字符串语义；参数用法统一维护在 README.md。
  */
 
-import { HOT_REGIONS, REGIONS_BY_CODE } from './regions.js';
+import { HOT_REGIONS, REGIONS_BY_CODE } from './regions.ts';
+import type { ScriptArguments } from '../types.ts';
+
+/** 地区标签中允许输出的字段。 */
+export type OutputField = 'FG' | 'ZH' | 'EN' | 'QC';
 
 const DEFAULT_FILTER_WORDS = [
   '过期',
@@ -28,7 +32,7 @@ const VALID_OUTPUT_FIELDS = new Set(['FG', 'ZH', 'EN', 'QC']);
  * @param {*} [value] hot 原始值；假值关闭筛选，真值按竖线分隔并忽略大小写。
  * @returns {Set<string>|null} 有效地区集合；关闭筛选时返回 null。
  */
-function parseHotRegions(value) {
+function parseHotRegions(value?: unknown): Set<string> | null {
   if (!value) return null;
   const codes = String(value)
     .toUpperCase()
@@ -48,7 +52,7 @@ function parseHotRegions(value) {
  * @returns {RegExp|null} 信息节点过滤正则；显式禁用时返回 null。
  * @throws {URIError} 自定义值包含无效的 URL 百分号编码时抛出。
  */
-function parseFilterPattern(value) {
+function parseFilterPattern(value?: unknown): RegExp | null {
   // 只有显式空值禁用过滤；false/0 仍应用内置过滤词。
   if (value !== undefined && String(value).trim() === '') return null;
   const customWords = value
@@ -73,7 +77,7 @@ function parseFilterPattern(value) {
  * @param {*} [value] retain 原始值；undefined 使用默认词表，字符串化后的 false 或 0 禁用保留。
  * @returns {string[]|null} 按竖线拆分并去空白的自定义关键词；禁用时返回 null。
  */
-function parseRetainKeywords(value) {
+function parseRetainKeywords(value?: unknown): string[] | null {
   if (value === undefined) return [];
   const text = String(value).trim();
   if (text === '0' || text.toLowerCase() === 'false') return null;
@@ -83,17 +87,23 @@ function parseRetainKeywords(value) {
     .filter((word) => word && word !== '1' && word.toLowerCase() !== 'true');
 }
 
-/**
- * @preserve
- * @typedef {Object} RenameOptions
- * @property {boolean} removeOriginalName 是否移除原名，默认 true。
- * @property {boolean} removeUniqueSequence 是否移除唯一完整名称的 01 序号，默认 false。
- * @property {Set<string>|null} hotRegions 允许保留的地区集合；null 表示不按地区过滤。
- * @property {RegExp|null} filterPattern 信息节点过滤正则；null 表示不执行名称过滤。
- * @property {RegExp|null} blockPattern 识别地区前移除文本的正则；null 表示不屏蔽。
- * @property {string[]|null} retainKeywords 追加到内置词表的关键词；null 表示禁用保留词。
- * @property {string[]} outputFields 按输出顺序排列的 FG、ZH、EN、QC 字段，默认 FG、EN。
- */
+/** 重命名流程使用的已解析选项。 */
+export interface RenameOptions {
+  /** 是否移除原名，默认 true。 */
+  removeOriginalName: boolean;
+  /** 是否移除唯一完整名称的 01 序号，默认 false。 */
+  removeUniqueSequence: boolean;
+  /** 允许保留的地区集合；null 表示不按地区过滤。 */
+  hotRegions: Set<string> | null;
+  /** 信息节点过滤正则；null 表示不执行名称过滤。 */
+  filterPattern: RegExp | null;
+  /** 识别地区前移除文本的正则；null 表示不屏蔽。 */
+  blockPattern: RegExp | null;
+  /** 追加到内置词表的关键词；null 表示禁用保留词。 */
+  retainKeywords: string[] | null;
+  /** 按输出顺序排列的地区字段，默认 FG、EN。 */
+  outputFields: OutputField[];
+}
 
 /**
  * 将 Sub-Store 参数归一化为过滤、地区选择、关键词保留和命名选项。
@@ -112,11 +122,11 @@ function parseRetainKeywords(value) {
  * @throws {URIError} filter 或 block 包含无效 URL 编码时抛出。
  * @throws {SyntaxError} 解码后的 block 无法编译为正则时抛出。
  */
-export function parseRenameOptions(args = {}) {
+export function parseRenameOptions(args: ScriptArguments | null = {}): RenameOptions {
   const outputFields = (args?.out ? String(args.out) : 'FG|EN')
     .split('|')
     .map((field) => field.trim().toUpperCase())
-    .filter((field) => VALID_OUTPUT_FIELDS.has(field));
+    .filter((field): field is OutputField => VALID_OUTPUT_FIELDS.has(field));
 
   return {
     removeOriginalName: args?.remove === undefined ? true : !!args.remove,

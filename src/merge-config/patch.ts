@@ -9,8 +9,11 @@ import {
   copyConfigValue,
   isConfigMap,
   requireArray,
-} from './value.js';
-import { checkGroupNames } from './validation.js';
+} from './value.ts';
+import { checkGroupNames } from './validation.ts';
+import type { ConfigMap } from '../types.ts';
+
+type NamedConfigMap = ConfigMap & { name: string };
 
 /**
  * 判断映射是否声明字段删除操作，仅检查自有 $delete 键，不验证其取值或额外字段。
@@ -19,7 +22,7 @@ import { checkGroupNames } from './validation.js';
  * @param {*} value 待识别的字段补丁值。
  * @returns {boolean} 值为配置映射且具有自有 $delete 键时返回 true。
  */
-function isDeletePatch(value) {
+function isDeletePatch(value: unknown): value is ConfigMap {
   return isConfigMap(value) && Object.hasOwn(value, '$delete');
 }
 
@@ -32,7 +35,7 @@ function isDeletePatch(value) {
  * @returns {void} 删除标记及字段数量符合要求时正常返回。
  * @throws {Error} $delete 不为 true 或补丁包含其他字段时抛出配置错误。
  */
-function validateDeletePatch(patch, path) {
+function validateDeletePatch(patch: ConfigMap, path: string): void {
   if (patch.$delete !== true || Object.keys(patch).length !== 1) {
     configError(`${path} 删除字段时只能填写 {$delete: true}`);
   }
@@ -49,12 +52,12 @@ function validateDeletePatch(patch, path) {
  * @returns {Array<*>} 应用补丁后的新数组，保留操作顺序，不自动去重或排序。
  * @throws {Error} 操作未知、字段类型不符、插入锚点不存在或待复制配置值无效时抛出错误。
  */
-function patchConfigArray(original, patch, path) {
+function patchConfigArray(original: unknown, patch: ConfigMap, path: string): unknown[] {
   const allowed = ['$remove', '$prepend', '$append', '$insert-before'];
   for (const key of Object.keys(patch)) {
     if (!allowed.includes(key)) configError(`${path} 未知数组操作：${key}`);
   }
-  let result = copyConfigValue(requireArray(original, path));
+  let result = copyConfigValue(requireArray(original, path)) as unknown[];
   if (Object.hasOwn(patch, '$remove')) {
     const removed = requireArray(patch.$remove, `${path}.$remove`);
     result = result.filter(
@@ -62,10 +65,13 @@ function patchConfigArray(original, patch, path) {
     );
   }
   if (Object.hasOwn(patch, '$prepend')) {
-    result = [...copyConfigValue(requireArray(patch.$prepend, `${path}.$prepend`)), ...result];
+    result = [
+      ...(copyConfigValue(requireArray(patch.$prepend, `${path}.$prepend`)) as unknown[]),
+      ...result,
+    ];
   }
   if (Object.hasOwn(patch, '$append')) {
-    result.push(...copyConfigValue(requireArray(patch.$append, `${path}.$append`)));
+    result.push(...(copyConfigValue(requireArray(patch.$append, `${path}.$append`)) as unknown[]));
   }
   if (Object.hasOwn(patch, '$insert-before')) {
     if (!isConfigMap(patch['$insert-before'])) configError(`${path}.$insert-before 必须是映射`);
@@ -75,7 +81,7 @@ function patchConfigArray(original, patch, path) {
       result.splice(
         index,
         0,
-        ...copyConfigValue(requireArray(values, `${path}.$insert-before.${anchor}`)),
+        ...(copyConfigValue(requireArray(values, `${path}.$insert-before.${anchor}`)) as unknown[]),
       );
     }
   }
@@ -93,12 +99,12 @@ function patchConfigArray(original, patch, path) {
  * @returns {Object<string, *>|Array<*>|string|boolean|number|null} 合并后的独立容器或替换标量。
  * @throws {Error} 配置键或值无效、补丁不合法、删除目标不存在或组操作失败时抛出错误。
  */
-export function mergeConfigValue(original, patch, path = '') {
+export function mergeConfigValue(original: unknown, patch: unknown, path: string = ''): unknown {
   if (!isConfigMap(patch)) return copyConfigValue(patch);
   if (Object.keys(patch).some((key) => key.startsWith('$'))) {
     return patchConfigArray(original, patch, path);
   }
-  const result = isConfigMap(original) ? copyConfigValue(original) : {};
+  const result: ConfigMap = isConfigMap(original) ? (copyConfigValue(original) as ConfigMap) : {};
   for (const [key, value] of Object.entries(patch)) {
     checkConfigKey(key);
     const field = path ? `${path}.${key}` : key;
@@ -125,11 +131,11 @@ export function mergeConfigValue(original, patch, path = '') {
  * @returns {Array<Object<string, *>>} 合并并定位后的新代理组列表，不与输入共享容器。
  * @throws {Error} 组名、字段补丁、删除操作、定位操作或定位目标不合法时抛出配置错误。
  */
-function mergeProxyGroups(original, patches) {
+function mergeProxyGroups(original: unknown, patches: unknown): NamedConfigMap[] {
   checkGroupNames(original, 'base.proxy-groups');
   checkGroupNames(patches, 'profile.proxy-groups');
-  const result = copyConfigValue(original);
-  for (const patch of patches) {
+  const result = copyConfigValue(original) as NamedConfigMap[];
+  for (const patch of patches as NamedConfigMap[]) {
     const { name, $before, $after, $delete, ...fields } = patch;
     const index = result.findIndex((group) => group.name === name);
     for (const key of Object.keys(fields)) {
@@ -149,7 +155,7 @@ function mergeProxyGroups(original, patches) {
       index < 0 ? {} : result[index],
       { name, ...fields },
       `proxy-groups.${name}`,
-    );
+    ) as NamedConfigMap;
     const position = Object.hasOwn(patch, '$before')
       ? '$before'
       : Object.hasOwn(patch, '$after')

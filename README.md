@@ -12,7 +12,7 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 | [scripts/dialer-proxy.js](scripts/dialer-proxy.js) | 为自建落地、oixCloud Edge 和一元机场节点设置中转的发布脚本；源码在 [src/dialer-proxy/](src/dialer-proxy/) |
 | [scripts/rename.js](scripts/rename.js) | 地区识别、名称整理和关键词过滤的发布脚本；源码在 [src/rename/](src/rename/) |
 
-维护脚本时修改 `src/`，在本地构建并验证；推送到 `master` 后由 GitHub Actions 自动构建并发布 `scripts/`，详见[贡献指南的自动构建与发布](CONTRIBUTING.md#自动构建与发布)。Sub-Store 使用下方四个单文件地址，无需安装开发依赖。
+维护脚本时修改 `src/` 中的 TypeScript 源码，在本地构建并验证；类型检查、工具和测试用法见[贡献指南的脚本开发](CONTRIBUTING.md#脚本开发)。推送到 `master` 后由 GitHub Actions 自动构建并发布 `scripts/`，详见[自动构建与发布](CONTRIBUTING.md#自动构建与发布)。Sub-Store 继续使用下方四个 JavaScript 单文件地址，无需安装开发依赖。
 
 ## 接入 Sub-Store
 

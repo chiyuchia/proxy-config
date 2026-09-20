@@ -4,7 +4,7 @@
  * 入口：function main(config)；接入与参数见 README.md。
  *
  * 此文件由 npm run build 自动生成，请修改 src/ 中的源码。
- * 源码入口：src/entries/config-overwrite.js。
+ * 源码入口：src/entries/config-overwrite.ts。
  */
 var __proxyConfigScript = (() => {
   var __defProp = Object.defineProperty;
@@ -25,13 +25,13 @@ var __proxyConfigScript = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // src/entries/config-overwrite.js
+  // src/entries/config-overwrite.ts
   var config_overwrite_exports = {};
   __export(config_overwrite_exports, {
     main: () => main
   });
 
-  // src/config-overwrite/member-policy.js
+  // src/config-overwrite/member-policy.ts
   var MEMBER_MODES = /* @__PURE__ */ new Set(["append", "replace", "manual"]);
   var MEMBER_FIELDS = /* @__PURE__ */ new Set(["mode", "exclude-dialer", "types"]);
   /**
@@ -94,10 +94,14 @@ var __proxyConfigScript = (() => {
       }
       types = new Set(policy.types.map((type) => type.trim().toLowerCase()));
     }
-    return { mode: policy.mode, excludeDialer: policy["exclude-dialer"] ?? false, types };
+    return {
+      mode: policy.mode,
+      excludeDialer: policy["exclude-dialer"] ?? false,
+      types
+    };
   }
 
-  // src/config-overwrite/group-members.js
+  // src/config-overwrite/group-members.ts
   /**
    * 判断值是否为包含非空白字符的字符串。
    * @preserve
@@ -205,7 +209,7 @@ var __proxyConfigScript = (() => {
     );
   }
 
-  // src/config-overwrite/provider.js
+  // src/config-overwrite/provider.ts
   /**
    * 创建 oixCloud provider，或复制已有配置并仅替换 URL，不修改输入对象。
    * @preserve
@@ -232,7 +236,7 @@ var __proxyConfigScript = (() => {
     };
   }
 
-  // src/config-overwrite/index.js
+  // src/config-overwrite/index.ts
   /**
    * 就地更新代理组成员并移除内部声明，按参数补入 oixCloud provider 的订阅地址。
    * 成员声明全部校验成功后才替换组数组；保留规则和注入节点。
@@ -256,7 +260,7 @@ var __proxyConfigScript = (() => {
     return config;
   }
 
-  // src/entries/config-overwrite.js
+  // src/entries/config-overwrite.ts
   /**
    * 读取 Sub-Store 的 $arguments，执行成员生成和可选的 provider URL 注入。
    * @preserve

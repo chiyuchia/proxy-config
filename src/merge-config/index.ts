@@ -3,9 +3,10 @@
  * 检查并移除来源标记，只保留 Sub-Store 注入的订阅节点。
  */
 
-import { configError, copyConfigValue, isConfigMap, requireArray } from './value.js';
-import { mergeConfigValue } from './patch.js';
-import { validateMergedConfig } from './validation.js';
+import { configError, copyConfigValue, isConfigMap, requireArray } from './value.ts';
+import { mergeConfigValue } from './patch.ts';
+import { validateMergedConfig } from './validation.ts';
+import type { ConfigMap, MergedConfig } from '../types.ts';
 
 /**
  * 校验来源标记，合并公共模板与客户端差异，再复制注入节点并校验当前配置引用。
@@ -18,9 +19,13 @@ import { validateMergedConfig } from './validation.js';
  * @returns {Object<string, *>} 完成合并及当前引用校验的新配置，不与输入共享容器。
  * @throws {Error} 来源标记、配置值、补丁、节点或当前配置引用不符合要求时抛出错误。
  */
-export function mergeConfigDocuments(base, profile, proxies) {
+export function mergeConfigDocuments(
+  base: unknown,
+  profile: unknown,
+  proxies?: unknown,
+): MergedConfig {
   if (!isConfigMap(base) || base.$base !== true) configError('base.yaml 必须包含 $base: true');
-  if (!isConfigMap(profile) || !['mihomo', 'stash'].includes(profile.$profile)) {
+  if (!isConfigMap(profile) || !(['mihomo', 'stash'] as unknown[]).includes(profile.$profile)) {
     configError('客户端差异必须包含 $profile: mihomo 或 stash');
   }
   // 标记可检测远程来源返回 HTML、颠倒的文件或错误的客户端差异，输出中不保留标记。
@@ -29,10 +34,10 @@ export function mergeConfigDocuments(base, profile, proxies) {
   if (Object.hasOwn(common, 'proxies') || Object.hasOwn(overlay, 'proxies')) {
     configError('配置源不能包含 proxies，节点由 Sub-Store 注入');
   }
-  const merged = mergeConfigValue(mergeConfigValue({}, common), overlay);
+  const merged = mergeConfigValue(mergeConfigValue({}, common), overlay) as ConfigMap;
   if (proxies !== undefined) {
     merged.proxies = copyConfigValue(requireArray(proxies, '输入 proxies'));
   }
   validateMergedConfig(merged);
-  return merged;
+  return merged as MergedConfig;
 }

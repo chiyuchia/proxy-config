@@ -3,7 +3,9 @@
  * 保留候选顺序，移除只供 Sub-Store 使用的生成策略，不依据组名决定行为。
  */
 
-import { readMemberPolicy } from './member-policy.js';
+import { readMemberPolicy } from './member-policy.ts';
+import type { MemberPolicy } from './member-policy.ts';
+import type { FinalProxyGroup, ProxyGroup, ProxyNode } from '../types.ts';
 
 /**
  * 判断值是否为包含非空白字符的字符串。
@@ -11,7 +13,7 @@ import { readMemberPolicy } from './member-policy.js';
  * @param {*} value 待检查的值。
  * @returns {boolean} 仅非空白字符串返回 true。
  */
-function hasText(value) {
+function hasText(value: unknown): value is string {
   return typeof value === 'string' && value.trim() !== '';
 }
 
@@ -22,7 +24,7 @@ function hasText(value) {
  * @param {string} filterText 非空的节点名称筛选表达式。
  * @returns {RegExp|null} 编译后的正则；语法或标记无效时为 null。
  */
-function compileGroupFilter(filterText) {
+function compileGroupFilter(filterText: string): RegExp | null {
   let flags = '';
   // Mihomo 支持的内联标记（如 (?i)）需转成 JavaScript RegExp 的 flags。
   const pattern = filterText.replace(/\(\?([dgimsuvy]+)\)/g, (_, inlineFlags) => {
@@ -33,7 +35,7 @@ function compileGroupFilter(filterText) {
   try {
     return new RegExp(pattern, flags);
   } catch (error) {
-    console.log(`[config-overwrite] 跳过无效 filter: ${filterText}, ${error.message}`);
+    console.log(`[config-overwrite] 跳过无效 filter: ${filterText}, ${(error as Error).message}`);
     return null;
   }
 }
@@ -45,7 +47,7 @@ function compileGroupFilter(filterText) {
  * @param {Array<Object>} candidates 已通过协议及中转限制的节点，需包含 name。
  * @returns {string[]} 按候选顺序返回匹配名称；无效正则返回空数组，尚未去重。
  */
-function matchingProxyNames(group, candidates) {
+function matchingProxyNames(group: ProxyGroup, candidates: ProxyNode[]): string[] {
   if (!hasText(group?.filter)) {
     return candidates.map(({ name }) => name);
   }
@@ -70,7 +72,7 @@ function matchingProxyNames(group, candidates) {
  * @param {string[]} added 待追加的节点名称。
  * @returns {string[]} 新建的有序成员数组，不修改输入数组。
  */
-function mergeProxyNames(existing, added) {
+function mergeProxyNames(existing: string[] | null | undefined, added: string[]): string[] {
   return [...new Set([...(existing ?? []), ...added])];
 }
 
@@ -81,7 +83,7 @@ function mergeProxyNames(existing, added) {
  * @param {{excludeDialer: boolean, types: Set<string>|null}} policy 已校验的策略；types 为 null 时不限协议。
  * @returns {boolean} 两项限制均满足时返回 true；dialer-proxy 按真值判断。
  */
-function matchesPolicy(proxy, policy) {
+function matchesPolicy(proxy: ProxyNode, policy: MemberPolicy): boolean {
   return (
     (!policy.excludeDialer || !proxy['dialer-proxy']) &&
     (!policy.types || policy.types.has(String(proxy.type).toLowerCase()))
@@ -98,7 +100,12 @@ function matchesPolicy(proxy, policy) {
  * @param {Map<string, Object>} proxiesByName 节点名称索引，用于识别已有成员中的真实节点。
  * @returns {Object} 新建的代理组对象；不修改输入，未更新的嵌套字段保留引用。
  */
-function updateGroup(group, policy, allProxies, proxiesByName) {
+function updateGroup(
+  group: ProxyGroup,
+  policy: MemberPolicy,
+  allProxies: ProxyNode[],
+  proxiesByName: Map<string, ProxyNode>,
+): FinalProxyGroup {
   const { 'x-substore': metadata, ...output } = group;
   if (policy.mode === 'manual') return output;
 
@@ -125,9 +132,13 @@ function updateGroup(group, policy, allProxies, proxiesByName) {
  * @returns {Array<Object>} 顺序不变、移除内部声明后的新代理组数组。
  * @throws {Error} 任一组的成员声明缺失、包含未知字段或字段值无效。
  */
-export function updateGroupMembers(groups, proxies) {
+export function updateGroupMembers(
+  groups: ProxyGroup[],
+  proxies: (ProxyNode | null)[],
+): FinalProxyGroup[] {
   const policies = groups.map(readMemberPolicy);
-  const allProxies = proxies.filter((proxy) => proxy?.name);
+  // 名称筛选已排除 null，保持原筛选表达式后收窄节点类型。
+  const allProxies = proxies.filter((proxy) => proxy?.name) as ProxyNode[];
   const proxiesByName = new Map(allProxies.map((proxy) => [proxy.name, proxy]));
   return groups.map((group, index) =>
     updateGroup(group, policies[index], allProxies, proxiesByName),

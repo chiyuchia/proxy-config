@@ -3,7 +3,19 @@
  * 记录顺序参与识别优先级；新增地区时填写完整记录，不调整已有顺序。
  */
 
-export const REGIONS = [
+/** 地区识别与输出标签所需的标准记录。 */
+export interface Region {
+  /** 标准地区代码。 */
+  code: string;
+  /** 中文地区名称，参与名称识别。 */
+  chineseName: string;
+  /** 英文地区名称，参与名称识别。 */
+  englishName: string;
+  /** 用于识别名称的地区旗帜。 */
+  flag: string;
+}
+
+export const REGIONS: Region[] = [
   { code: 'CN', chineseName: '中国', englishName: 'China', flag: '🇨🇳' },
   { code: 'HK', chineseName: '香港', englishName: 'Hong Kong', flag: '🇭🇰' },
   { code: 'MO', chineseName: '澳门', englishName: 'Macao', flag: '🇲🇴' },
@@ -201,7 +213,9 @@ export const REGIONS = [
   { code: 'TL', chineseName: '东帝汶', englishName: 'Timor-Leste', flag: '🇹🇱' },
 ];
 
-export const REGIONS_BY_CODE = new Map(REGIONS.map((region) => [region.code, region]));
+export const REGIONS_BY_CODE = new Map<string, Region>(
+  REGIONS.map((region) => [region.code, region]),
+);
 
 // hot=true 的默认筛选范围，也是所有输出使用的排序优先级。
-export const HOT_REGIONS = new Set(['HK', 'TW', 'CN', 'JP', 'SG', 'US']);
+export const HOT_REGIONS = new Set<string>(['HK', 'TW', 'CN', 'JP', 'SG', 'US']);

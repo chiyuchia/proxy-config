@@ -4,9 +4,10 @@
  */
 
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { updateGroupMembers } from '../src/config-overwrite/group-members.js';
-import { overwriteConfig } from '../src/config-overwrite/index.js';
+import test, { type Mock } from 'node:test';
+import { updateGroupMembers } from '../src/config-overwrite/group-members.ts';
+import { overwriteConfig } from '../src/config-overwrite/index.ts';
+import type { ProxyConfig, ProxyGroup, ProxyNode } from '../src/types.ts';
 
 /**
  * 从测试配置中读取指定代理组的成员，供结果断言使用。
@@ -14,8 +15,8 @@ import { overwriteConfig } from '../src/config-overwrite/index.js';
  * @param {string} name 必须存在的代理组名称。
  * @returns {string[]|undefined} 该组的 proxies 字段。
  */
-function members(config, name) {
-  return config['proxy-groups'].find((group) => group.name === name).proxies;
+function members(config: ProxyConfig, name: string): string[] | undefined {
+  return config['proxy-groups']!.find((group) => group.name === name)!.proxies;
 }
 
 /**
@@ -24,7 +25,10 @@ function members(config, name) {
  * @param {Object} [options={}] 合并到 members 中的附加字段。
  * @returns {Object} 可展开到代理组上的 x-substore 声明。
  */
-function policy(mode, options = {}) {
+function policy(
+  mode: unknown,
+  options: Record<string, unknown> = {},
+): Pick<ProxyGroup, 'x-substore'> {
   return { 'x-substore': { members: { mode, ...options } } };
 }
 
@@ -33,7 +37,7 @@ function policy(mode, options = {}) {
  * @param {*} value 待冻结的对象、数组或原始值。
  * @returns {*} 同一输入值；对象及其后代均已冻结。
  */
-function freezeDeep(value) {
+function freezeDeep<T>(value: T): T {
   if (value && typeof value === 'object') {
     Object.values(value).forEach(freezeDeep);
     Object.freeze(value);
@@ -55,7 +59,7 @@ test('invalid filters do not add nodes and replace groups drop stale members', (
 
   assert.deepEqual(members(config, '普通筛选组'), ['DIRECT']);
   assert.deepEqual(members(config, '任意重建组'), []);
-  assert.equal(console.log.mock.calls.length, 2);
+  assert.equal((console.log as Mock<typeof console.log>).mock.calls.length, 2);
 });
 
 test('inline flags match each node independently, including stateful g/y filters', () => {
@@ -87,7 +91,7 @@ test('append preserves candidate order and manual preserves duplicates without n
       { name: 'JP 02' },
       { name: '链式节点', 'dialer-proxy': '中转' },
       { name: '' },
-      null,
+      null as unknown as ProxyNode, // 故意注入空节点，验证运行时会忽略它。
     ],
     'proxy-groups': [
       { name: '普通组', proxies: ['DIRECT', 'HK 01', 'DIRECT'], ...policy('append') },
@@ -112,11 +116,11 @@ test('append preserves candidate order and manual preserves duplicates without n
 });
 
 test('replace uses declared actual protocols and direct nodes on every fresh generation', () => {
-  const vless = { name: '良心云 HK CT Hy2', type: 'VLESS' };
-  const hy2 = { name: '良心云 SG CT VLESS', type: 'hy2' };
-  const hysteria2 = { name: '良心云 JP CT', type: 'HYSTERIA2' };
-  const viking = { name: 'VikingLinks HK Go', type: 'trojan' };
-  const blowing = { name: '吹雪云 SG 电信', type: 'ss' };
+  const vless: ProxyNode = { name: '良心云 HK CT Hy2', type: 'VLESS' };
+  const hy2: ProxyNode = { name: '良心云 SG CT VLESS', type: 'hy2' };
+  const hysteria2: ProxyNode = { name: '良心云 JP CT', type: 'HYSTERIA2' };
+  const viking: ProxyNode = { name: 'VikingLinks HK Go', type: 'trojan' };
+  const blowing: ProxyNode = { name: '吹雪云 SG 电信', type: 'ss' };
   const template = [
     {
       name: '任意 VLESS 名单',
@@ -148,7 +152,7 @@ test('replace uses declared actual protocols and direct nodes on every fresh gen
    * @param {Object[]} proxies 本次生成使用的节点数组。
    * @returns {Object} 完成成员覆写的新配置，模板本身不变。
    */
-  const generate = (proxies) =>
+  const generate = (proxies: ProxyNode[]) =>
     overwriteConfig({ proxies, 'proxy-groups': structuredClone(template) });
   const config = generate([vless, hy2, hysteria2, viking, blowing]);
 
@@ -202,13 +206,13 @@ test('renaming a group cannot change its declared member behavior', () => {
     { name: '链式节点', type: 'hysteria2', 'dialer-proxy': '上游组' },
   ];
   const names = ['新建组', '中转', '🎯 全球直连', '✈️ 良心云 亚太', '✈️ 良心云 Hy2'];
-  for (const mode of ['append', 'replace', 'manual']) {
+  for (const mode of ['append', 'replace', 'manual'] as const) {
     const groups = names.map((name) => ({
       name,
       proxies: ['DIRECT', 'DIRECT'],
       ...policy(mode),
     }));
-    const result = updateGroupMembers(groups, nodes);
+    const result: ProxyGroup[] = updateGroupMembers(groups, nodes);
     const expected = {
       append: ['DIRECT', '直接节点', '链式节点'],
       replace: ['直接节点', '链式节点'],
@@ -226,7 +230,7 @@ test('member updates return clean groups without mutating source groups or proxy
   ]);
   const proxies = freezeDeep([{ name: 'HK', type: 'vless', server: 'example.invalid' }]);
   const before = structuredClone({ groups, proxies });
-  const result = updateGroupMembers(groups, proxies);
+  const result: ProxyGroup[] = updateGroupMembers(groups, proxies);
 
   assert.notEqual(result, groups);
   assert.deepEqual({ groups, proxies }, before);
@@ -246,7 +250,7 @@ test('serialized final output must be merged with declared policies again before
     'proxy-groups': [{ name: '需要声明的组', ...policy('append') }],
   };
   const first = overwriteConfig(structuredClone(template));
-  const serialized = JSON.parse(JSON.stringify(first));
+  const serialized = JSON.parse(JSON.stringify(first)) as ProxyConfig;
   const before = structuredClone(serialized);
 
   assert.throws(() => overwriteConfig(serialized), /config-overwrite/);
@@ -255,7 +259,7 @@ test('serialized final output must be merged with declared policies again before
 });
 
 test('all group declarations are validated before any config or provider mutation', async (t) => {
-  const cases = [
+  const cases: [string, Record<string, unknown>, string][] = [
     ['missing extension', {}, 'x-substore'],
     ['null extension', { 'x-substore': null }, 'x-substore'],
     ['array extension', { 'x-substore': [] }, 'x-substore'],
@@ -302,10 +306,11 @@ test('all group declarations are validated before any config or provider mutatio
 
       assert.throws(
         () => overwriteConfig(config, { oixCloudEdgePath: 'https://example.com/new' }),
-        (error) => {
-          assert.match(error.message, /config-overwrite/);
-          assert.ok(error.message.includes('声明错误组'), error.message);
-          assert.ok(error.message.includes(field), error.message);
+        (error: unknown) => {
+          const failure = error as Error;
+          assert.match(failure.message, /config-overwrite/);
+          assert.ok(failure.message.includes('声明错误组'), failure.message);
+          assert.ok(failure.message.includes(field), failure.message);
           return true;
         },
       );
@@ -332,7 +337,7 @@ test('provider URL injection preserves client settings and unrelated providers',
 
   overwriteConfig(config, { oixCloudEdgePath: 'https://example.com/new' });
 
-  assert.deepEqual(config['proxy-providers'].oixCloud, {
+  assert.deepEqual(config['proxy-providers']!.oixCloud, {
     ...oixCloud,
     url: 'https://example.com/new',
   });
@@ -345,12 +350,12 @@ test('provider URL injection preserves client settings and unrelated providers',
 });
 
 test('provider defaults are only created when an explicit URL is supplied', () => {
-  const config = {};
+  const config: ProxyConfig = {};
   overwriteConfig(config);
   assert.deepEqual(config, { 'proxy-groups': [] });
 
   overwriteConfig(config, { oixCloudEdgePath: 'https://example.com/subscription' });
-  assert.deepEqual(config['proxy-providers'].oixCloud, {
+  assert.deepEqual((config as ProxyConfig)['proxy-providers']!.oixCloud, {
     type: 'http',
     url: 'https://example.com/subscription',
     path: './proxy_provider/oixCloud.yaml',

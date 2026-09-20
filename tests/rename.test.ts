@@ -8,7 +8,21 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import vm from 'node:vm';
-import { renameProxies } from '../src/rename/index.js';
+import { renameProxies } from '../src/rename/index.ts';
+import type { ProxyNode, ScriptArguments } from '../src/types.ts';
+
+interface TestNode extends ProxyNode {
+  id: string;
+}
+interface RenameRuntime {
+  $arguments: ScriptArguments;
+  operator: (
+    proxies: TestNode[],
+    targetPlatform: string,
+    context: Record<string, unknown>,
+  ) => Promise<TestNode[]>;
+}
+type RenameSession = (proxies: TestNode[], args?: ScriptArguments) => Promise<TestNode[]>;
 
 const scriptPath = fileURLToPath(new URL('../scripts/rename.js', import.meta.url));
 
@@ -17,8 +31,8 @@ const scriptPath = fileURLToPath(new URL('../scripts/rename.js', import.meta.url
  * @returns {Function} 接收节点与参数、返回普通节点数组 Promise 的会话执行函数。
  * @throws {Error} 发布脚本读取或加载失败时抛出。
  */
-function createRenameSession() {
-  const externalCalls = [];
+function createRenameSession(): RenameSession {
+  const externalCalls: string[] = [];
   const context = vm.createContext({
     $arguments: {},
     console: {
@@ -53,7 +67,7 @@ function createRenameSession() {
     clearTimeout() {
       externalCalls.push('clearTimeout');
     },
-  });
+  }) as unknown as RenameRuntime;
   vm.runInContext(fs.readFileSync(scriptPath, 'utf8'), context, {
     filename: scriptPath,
   });
@@ -64,12 +78,12 @@ function createRenameSession() {
    * @returns {Promise<Object[]>} 经过 JSON 转换、可跨 VM 进行断言的结果节点。
    * @throws {Error} 重命名失败或发现外部调用时抛出。
    */
-  return async (proxies, args = {}) => {
+  return async (proxies: TestNode[], args: ScriptArguments = {}): Promise<TestNode[]> => {
     context.$arguments = args;
     const result = await context.operator(proxies, 'ClashMeta', {});
     // A caught fetch failure alone cannot prove processing stayed offline.
     assert.deepEqual(externalCalls, [], 'renaming must not use network requests or timers');
-    return JSON.parse(JSON.stringify(result));
+    return JSON.parse(JSON.stringify(result)) as TestNode[];
   };
 }
 
@@ -80,7 +94,7 @@ function createRenameSession() {
  * @returns {Promise<Object[]>} 发布脚本返回并转换为普通对象的节点数组。
  * @throws {Error} 会话执行失败或触发禁止的外部调用时抛出。
  */
-async function rename(proxies, args = {}) {
+async function rename(proxies: TestNode[], args: ScriptArguments = {}): Promise<TestNode[]> {
   return createRenameSession()(proxies, args);
 }
 
@@ -91,7 +105,7 @@ async function rename(proxies, args = {}) {
  * @param {Object} [extra={}] 附加节点字段或默认字段覆盖值。
  * @returns {Object} 新建的测试节点对象。
  */
-function node(id, name, extra = {}) {
+function node(id: string, name: string, extra: Partial<TestNode> = {}): TestNode {
   return { id, name, server: '192.0.2.1', port: 443, type: 'vless', ...extra };
 }
 
@@ -189,18 +203,18 @@ test('block removes misleading text only for recognition and preserves the origi
 });
 
 test('the source API accepts explicit arguments and logger without Sub-Store globals', () => {
-  const messages = [];
+  const messages: string[] = [];
   const result = renameProxies(
     [node('source', '东京')],
     { out: 'EN', retain: false },
     {
       /**
        * 收集源码接口的日志，以验证显式传入的日志依赖被使用。
-       * @param {string} message 重命名流程产生的日志文本。
+       * @param {unknown} message 日志接口传入的值，本测试期望重命名流程输出文本。
        * @returns {void} 将文本追加到 messages，无返回值。
        */
-      log(message) {
-        messages.push(message);
+      log(message: unknown): void {
+        messages.push(message as string);
       },
     },
   );

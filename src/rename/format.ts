@@ -3,9 +3,12 @@
  * 保留 Viking 原旗帜与展示代码，并按完整名称处理唯一节点的序号。
  */
 
-import { parseVikingName } from './identify.js';
-import { extractRetainKeywords } from './keywords.js';
-import { REGIONS_BY_CODE } from './regions.js';
+import { parseVikingName } from './identify.ts';
+import { extractRetainKeywords } from './keywords.ts';
+import { REGIONS_BY_CODE } from './regions.ts';
+import type { VikingName } from './identify.ts';
+import type { OutputField, RenameOptions } from './options.ts';
+import type { ProxyNode } from '../types.ts';
 
 /**
  * 将地区代码中的英文字母转为区域指示符，TW 按现有展示约定使用萨摩亚旗帜。
@@ -14,7 +17,7 @@ import { REGIONS_BY_CODE } from './regions.js';
  * @param {string|null} [countryCode] 地区代码；假值使用通用地球图标。
  * @returns {string} 地区旗帜，或缺少代码时的 🌐。
  */
-function getFlagEmoji(countryCode) {
+function getFlagEmoji(countryCode?: string | null): string {
   if (!countryCode) return '🌐';
   if (countryCode.toUpperCase() === 'TW') return '🇼🇸';
   return countryCode
@@ -28,11 +31,15 @@ function getFlagEmoji(countryCode) {
  *
  * @preserve
  * @param {string} countryCode 已识别的标准地区代码。
- * @param {import('./identify.js').VikingName|null} vikingName Viking 解析结果；null 使用标准地区展示。
+ * @param {import('./identify.ts').VikingName|null} vikingName Viking 解析结果；null 使用标准地区展示。
  * @param {string[]} outputFields 输出字段顺序，可包含 FG、ZH、EN、QC。
  * @returns {string} 用空格连接的地区标签。
  */
-function formatCountryLabel(countryCode, vikingName, outputFields) {
+function formatCountryLabel(
+  countryCode: string,
+  vikingName: VikingName | null,
+  outputFields: OutputField[],
+): string {
   const region = REGIONS_BY_CODE.get(countryCode);
   const values = {
     FG: vikingName?.flag || getFlagEmoji(countryCode),
@@ -53,11 +60,16 @@ function formatCountryLabel(countryCode, vikingName, outputFields) {
  * @param {string} [proxy._subName] 追加到名称末尾的订阅名；假值不追加。
  * @param {string} countryCode 已识别的标准地区代码。
  * @param {number} sequence 当前订阅及地区分组中的序号，从 1 开始。
- * @param {import('./options.js').RenameOptions} options 已解析的输出格式和保留选项。
+ * @param {import('./options.ts').RenameOptions} options 已解析的输出格式和保留选项。
  * @returns {string} 格式化后的完整节点名称。
  * @throws {SyntaxError} 需要提取关键词且某个关键词无法编译为正则时抛出。
  */
-export function formatProxyName(proxy, countryCode, sequence, options) {
+export function formatProxyName(
+  proxy: ProxyNode,
+  countryCode: string,
+  sequence: number,
+  options: RenameOptions,
+): string {
   // 输出按原名解析 Viking 格式；block 只参与地区识别，不能影响后缀。
   const parsedName = parseVikingName(proxy.name);
   const vikingName = parsedName?.countryCode === countryCode ? parsedName : null;
@@ -71,7 +83,7 @@ export function formatProxyName(proxy, countryCode, sequence, options) {
    * @param {string} name 需要保留的名称或关键词片段。
    * @returns {string} 用空格连接的片段与订阅名。
    */
-  const appendSubName = (name) => [name, subName].filter(Boolean).join(' ');
+  const appendSubName = (name: string): string => [name, subName].filter(Boolean).join(' ');
   /**
    * 用管道分隔非空命名片段。
    *
@@ -79,7 +91,7 @@ export function formatProxyName(proxy, countryCode, sequence, options) {
    * @param {...string} parts 按输出顺序传入的地区序号和名称后缀。
    * @returns {string} 用“ | ”连接且不含空片段的名称。
    */
-  const joinNameParts = (...parts) => parts.filter(Boolean).join(' | ');
+  const joinNameParts = (...parts: string[]): string => parts.filter(Boolean).join(' | ');
 
   if (!options.removeOriginalName) return joinNameParts(baseName, appendSubName(proxy.name));
   if (!options.retainKeywords) return joinNameParts(baseName, subName);
@@ -97,7 +109,7 @@ export function formatProxyName(proxy, countryCode, sequence, options) {
  * @param {Array<{name: string}>} proxies 已完成命名和筛选的节点，亦可包含保留原名的未知地区节点。
  * @returns {void} 无返回值，修改结果保存在原节点对象中。
  */
-export function removeUniqueSequence(proxies) {
+export function removeUniqueSequence(proxies: Array<{ name: string }>): void {
   /**
    * 移除位于名称末尾或管道后缀之前的两位序号，用于归并完整名称。
    *
@@ -105,9 +117,9 @@ export function removeUniqueSequence(proxies) {
    * @param {string} name 待计算归并键的完整名称。
    * @returns {string} 移除两位序号但保留原管道后缀的名称；不匹配时返回原文。
    */
-  const withoutSequence = (name) =>
-    name.replace(/\s+\d{2}(\s*\|.*)?$/, (_, suffix) => suffix || '');
-  const nameCounts = new Map();
+  const withoutSequence = (name: string): string =>
+    name.replace(/\s+\d{2}(\s*\|.*)?$/, (_: string, suffix?: string) => suffix || '');
+  const nameCounts = new Map<string, number>();
   for (const proxy of proxies) {
     const baseName = withoutSequence(proxy.name);
     nameCounts.set(baseName, (nameCounts.get(baseName) || 0) + 1);

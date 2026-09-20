@@ -3,8 +3,9 @@
  * 按组内声明就地更新成员和 provider，移除内部声明，保留原有规则与订阅节点。
  */
 
-import { updateGroupMembers } from './group-members.js';
-import { buildOixCloudProvider } from './provider.js';
+import { updateGroupMembers } from './group-members.ts';
+import { buildOixCloudProvider } from './provider.ts';
+import type { OverwrittenConfig, ProxyConfig, ScriptArguments } from '../types.ts';
 
 /**
  * 就地更新代理组成员并移除内部声明，按参数补入 oixCloud provider 的订阅地址。
@@ -16,7 +17,10 @@ import { buildOixCloudProvider } from './provider.js';
  * @returns {Object} 传入的同一个配置对象，其中组已不再包含 x-substore 声明。
  * @throws {Error} 任一组的成员声明无效，包括直接再次覆写已移除声明的最终配置。
  */
-export function overwriteConfig(config, args = {}) {
+export function overwriteConfig<T extends ProxyConfig>(
+  config: T,
+  args: ScriptArguments | null = {},
+): OverwrittenConfig<T> {
   config['proxy-groups'] = updateGroupMembers(
     config?.['proxy-groups'] ?? [],
     config?.proxies ?? [],
@@ -28,5 +32,6 @@ export function overwriteConfig(config, args = {}) {
     config['proxy-providers'] = { ...providers, oixCloud };
   }
 
-  return config;
+  // 成员计算成功后已在原对象上写入组数组，返回类型反映这项后置条件。
+  return config as OverwrittenConfig<T>;
 }

@@ -6,7 +6,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
-import { assignDialerProxy } from '../src/dialer-proxy/index.js';
+import { assignDialerProxy } from '../src/dialer-proxy/index.ts';
+import type { ProxyNode } from '../src/types.ts';
+
+type DialerOperator = (
+  proxies: ProxyNode[],
+  targetPlatform?: string,
+  context?: Record<string, unknown>,
+) => ProxyNode[];
 
 const script = fs.readFileSync(new URL('../scripts/dialer-proxy.js', import.meta.url), 'utf8');
 
@@ -16,10 +23,10 @@ const script = fs.readFileSync(new URL('../scripts/dialer-proxy.js', import.meta
  * @returns {Function} 接收节点、目标平台和上下文的 operator 函数。
  * @throws {Error} 发布脚本加载或执行失败时抛出。
  */
-function loadOperator(globals = {}) {
+function loadOperator(globals: Record<string, unknown> = {}): DialerOperator {
   const context = vm.createContext(globals);
   vm.runInContext(script, context, { filename: 'scripts/dialer-proxy.js' });
-  return context.operator;
+  return (context as unknown as { operator: DialerOperator }).operator;
 }
 
 test('self-hosted mode preserves the original case-sensitive landing-node rules', () => {

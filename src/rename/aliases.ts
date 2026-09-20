@@ -3,7 +3,7 @@
  * 按声明顺序替换为标准地区名称，各条正则分别保留大小写匹配规则。
  */
 
-export const REGION_ALIASES = {
+export const REGION_ALIASES: Record<string, RegExp> = {
   香港: /Hongkong|HONG KONG|HKG|港(?!.*线)/gi,
   台湾: /新台|新北|TPE|TSA|台(?!.*线)/g,
   Taiwan: /Taipei/g,

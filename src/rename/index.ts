@@ -3,10 +3,11 @@
  * 参数和日志对象由调用者提供，未识别节点默认保留原名。
  */
 
-import { parseRenameOptions } from './options.js';
-import { identifyCountry } from './identify.js';
-import { formatProxyName, removeUniqueSequence } from './format.js';
-import { HOT_REGIONS } from './regions.js';
+import { parseRenameOptions } from './options.ts';
+import { identifyCountry } from './identify.ts';
+import { formatProxyName, removeUniqueSequence } from './format.ts';
+import { HOT_REGIONS } from './regions.ts';
+import type { Logger, ProxyNode, ScriptArguments } from '../types.ts';
 
 /**
  * 按热门地区、其他已识别地区、未知地区排序，已识别节点再按地区代码和最终名称排序。
@@ -18,7 +19,11 @@ import { HOT_REGIONS } from './regions.js';
  * @param {Map<Object, string>} countries 按节点对象引用保存的已识别地区代码。
  * @returns {number} 负数表示 a 在前，正数表示 b 在前，0 表示排序等价。
  */
-function compareProxiesByRegion(a, b, countries) {
+function compareProxiesByRegion<T extends ProxyNode>(
+  a: T,
+  b: T,
+  countries: ReadonlyMap<T, string>,
+): number {
   const countryA = countries.get(a);
   const countryB = countries.get(b);
   if (!countryA && !countryB) return 0;
@@ -44,7 +49,11 @@ function compareProxiesByRegion(a, b, countries) {
  * @throws {URIError} filter 或 block 参数包含无效 URL 编码时抛出。
  * @throws {SyntaxError} block 或保留关键词无法编译为正则时抛出。
  */
-export function renameProxies(proxies, args = {}, logger = console) {
+export function renameProxies<T extends ProxyNode>(
+  proxies: T[],
+  args: ScriptArguments | null = {},
+  logger: Logger = console,
+): T[] {
   const options = parseRenameOptions(args);
   const hotOnly = options.hotRegions !== null;
   logger.log(
@@ -53,14 +62,14 @@ export function renameProxies(proxies, args = {}, logger = console) {
 
   if (options.filterPattern) {
     const before = proxies.length;
-    proxies = proxies.filter((proxy) => !options.filterPattern.test(proxy.name));
+    proxies = proxies.filter((proxy) => !options.filterPattern!.test(proxy.name));
     logger.log(
       `[geo-tag] filter 过滤: ${before - proxies.length} 个节点被丢弃，剩余 ${proxies.length} 个`,
     );
   }
 
   // 逐节点识别；即便 server 相同也不共享识别结果。
-  const countries = new Map();
+  const countries = new Map<T, string>();
   let nameHitCount = 0;
   for (const proxy of proxies) {
     const countryCode = identifyCountry(proxy, options.blockPattern);
@@ -73,7 +82,7 @@ export function renameProxies(proxies, args = {}, logger = console) {
   logger.log(`[geo-tag] 名称命中 ${nameHitCount}/${proxies.length} 个节点`);
 
   // 序号按订阅和地区分别累计，先命名再过滤 hot，保留源节点的计数顺序。
-  const sequenceByGroup = new Map();
+  const sequenceByGroup = new Map<string, number>();
   const renamedProxies = proxies.map((proxy) => {
     const countryCode = countries.get(proxy);
     if (!countryCode) return proxy;
@@ -91,7 +100,7 @@ export function renameProxies(proxies, args = {}, logger = console) {
   const result = hotOnly
     ? renamedProxies.filter((proxy) => {
         const code = countries.get(proxy);
-        return code && options.hotRegions.has(code);
+        return code && options.hotRegions!.has(code);
       })
     : renamedProxies;
   if (hotOnly) logger.log(`[geo-tag] hot 过滤后剩余: ${result.length} 个节点`);
