@@ -1,5 +1,5 @@
 /**
- * @file 验证配置覆写的节点筛选、成员更新与 provider 注入行为。
+ * @file 验证配置覆写的节点筛选、成员更新与运行时 provider 声明处理。
  * 覆盖声明式成员策略、严格验证、正则状态、输入保留及已有 provider 设置保留。
  */
 
@@ -20,16 +20,16 @@ function members(config: ProxyConfig, name: string): string[] | undefined {
 }
 
 /**
- * 构造成员生成声明；允许传入无效值以覆盖声明校验的失败场景。
+ * 构造成员生成声明和默认 select 组类型；允许无效声明值以覆盖失败场景。
  * @param {*} mode 成员生成模式或测试用的无效模式值。
  * @param {Object} [options={}] 合并到 members 中的附加字段。
- * @returns {Object} 可展开到代理组上的 x-substore 声明。
+ * @returns {Object} 可展开到代理组上的 type 与 x-substore 声明。
  */
 function policy(
   mode: unknown,
   options: Record<string, unknown> = {},
-): Pick<ProxyGroup, 'x-substore'> {
-  return { 'x-substore': { members: { mode, ...options } } };
+): Pick<ProxyGroup, 'type' | 'x-substore'> {
+  return { type: 'select', 'x-substore': { members: { mode, ...options } } };
 }
 
 /**
@@ -85,17 +85,10 @@ test('append preserves candidate order and manual preserves duplicates without n
     ...policy('manual', { 'exclude-dialer': true, types: ['vless'] }),
   };
   const config = {
-    proxies: [
-      { name: 'JP 02' },
-      { name: 'HK 01' },
-      { name: 'JP 02' },
-      { name: '链式节点', 'dialer-proxy': '中转' },
-      { name: '' },
-      null as unknown as ProxyNode, // 故意注入空节点，验证运行时会忽略它。
-    ],
+    proxies: [{ name: 'JP 02' }, { name: 'HK 01' }, { name: '链式节点', 'dialer-proxy': '中转' }],
     'proxy-groups': [
       { name: '普通组', proxies: ['DIRECT', 'HK 01', 'DIRECT'], ...policy('append') },
-      { name: '中转', proxies: ['DIRECT'], ...policy('append', { 'exclude-dialer': false }) },
+      { name: '中转', proxies: ['DIRECT'], ...policy('append', { 'exclude-dialer': true }) },
       { name: '🎯 全球直连', proxies: ['DIRECT'], ...policy('append') },
       manual,
     ],
@@ -106,13 +99,28 @@ test('append preserves candidate order and manual preserves duplicates without n
 
   assert.equal(overwriteConfig(config), config);
   assert.deepEqual(members(config, '普通组'), ['DIRECT', 'HK 01', 'JP 02', '链式节点']);
-  assert.deepEqual(members(config, '中转'), ['DIRECT', 'JP 02', 'HK 01', '链式节点']);
+  assert.deepEqual(members(config, '中转'), ['DIRECT', 'JP 02', 'HK 01']);
   assert.deepEqual(members(config, '🎯 全球直连'), ['DIRECT', 'JP 02', 'HK 01', '链式节点']);
   assert.deepEqual(members(config, '任意手工名单'), ['DIRECT', 'DIRECT', '链式节点']);
   assert.ok(config['proxy-groups'].every((group) => !Object.hasOwn(group, 'x-substore')));
   assert.ok(Object.hasOwn(manual, 'x-substore'));
   assert.equal(config.rules, rules);
   assert.equal(config.proxies, proxies);
+});
+
+test('member selection deduplicates names and skips empty nodes before final validation', () => {
+  const proxies = [{ name: 'HK 01' }, { name: 'HK 01' }, { name: '' }, null];
+  const groups = [
+    { name: '追加组', proxies: ['DIRECT', 'HK 01', 'DIRECT'], ...policy('append') },
+    { name: '重建组', proxies: ['旧成员'], ...policy('replace') },
+  ];
+
+  const result = updateGroupMembers(groups, proxies);
+
+  assert.deepEqual(
+    result.map((group) => group.proxies),
+    [['DIRECT', 'HK 01'], ['HK 01']],
+  );
 });
 
 test('replace uses declared actual protocols and direct nodes on every fresh generation', () => {
@@ -146,6 +154,7 @@ test('replace uses declared actual protocols and direct nodes on every fresh gen
       proxies: ['旧地区节点'],
       ...policy('replace', { 'exclude-dialer': true }),
     },
+    { name: '中转', proxies: ['DIRECT'], ...policy('manual') },
   ];
   /**
    * 复制成员策略模板并注入当前节点，模拟每次从新合并配置开始生成。
@@ -192,6 +201,7 @@ test('append clears ineligible existing nodes but preserves static groups and ig
         ...policy('append', { 'exclude-dialer': true, types: ['vless'] }),
       },
       { name: '子组', proxies: ['DIRECT'], ...policy('manual') },
+      { name: '上游组', proxies: ['DIRECT'], ...policy('manual') },
     ],
   };
 
@@ -296,7 +306,7 @@ test('all group declarations are validated before any config or provider mutatio
         proxies: [{ name: 'HK', type: 'vless' }],
         'proxy-groups': [
           { name: '先验证的正常组', proxies: ['DIRECT'], ...policy('append') },
-          { name: '声明错误组', proxies: ['旧成员'], ...declaration },
+          { name: '声明错误组', type: 'select', proxies: ['旧成员'], ...declaration },
         ],
         'proxy-providers': { oixCloud: { type: 'http', url: 'https://example.com/old' } },
       };
@@ -305,7 +315,7 @@ test('all group declarations are validated before any config or provider mutatio
       const providers = config['proxy-providers'];
 
       assert.throws(
-        () => overwriteConfig(config, { oixCloudEdgePath: 'https://example.com/new' }),
+        () => overwriteConfig(config),
         (error: unknown) => {
           const failure = error as Error;
           assert.match(failure.message, /config-overwrite/);
@@ -322,8 +332,8 @@ test('all group declarations are validated before any config or provider mutatio
   }
 });
 
-test('provider URL injection preserves client settings and unrelated providers', () => {
-  const oixCloud = {
+test('overwriting preserves all explicitly configured provider objects and settings', () => {
+  const subscription = {
     type: 'http',
     url: 'https://example.com/old',
     path: './custom.yaml',
@@ -333,38 +343,38 @@ test('provider URL injection preserves client settings and unrelated providers',
     'health-check': { enable: false, interval: 10, url: 'https://example.com/check' },
   };
   const other = { type: 'file', path: './other.yaml' };
-  const config = { 'proxy-providers': { oixCloud, other } };
-
-  overwriteConfig(config, { oixCloudEdgePath: 'https://example.com/new' });
-
-  assert.deepEqual(config['proxy-providers']!.oixCloud, {
-    ...oixCloud,
-    url: 'https://example.com/new',
-  });
-  assert.equal(oixCloud.url, 'https://example.com/old');
-  assert.equal(config['proxy-providers'].other, other);
-
+  const config = { 'proxy-providers': { subscription, other } };
   const providers = config['proxy-providers'];
-  overwriteConfig(config, { oixCloudEdgePath: '  ' });
+  const before = structuredClone(providers);
+
+  overwriteConfig(config);
+
   assert.equal(config['proxy-providers'], providers);
+  assert.equal(config['proxy-providers'].subscription, subscription);
+  assert.equal(config['proxy-providers'].other, other);
+  assert.deepEqual(providers, before);
 });
 
-test('provider defaults are only created when an explicit URL is supplied', () => {
+test('overwriting never creates provider definitions for runtime declarations', () => {
   const config: ProxyConfig = {};
   overwriteConfig(config);
   assert.deepEqual(config, { 'proxy-groups': [] });
 
-  overwriteConfig(config, { oixCloudEdgePath: 'https://example.com/subscription' });
-  assert.deepEqual((config as ProxyConfig)['proxy-providers']!.oixCloud, {
-    type: 'http',
-    url: 'https://example.com/subscription',
-    path: './proxy_provider/oixCloud.yaml',
-    interval: 86400,
-    proxy: 'DIRECT',
-    'health-check': {
-      enable: true,
-      interval: 600,
-      url: 'http://www.gstatic.com/generate_204',
-    },
+  const declared = {
+    'x-substore': { 'runtime-proxy-providers': ['oixCloud', 'another-runtime-provider'] },
+    'proxy-groups': [
+      { name: '运行时来源', use: ['oixCloud', 'another-runtime-provider'], ...policy('manual') },
+    ],
+  };
+  assert.equal(overwriteConfig(declared), declared);
+  assert.deepEqual(declared, {
+    'proxy-groups': [
+      {
+        name: '运行时来源',
+        type: 'select',
+        use: ['oixCloud', 'another-runtime-provider'],
+      },
+    ],
   });
+  assert.equal(Object.hasOwn(declared, 'proxy-providers'), false);
 });

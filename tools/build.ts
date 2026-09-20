@@ -35,7 +35,7 @@ const scripts = [
   },
   {
     name: 'config-overwrite',
-    description: 'Sub-Store 配置覆写脚本：筛选代理组成员、去重并注入可选 provider URL。',
+    description: 'Sub-Store 配置覆写脚本：生成代理组成员、校验最终配置并移除内部声明。',
     usage: '在配置合并和节点注入后执行，保留分流规则及候选顺序。',
     signature: 'function main(config)',
     call: 'main(config)',

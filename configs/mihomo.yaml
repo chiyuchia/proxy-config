@@ -1,6 +1,10 @@
 # Mihomo 专用差异；与 base.yaml 合并后交给节点注入和 scripts/config-overwrite.js。
 $profile: mihomo
 
+# oixCloud 由启用 oix 的内核运行时创建；此声明仅供 Sub-Store 检查引用。
+x-substore:
+  runtime-proxy-providers: [oixCloud]
+
 # DNS 的共有项在 base.yaml，以下仅保留 Mihomo 差异。
 dns:
   nameserver-policy: # DNS 分流策略：精准匹配国内域名
@@ -16,7 +20,7 @@ dns:
   proxy-server-nameserver-policy:
     "+.cloud-nodes.com": 124.221.68.73:1053
 
-# Mihomo 的嗅探和 oixCloud provider。
+# Mihomo 的嗅探。
 sniffer:
   enable: true # 开启流量嗅探，应对软件直接通过纯 IP 发起连接的情况
   force-dns-mapping: true # 强制将嗅探到的域名与 Fake-IP 对应，防止分流规则失效
@@ -31,22 +35,6 @@ sniffer:
         - 443
   skip-domain: # 嗅探白名单：排除特定域名的嗅探
     - "+.push.apple.com" # 放行苹果推送服务，防止消息通知断连或收不到
-
-proxy-providers:
-  oixCloud:
-    type: http
-    path: ./proxy_provider/oixCloud.yaml
-    interval: 86400
-    proxy: DIRECT
-    health-check:
-      enable: true
-      # provider 检查与 Optimized 组复用测速参数；enable 仅用于 provider。
-      <<: &oix_health_check
-        interval: 60
-        timeout: 5000
-        lazy: false
-        url: https://cp.cloudflare.com/generate_204
-        expected-status: 204
 
 # 普通代理组及候选顺序统一在 base.yaml 维护；这里只补充 oixCloud provider 差异。
 # 锚点仅在本文件内复用，Optimized 选项按公共候选位置插入。
@@ -200,8 +188,12 @@ proxy-groups:
       members:
         mode: append
     $before: "✈️ oixCloud Edge"
-    <<: *oix_health_check
     type: url-test
+    interval: 60
+    timeout: 5000
+    lazy: false
+    url: https://cp.cloudflare.com/generate_204
+    expected-status: 204
     tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
     max-failed-times: 3
     filter: "(IXP|CIA)"

@@ -5,10 +5,10 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 | 文件 | 维护内容 |
 | --- | --- |
 | [configs/base.yaml](configs/base.yaml) | 公共网络设置、全部共同代理组及其候选顺序、成员生成声明、筛选、测速设置、规则集和分流规则 |
-| [configs/mihomo.yaml](configs/mihomo.yaml) | Mihomo 的 DNS、嗅探、oixCloud provider、Optimized 组及相关 `use` 和菜单引用 |
+| [configs/mihomo.yaml](configs/mihomo.yaml) | Mihomo 的 DNS、嗅探、oixCloud 运行时 provider 声明、Optimized 组及相关 `use` 和菜单引用 |
 | [configs/stash.yaml](configs/stash.yaml) | Stash 的 DNS 差异 |
 | [scripts/merge-config.js](scripts/merge-config.js) | 服务端拉取、合并与配置检查的发布脚本；源码在 [src/merge-config/](src/merge-config/) |
-| [scripts/config-overwrite.js](scripts/config-overwrite.js) | 组成员筛选、去重和 provider URL 注入的发布脚本；源码在 [src/config-overwrite/](src/config-overwrite/) |
+| [scripts/config-overwrite.js](scripts/config-overwrite.js) | 组成员筛选、去重和最终配置校验的发布脚本；源码在 [src/config-overwrite/](src/config-overwrite/) |
 | [scripts/dialer-proxy.js](scripts/dialer-proxy.js) | 为自建落地、oixCloud Edge 和一元机场节点设置中转的发布脚本；源码在 [src/dialer-proxy/](src/dialer-proxy/) |
 | [scripts/rename.js](scripts/rename.js) | 地区识别、名称整理和关键词过滤的发布脚本；源码在 [src/rename/](src/rename/) |
 
@@ -26,17 +26,17 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 
 1. 添加远程脚本 `scripts/merge-config.js`，通过下方的 URL 参数选择客户端。
 2. 配置节点注入操作（例如“从订阅添加节点”）；先在各自来源订阅中完成[节点中转](#节点中转)等处理。自建节点保留原名；oixCloud Edge 和一元机场设置中转后可按需[重命名](#节点重命名)。
-3. 最后运行原有 `scripts/config-overwrite.js`，保留其已有参数。
+3. 最后运行 `scripts/config-overwrite.js`，无需参数；脚本完成覆写后自动校验最终配置。
 
 ```text
 本地初始内容：{}
 → scripts/merge-config.js：读取 base.yaml + 客户端差异
 → 注入已在来源订阅中处理的节点
-→ scripts/config-overwrite.js：重建代理组成员
+→ scripts/config-overwrite.js：重建代理组成员、校验最终配置、移除内部声明
 → Sub-Store 输出完整 YAML
 ```
 
-若现有节点注入操作位于合并脚本之前，也可以保留：合并脚本会保留传入的 `config.proxies`。输入中的其他配置由合并结果替换；需要额外修改配置时，将相应覆写放在合并之后。
+若现有节点注入操作位于合并脚本之前，也可以保留：合并脚本会保留传入的 `config.proxies`。输入中的其他配置由合并结果替换；需要额外修改配置时，将相应操作放在合并之后、最终覆写脚本之前，以便检查完整结果。
 
 Mihomo 的远程脚本地址：
 
@@ -50,17 +50,21 @@ Stash 的远程脚本地址：
 https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-config.js#client=stash
 ```
 
-原有覆写脚本地址（Mihomo 原来使用的 `oixCloudEdgePath` 参数继续放在此脚本上）：
+覆写脚本地址：
 
 ```text
 https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/config-overwrite.js
 ```
 
-Stash 输出不需要添加 `oixCloudEdgePath`；该参数会额外生成 oixCloud provider。
+本仓库的 Mihomo 配置依赖 OpenClash 中已启用的 oix 运行时，由内核创建完整的 `oixCloud` provider 并管理其订阅地址、本地文件和健康检查。模板只通过顶层 `x-substore.runtime-proxy-providers: [oixCloud]` 声明这项依赖，保留组内的 `use: [oixCloud]`；Sub-Store 不创建 `proxy-providers.oixCloud`，也不检查客户端本地文件是否存在。Stash 配置没有这项声明和依赖。
+
+升级时请移除旧的 `oixCloudEdgePath` 参数：覆写脚本已不再读取该参数或创建、更新 provider。如需自行管理其他 HTTP provider，在配置中显式定义其有效 `url`，并按需添加组内 `use` 引用。运行时声明的字段规则见[贡献指南](CONTRIBUTING.md#运行时-provider-声明)。
 
 这两个 JavaScript 文件必须作为**两个独立的脚本操作**执行，它们分别提供 `main(config)`，不能拼接到同一个脚本中。Sub-Store 会等待异步 `main` 并将返回值序列化为 YAML，参见[官方脚本处理实现](https://github.com/sub-store-org/Sub-Store/blob/master/backend/src/core/proxy-utils/processors/index.js)。
 
 代理组通过模板中的 `x-substore.members` 声明成员生成方式，覆写不再根据组名决定行为；声明在最终输出前移除。每次刷新都应重新执行合并与覆写，不能直接对上次输出再次覆写。新增组和声明字段的说明见[贡献指南的成员生成声明](CONTRIBUTING.md#成员生成声明)。
+
+最终校验随覆写脚本直接在 Sub-Store 中运行，无需另加脚本或安装依赖。发现重复名称、无效引用、依赖循环或无效 HTTP provider 地址时，本次脚本报错并停止输出；具体范围和限制见[贡献指南的最终配置校验](CONTRIBUTING.md#最终配置校验)。
 
 首次切换后，在 Sub-Store 预览最终配置，确认原来的订阅节点仍在 `proxies` 中，并检查三个机场亚太组的成员，再更新客户端订阅。
 

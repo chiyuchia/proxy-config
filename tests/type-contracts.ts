@@ -11,10 +11,14 @@ import type { ProxyNode } from '../src/types.ts';
 type Assert<T extends true> = T;
 
 type Template = {
+  'x-substore': { 'runtime-proxy-providers': ['oixCloud'] };
   'proxy-groups': {
     name: string;
     'x-substore': { members: { mode: 'append' } };
   }[];
+  'proxy-providers': {
+    subscription: { type: 'http'; url: 'https://example.com/nodes'; interval: 600 };
+  };
   rules: ['MATCH,DIRECT'];
   label: 'custom';
 };
@@ -24,6 +28,12 @@ type TaggedNode = ProxyNode & { sourceId: number };
 
 export type RemovedMemberDeclaration = Assert<
   Output['proxy-groups'][number]['x-substore'] extends undefined ? true : false
+>;
+export type RemovedRuntimeProviderDeclaration = Assert<
+  Output['x-substore'] extends undefined ? true : false
+>;
+export type PreservedProviderFields = Assert<
+  Output['proxy-providers'] extends Template['proxy-providers'] ? true : false
 >;
 export type PreservedRules = Assert<Output['rules'] extends Template['rules'] ? true : false>;
 export type PreservedCustomField = Assert<Output['label'] extends 'custom' ? true : false>;

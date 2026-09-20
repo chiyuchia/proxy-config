@@ -10,7 +10,7 @@ import type { ConfigMap, MergedConfig } from '../types.ts';
 
 /**
  * 校验来源标记，合并公共模板与客户端差异，再复制注入节点并校验当前配置引用。
- * 不修改输入；移除来源标记，保留供后续覆写使用的成员生成声明。
+ * 不修改输入；移除来源标记，保留供后续覆写使用的成员生成和运行时 provider 声明。
  *
  * @preserve
  * @param {Object<string, *>} base 包含 `$base: true` 且不含顶层 proxies 的公共配置。

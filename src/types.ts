@@ -35,11 +35,12 @@ export interface FinalProxyGroup extends ProxyGroup {
   'x-substore'?: never;
 }
 
-/** 本项目只更新 provider 的 URL，其他客户端选项原样保留。 */
+/** 本地 provider 配置；经结构与 HTTP URL 检查后原样保留。 */
 export type ProxyProvider = Record<string, unknown>;
 
 /** 配置处理入口使用的字段；允许初始空配置及客户端自定义字段。 */
 export interface ProxyConfig {
+  'x-substore'?: unknown;
   proxies?: ProxyNode[];
   'proxy-groups'?: ProxyGroup[];
   'proxy-providers'?: Record<string, ProxyProvider>;
@@ -53,12 +54,12 @@ export interface MergedConfig extends ProxyConfig {
   rules: string[];
 }
 
-/** 保留输入的其他已知字段，用最终组及 provider 类型替换被覆写字段。 */
+/** 保留输入的其他已知字段，更新组类型并剥离顶层内部声明。 */
 export type OverwrittenConfig<T extends ProxyConfig = ProxyConfig> = Omit<
   T,
-  'proxy-groups' | 'proxy-providers'
+  'proxy-groups' | 'x-substore'
 > &
-  ProxyConfig & { 'proxy-groups': FinalProxyGroup[] };
+  ProxyConfig & { 'proxy-groups': FinalProxyGroup[]; 'x-substore'?: never };
 
 /** 远程配置读取请求，timeout 单位为毫秒。 */
 export interface HttpRequest {
