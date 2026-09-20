@@ -1,46 +1,23 @@
-const assert = require('node:assert/strict');
-const { execFileSync } = require('node:child_process');
-const fs = require('node:fs');
-const path = require('node:path');
-const test = require('node:test');
-const vm = require('node:vm');
+/**
+ * @file 验证配置合并、远程读取与 Sub-Store 发布脚本的集成行为。
+ * 覆盖补丁与引用校验，并检查 Mihomo 和 Stash 注入节点后的最终分组及候选顺序。
+ */
 
-const root = path.resolve(__dirname, '..');
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
+import { parse } from 'yaml';
+import { mergeConfigDocuments } from '../src/merge-config/index.js';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
 const defaultConfigUrl = 'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs';
 
-// Sub-Store supplies js-yaml. Keep these tests dependency-free on the JS side;
-// the Python bridge accepts YAML (including anchors) and rejects duplicate keys.
-const yamlBridge = `
-import json, sys, yaml
-
-class UniqueKeyLoader(yaml.SafeLoader):
-    pass
-
-def construct_mapping(loader, node, deep=False):
-    keys = set()
-    for key_node, _ in node.value:
-        if key_node.tag == 'tag:yaml.org,2002:merge':
-            continue
-        key = loader.construct_object(key_node, deep=deep)
-        if key in keys:
-            raise ValueError('Duplicate YAML key: ' + str(key))
-        keys.add(key)
-    loader.flatten_mapping(node)
-    return yaml.SafeLoader.construct_mapping(loader, node, deep=deep)
-
-UniqueKeyLoader.add_constructor(
-    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping
-)
-json.dump(yaml.load(sys.stdin.read(), Loader=UniqueKeyLoader), sys.stdout)
-`;
-
+// Match the Sub-Store parser's YAML merge-key support and duplicate-key rejection.
 function parseYaml(source) {
-  return JSON.parse(execFileSync('python3', ['-c', yamlBridge], {
-    input: source,
-    encoding: 'utf8',
-    stdio: ['pipe', 'pipe', 'pipe'],
-    maxBuffer: 4 * 1024 * 1024,
-  }));
+  return parse(source, { merge: true, uniqueKeys: true });
 }
 
 function plain(value) {
@@ -70,13 +47,15 @@ function fixture() {
       { name: 'Region', type: 'select', proxies: ['DIRECT'] },
     ],
     'proxy-providers': { subscription: { type: 'http', url: 'https://example.com/nodes' } },
-    'rule-providers': { example: { type: 'http', behavior: 'domain', url: 'https://example.com/rules' } },
+    'rule-providers': {
+      example: { type: 'http', behavior: 'domain', url: 'https://example.com/rules' },
+    },
     rules: ['RULE-SET,example,Main', 'MATCH,Main'],
   };
 }
 
 function merge(base, profile) {
-  return loadScript('scripts/merge-config.js').mergeConfigDocuments(base, profile);
+  return mergeConfigDocuments(base, profile);
 }
 
 function runtime(args, responder) {
@@ -104,12 +83,15 @@ function respondWith(base, profile) {
 }
 
 function liveConfigs(proxies) {
-  const read = (name) => parseYaml(fs.readFileSync(path.join(root, 'configs', `${name}.yaml`), 'utf8'));
+  const read = (name) =>
+    parseYaml(fs.readFileSync(path.join(root, 'configs', `${name}.yaml`), 'utf8'));
   const base = read('base');
-  const { mergeConfigDocuments } = loadScript('scripts/merge-config.js');
-  return Object.fromEntries(['mihomo', 'stash'].map((client) => [
-    client, plain(mergeConfigDocuments(base, read(client), proxies)),
-  ]));
+  return Object.fromEntries(
+    ['mihomo', 'stash'].map((client) => [
+      client,
+      plain(mergeConfigDocuments(base, read(client), proxies)),
+    ]),
+  );
 }
 
 function sharedGroups(config) {
@@ -126,6 +108,19 @@ function sharedGroups(config) {
       return group;
     });
 }
+
+test('the local YAML parser resolves merge keys and rejects duplicate source keys', () => {
+  const document = parseYaml(`
+defaults: &defaults
+  interval: 60
+  url: https://example.com/generate_204
+group:
+  <<: *defaults
+  interval: 120
+`);
+  assert.deepEqual(document.group, { interval: 120, url: 'https://example.com/generate_204' });
+  assert.throws(() => parseYaml('mode: rule\nmode: global\n'));
+});
 
 test('maps merge recursively, lists replace, fields delete, and sources stay untouched', () => {
   const base = fixture();
@@ -163,7 +158,12 @@ test('array edits apply remove, prepend, append, then insert-before in order', (
     },
   });
   assert.deepEqual(plain(result.dns.nameserver), [
-    'first', 'near-anchor', 'anchor', 'keep', 'near-last', 'last',
+    'first',
+    'near-anchor',
+    'anchor',
+    'keep',
+    'near-last',
+    'last',
   ]);
 });
 
@@ -180,9 +180,15 @@ test('groups merge by name with stable positions, explicit placement, and deleti
     ],
   });
   const groups = plain(result['proxy-groups']);
-  assert.deepEqual(groups.map(({ name }) => name), ['Main', 'Before', 'Airport', 'After', 'Tail']);
+  assert.deepEqual(
+    groups.map(({ name }) => name),
+    ['Main', 'Before', 'Airport', 'After', 'Tail'],
+  );
   assert.deepEqual(groups[2], {
-    name: 'Airport', type: 'url-test', proxies: ['DIRECT'], interval: 60,
+    name: 'Airport',
+    type: 'url-test',
+    proxies: ['DIRECT'],
+    interval: 60,
   });
   assert.ok(groups.every((group) => !('$before' in group) && !('$after' in group)));
 });
@@ -246,9 +252,10 @@ test('main selects the requested profile and preserves only injected proxies fro
     const before = plain(input);
     const { main, calls } = runtime({ client }, respondWith(fixture(), { $profile: client }));
     const result = await main(input);
-    assert.deepEqual(calls.map(({ url }) => url).sort(), [
-      `${defaultConfigUrl}/base.yaml`, `${defaultConfigUrl}/${client}.yaml`,
-    ].sort());
+    assert.deepEqual(
+      calls.map(({ url }) => url).sort(),
+      [`${defaultConfigUrl}/base.yaml`, `${defaultConfigUrl}/${client}.yaml`].sort(),
+    );
     assert.deepEqual(plain(result.proxies), input.proxies);
     assert.equal(result.dns.enable, true);
     assert.equal('stale-key' in result, false);
@@ -258,24 +265,31 @@ test('main selects the requested profile and preserves only injected proxies fro
 });
 
 test('main supports source URL overrides and passes the configured timeout to HTTP', async () => {
-  const { main, calls } = runtime({
-    client: 'stash',
-    configBaseUrl: 'https://config.example/configs/',
-    baseUrl: 'https://override.example/base.yaml',
-    profileUrl: 'https://override.example/stash.yaml',
-    timeout: '12345',
-  }, respondWith(fixture(), { $profile: 'stash' }));
+  const { main, calls } = runtime(
+    {
+      client: 'stash',
+      configBaseUrl: 'https://config.example/configs/',
+      baseUrl: 'https://override.example/base.yaml',
+      profileUrl: 'https://override.example/stash.yaml',
+      timeout: '12345',
+    },
+    respondWith(fixture(), { $profile: 'stash' }),
+  );
   await main({ proxies: [] });
   assert.deepEqual(calls.map(({ url }) => url).sort(), [
-    'https://override.example/base.yaml', 'https://override.example/stash.yaml',
+    'https://override.example/base.yaml',
+    'https://override.example/stash.yaml',
   ]);
   assert.ok(calls.every(({ timeout }) => timeout === 12345));
 
-  const custom = runtime({ client: 'mihomo', configBaseUrl: 'https://config.example/configs/' },
-    respondWith(fixture(), { $profile: 'mihomo' }));
+  const custom = runtime(
+    { client: 'mihomo', configBaseUrl: 'https://config.example/configs/' },
+    respondWith(fixture(), { $profile: 'mihomo' }),
+  );
   await custom.main({ proxies: [] });
   assert.deepEqual(custom.calls.map(({ url }) => url).sort(), [
-    'https://config.example/configs/base.yaml', 'https://config.example/configs/mihomo.yaml',
+    'https://config.example/configs/base.yaml',
+    'https://config.example/configs/mihomo.yaml',
   ]);
 });
 
@@ -294,8 +308,24 @@ test('main resolves explicit group members against the nodes injected by Sub-Sto
 
 test('missing or unsupported client is rejected before downloading', async () => {
   for (const args of [{}, { client: 'other' }]) {
-    const { main, calls } = runtime(args, () => { throw new Error('must not request'); });
+    const { main, calls } = runtime(args, () => {
+      throw new Error('must not request');
+    });
     await assert.rejects(() => main({ proxies: [] }));
+    assert.equal(calls.length, 0);
+  }
+});
+
+test('invalid timeout and shared source URL parameters are rejected before downloading', async () => {
+  for (const options of [
+    ...[0, -1, '', 'invalid', Infinity].map((timeout) => ({ timeout })),
+    { configBaseUrl: 42 },
+    { configBaseUrl: 'file:///tmp/configs' },
+  ]) {
+    const { main, calls } = runtime({ client: 'mihomo', ...options }, () => {
+      throw new Error('must not request');
+    });
+    await assert.rejects(() => main({ proxies: [] }), /\[merge-config\]/);
     assert.equal(calls.length, 0);
   }
 });
@@ -311,11 +341,14 @@ test('failed downloads and invalid YAML are rejected without returning fallback 
   ]) {
     const good = respondWith(fixture(), { $profile: 'mihomo' });
     const { main } = runtime({ client: 'mihomo' }, (request) =>
-      request.url.endsWith('/base.yaml') ? badResponse : good(request));
+      request.url.endsWith('/base.yaml') ? badResponse : good(request),
+    );
     await assert.rejects(() => main({ proxies: [] }));
   }
 
-  const failed = runtime({ client: 'mihomo' }, () => { throw new Error('request timed out'); });
+  const failed = runtime({ client: 'mihomo' }, () => {
+    throw new Error('request timed out');
+  });
   await assert.rejects(() => failed.main({ proxies: [] }), /timed out/);
   const mismatched = runtime({ client: 'mihomo' }, respondWith(fixture(), { $profile: 'stash' }));
   await assert.rejects(() => mismatched.main({ proxies: [] }));
@@ -326,8 +359,12 @@ test('live profiles share group definitions and menu order except for the Mihomo
   assert.deepEqual(sharedGroups(stash), sharedGroups(mihomo));
   assert.equal(stash['proxy-providers'], undefined);
   assert.ok(stash['proxy-groups'].every((group) => !group.use?.length));
-  assert.ok(stash['proxy-groups'].every((group) =>
-    group.name !== '✈️ oixCloud Optimized' && !group.proxies?.includes('✈️ oixCloud Optimized')));
+  assert.ok(
+    stash['proxy-groups'].every(
+      (group) =>
+        group.name !== '✈️ oixCloud Optimized' && !group.proxies?.includes('✈️ oixCloud Optimized'),
+    ),
+  );
   assert.equal(mihomo['proxy-providers'].oixCloud.type, 'http');
   const optimized = mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized');
   assert.equal(optimized.type, 'url-test');
@@ -335,35 +372,76 @@ test('live profiles share group definitions and menu order except for the Mihomo
   assert.deepEqual(optimized.use, ['oixCloud']);
   const mihomoMain = mihomo['proxy-groups'].find(({ name }) => name === '🚀 节点选择');
   assert.deepEqual(mihomoMain.use, ['oixCloud']);
-  assert.equal(mihomoMain.proxies.indexOf('✈️ oixCloud Optimized'),
-    mihomoMain.proxies.indexOf('✈️ VikingLinks') + 1);
+  assert.equal(
+    mihomoMain.proxies.indexOf('✈️ oixCloud Optimized'),
+    mihomoMain.proxies.indexOf('✈️ VikingLinks') + 1,
+  );
 
   const groups = new Map(sharedGroups(stash).map((group) => [group.name, group]));
-  const airportMenu = ['✈️ VikingLinks', '✈️ oixCloud Edge', '✈️ 吹雪云', '✈️ 良心云', '✈️ 一元机场'];
+  const airportMenu = [
+    '✈️ VikingLinks',
+    '✈️ oixCloud Edge',
+    '✈️ 吹雪云',
+    '✈️ 良心云',
+    '✈️ 一元机场',
+  ];
   const asiaRelays = [
-    '✈️ VikingLinks 亚太', '✈️ 吹雪云 亚太', '✈️ 良心云 亚太',
-    '✈️ VikingLinks', '✈️ 吹雪云', '✈️ 良心云', '✈️ 良心云 Hy2',
+    '✈️ VikingLinks 亚太',
+    '✈️ 吹雪云 亚太',
+    '✈️ 良心云 亚太',
+    '✈️ VikingLinks',
+    '✈️ 吹雪云',
+    '✈️ 良心云',
+    '✈️ 良心云 Hy2',
   ];
   assert.deepEqual(groups.get('🛡️ Edge 中转').proxies, asiaRelays);
   assert.deepEqual(groups.get('🛡️ 亚太中转').proxies, asiaRelays);
-  assert.deepEqual(groups.get('🛡️ 美西中转').proxies,
-    ['✈️ VikingLinks', '✈️ 吹雪云', '✈️ 良心云', '✈️ 良心云 Hy2']);
+  assert.deepEqual(groups.get('🛡️ 美西中转').proxies, [
+    '✈️ VikingLinks',
+    '✈️ 吹雪云',
+    '✈️ 良心云',
+    '✈️ 良心云 Hy2',
+  ]);
   assert.deepEqual(groups.get('🚀 节点选择').proxies, [
-    '🏝️ 精品节点', '🇭🇰 香港节点', '🇺🇲 美国节点', '🇸🇬 狮城节点',
-    '🇯🇵 日本节点', '🇼🇸 台湾节点', '🌍 其他节点',
-    ...airportMenu.slice(0, -1), '✈️ 良心云 Hy2', '✈️ 一元机场',
+    '🏝️ 精品节点',
+    '🇭🇰 香港节点',
+    '🇺🇲 美国节点',
+    '🇸🇬 狮城节点',
+    '🇯🇵 日本节点',
+    '🇼🇸 台湾节点',
+    '🌍 其他节点',
+    ...airportMenu.slice(0, -1),
+    '✈️ 良心云 Hy2',
+    '✈️ 一元机场',
   ]);
   assert.equal(groups.get('🚀 节点选择').url, 'https://cp.cloudflare.com/generate_204');
   assert.equal(groups.get('🏝️ 精品节点').filter, '(自建|合租)');
   for (const name of [
-    '♊ Gemini', '💬 Ai平台', '🍎 Apple Push', '🎥 奈飞视频', '📹 油管视频',
-    '📼 EMBY', '📲 电报消息', '🐙 Github', '🍎 Apple', 'Ⓜ️ Microsoft', '📢 Google',
-    '📺 国内媒体', '🌍 国外媒体', '🎮 游戏平台', '👛 Paypal', '💰 加密货币', '🐟 漏网之鱼',
+    '♊ Gemini',
+    '💬 Ai平台',
+    '🍎 Apple Push',
+    '🎥 奈飞视频',
+    '📹 油管视频',
+    '📼 EMBY',
+    '📲 电报消息',
+    '🐙 Github',
+    '🍎 Apple',
+    'Ⓜ️ Microsoft',
+    '📢 Google',
+    '📺 国内媒体',
+    '🌍 国外媒体',
+    '🎮 游戏平台',
+    '👛 Paypal',
+    '💰 加密货币',
+    '🐟 漏网之鱼',
   ]) {
     const menu = groups.get(name).proxies;
     const hasDirectTail = ['🍎 Apple Push', '🌍 国外媒体'].includes(name);
-    assert.deepEqual(menu.slice(-(airportMenu.length + Number(hasDirectTail))),
-      hasDirectTail ? [...airportMenu, 'DIRECT'] : airportMenu, `${name}: airport menu order`);
+    assert.deepEqual(
+      menu.slice(-(airportMenu.length + Number(hasDirectTail))),
+      hasDirectTail ? [...airportMenu, 'DIRECT'] : airportMenu,
+      `${name}: airport menu order`,
+    );
   }
   for (const [name, filter] of [
     ['✈️ oixCloud Edge', '(oixCloud Edge)'],
@@ -400,14 +478,19 @@ test('the same injected nodes produce matching group members in both live profil
       ['✈️ 一元机场', ['一元机场 JP']],
       ['🏝️ 精品节点', ['自建 US', '合租 HK']],
     ]) {
-      assert.deepEqual(plain(config['proxy-groups'].find((group) => group.name === name).proxies), expected);
+      assert.deepEqual(
+        plain(config['proxy-groups'].find((group) => group.name === name).proxies),
+        expected,
+      );
     }
   }
   assert.equal(stash['proxy-providers'], undefined);
   assert.ok(stash['proxy-groups'].every((group) => !group.use?.length));
   assert.ok(mihomo['proxy-providers'].oixCloud);
-  assert.deepEqual(plain(mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized').use),
-    ['oixCloud']);
+  assert.deepEqual(
+    plain(mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized').use),
+    ['oixCloud'],
+  );
 });
 
 test('both live source profiles work with the existing airport and transit node filters', async () => {
@@ -445,7 +528,10 @@ test('both live source profiles work with the existing airport and transit node 
   for (const client of ['mihomo', 'stash']) {
     const { main } = runtime({ client }, ({ url }) => ({
       statusCode: 200,
-      body: fs.readFileSync(path.join(root, 'configs', path.basename(new URL(url).pathname)), 'utf8'),
+      body: fs.readFileSync(
+        path.join(root, 'configs', path.basename(new URL(url).pathname)),
+        'utf8',
+      ),
     }));
     const merged = await main({ proxies: plain(proxies) });
     const overwrite = loadScript('scripts/config-overwrite.js', { $arguments: {} }).main;
@@ -458,24 +544,34 @@ test('both live source profiles work with the existing airport and transit node 
       assert.deepEqual(plain(group.proxies), members, `${client}: ${name}`);
     }
     const firstMembers = plain(result['proxy-groups']);
-    assert.deepEqual(plain(overwrite(result)['proxy-groups']), firstMembers,
-      `${client}: repeated overwrite must remain idempotent`);
+    assert.deepEqual(
+      plain(overwrite(result)['proxy-groups']),
+      firstMembers,
+      `${client}: repeated overwrite must remain idempotent`,
+    );
   }
 });
 
 test('Mihomo file wrappers await merge and serialize each independently scoped script', async () => {
   // Mirrors the Sub-Store Mihomo file processor's local script scope and its
   // parse -> await main(config || {}) -> dump calling convention.
-  const runWrapped = (file, context) => vm.runInContext(`
+  const runWrapped = (file, context) =>
+    vm.runInContext(
+      `
     (async function () {
       ${fs.readFileSync(path.join(root, file), 'utf8')}
       let config = ProxyUtils.yaml.safeLoad($content);
       config = await main(config || {});
       $content = ProxyUtils.yaml.safeDump(config);
     })()
-  `, context, { filename: `sub-store-wrapper:${file}` });
+  `,
+      context,
+      { filename: `sub-store-wrapper:${file}` },
+    );
 
-  const hasDirective = (value) => value && typeof value === 'object' &&
+  const hasDirective = (value) =>
+    value &&
+    typeof value === 'object' &&
     Object.entries(value).some(([key, child]) => key.startsWith('$') || hasDirective(child));
   const node = { name: '良心云 HK CT', type: 'vless', server: 'example.com', port: 443 };
 
@@ -491,8 +587,11 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
           yaml: {
             safeLoad: parseYaml,
             safeDump: (value) => {
-              assert.notEqual(Object.prototype.toString.call(value), '[object Promise]',
-                'the wrapper must await async main before serializing');
+              assert.notEqual(
+                Object.prototype.toString.call(value),
+                '[object Promise]',
+                'the wrapper must await async main before serializing',
+              );
               dumpCount += 1;
               // JSON is valid YAML; the next script still reparses it as YAML.
               return JSON.stringify(value);
@@ -506,7 +605,10 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
               await Promise.resolve();
               return {
                 statusCode: 200,
-                body: fs.readFileSync(path.join(root, 'configs', path.basename(new URL(url).pathname)), 'utf8'),
+                body: fs.readFileSync(
+                  path.join(root, 'configs', path.basename(new URL(url).pathname)),
+                  'utf8',
+                ),
               };
             },
           },

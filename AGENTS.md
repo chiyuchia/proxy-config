@@ -7,6 +7,7 @@
 本仓库通过 Sub-Store 合并公共配置与客户端差异，为 Mihomo 和 Stash 生成配置。
 
 - 修改配置、脚本或规则前，先阅读贡献指南的[修改位置](CONTRIBUTING.md#修改位置)、[配置与合并](CONTRIBUTING.md#配置与合并)和[规则与节点筛选](CONTRIBUTING.md#规则与节点筛选)。
+- 脚本修改在 `src/` 完成，按[脚本开发](CONTRIBUTING.md#脚本开发)构建并检查 `scripts/` 发布产物。
 - 修改接入方式或脚本参数时，阅读 README 中的[接入 Sub-Store](README.md#接入-sub-store)或[节点重命名](README.md#节点重命名)，同步更新使用说明。
 - 修改远程资源地址时，遵循[资源链接约定](CONTRIBUTING.md#资源链接)。
 

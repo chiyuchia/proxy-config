@@ -1,0 +1,73 @@
+name: Build and check scripts and configs
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run check
+      - uses: actions/upload-artifact@v7
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        with:
+          name: built-scripts
+          path: |
+            scripts/merge-config.js
+            scripts/config-overwrite.js
+            scripts/rename.js
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  publish:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # 检出通过检查的提交；不在较新的 master 上套用旧构建。
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: built-scripts
+          path: scripts
+      - name: Commit and push generated scripts
+        id: publish-scripts
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          git fetch origin refs/heads/master
+          if [ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_COMMIT" ]; then
+            echo "master 已更新，跳过旧构建，等待最新提交的工作流。"
+            exit 0
+          fi
+
+          git add -- scripts/merge-config.js scripts/config-overwrite.js scripts/rename.js
+          if git diff --cached --quiet; then
+            echo "发布脚本无变化，无需提交。"
+            exit 0
+          fi
+
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'chore(build): 更新 Sub-Store 发布脚本'
+          # 使用普通推送，检查后若 master 又有更新则失败，不覆盖或合并未验证的代码。
+          git push origin HEAD:refs/heads/master

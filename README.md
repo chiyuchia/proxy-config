@@ -7,9 +7,11 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 | [configs/base.yaml](configs/base.yaml) | 公共网络设置、全部共同代理组及其候选顺序、筛选、测速设置、规则集和分流规则 |
 | [configs/mihomo.yaml](configs/mihomo.yaml) | Mihomo 的 DNS、嗅探、oixCloud provider、Optimized 组及相关 `use` 和菜单引用 |
 | [configs/stash.yaml](configs/stash.yaml) | Stash 的 DNS 差异 |
-| [scripts/merge-config.js](scripts/merge-config.js) | Sub-Store 服务端拉取、合并与配置检查 |
-| [scripts/config-overwrite.js](scripts/config-overwrite.js) | 按节点名称和实际协议重建组成员、去重和补充 provider URL |
-| [scripts/rename.js](scripts/rename.js) | 订阅节点地区识别、名称整理、关键词保留与过滤 |
+| [scripts/merge-config.js](scripts/merge-config.js) | 服务端拉取、合并与配置检查的发布脚本；源码在 [src/merge-config/](src/merge-config/) |
+| [scripts/config-overwrite.js](scripts/config-overwrite.js) | 组成员筛选、去重和 provider URL 注入的发布脚本；源码在 [src/config-overwrite/](src/config-overwrite/) |
+| [scripts/rename.js](scripts/rename.js) | 地区识别、名称整理和关键词过滤的发布脚本；源码在 [src/rename/](src/rename/) |
+
+维护脚本时修改 `src/`，在本地构建并验证；推送到 `master` 后由 GitHub Actions 自动构建并发布 `scripts/`，详见[贡献指南的自动构建与发布](CONTRIBUTING.md#自动构建与发布)。Sub-Store 继续使用下方三个单文件地址，无需安装开发依赖。
 
 ## 接入 Sub-Store
 
@@ -75,7 +77,7 @@ Stash 输出不需要添加 `oixCloudEdgePath`；该参数会额外生成 oixClo
 https://example.com/scripts/merge-config.js#client=stash&configBaseUrl=https%3A%2F%2Fexample.com%2Fproxy-config%2Fconfigs
 ```
 
-需要固定版本时，将脚本 URL 和 `configBaseUrl` 一起固定到同一个 Git 提交，例如配置目录使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/<commit>/configs`。仅固定脚本地址不会自动固定 YAML 版本。
+需要固定版本时，选择已包含对应构建产物的 Git 提交，将三个脚本 URL 和 `configBaseUrl` 一起固定到该提交，例如配置目录使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/<commit>/configs`。若源码提交由机器人补充发布产物，应选择机器人的发布提交；仅固定脚本地址不会自动固定 YAML 版本。
 
 合并脚本在远程请求失败、来源为空、客户端不匹配、补丁无效或配置引用错误时会报错并停止生成配置。
 
@@ -141,6 +143,6 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.j
 
 修改配置或脚本前，请阅读 [贡献指南](CONTRIBUTING.md)，其中说明了修改位置、配置合并与补丁语法、测速参数复用、规则约束、验证方法和提交规范。
 
-修改通过验证并发布后，让 Sub-Store 重新生成输出，再更新客户端订阅。远程资源和 Sub-Store 的缓存可能使刚发布的修改延迟生效。
+推送到 `master` 后，等待 GitHub Actions 自动构建与发布成功，再让 Sub-Store 重新生成输出并更新客户端订阅。远程资源和 Sub-Store 的缓存可能使刚发布的修改延迟生效。
 
 各 Agent 共用的工作指令维护在 [AGENTS.md](AGENTS.md)；[CLAUDE.md](CLAUDE.md) 通过 `@AGENTS.md` 导入。使用说明和参数维护在本 README，详细开发规范维护在 CONTRIBUTING。

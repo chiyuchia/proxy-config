@@ -1,0 +1,21 @@
+{
+  "name": "proxy-config",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node tools/build.js",
+    "build:check": "node tools/build.js --check",
+    "test": "node --test tests/*.test.js",
+    "format": "prettier --write src tools tests package.json .prettierrc.json .github/workflows/check.yml",
+    "format:check": "prettier --check src tools tests package.json .prettierrc.json .github/workflows/check.yml",
+    "check": "npm run format:check && npm run build:check && npm test"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "prettier": "3.9.8",
+    "yaml": "2.9.1"
+  }
+}

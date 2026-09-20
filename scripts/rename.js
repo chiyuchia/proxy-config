@@ -1,751 +1,791 @@
 /**
- * Sub-Store 节点地区标注脚本
- * 仅通过节点名匹配地区，为节点添加地区标签（默认国旗 + 地区代码 + 序号）
- * 用于订阅/组合订阅的脚本操作，入口为 async operator(proxies, targetPlatform, context)。
- * 接入方式、URL 参数示例见 README.md 的“节点重命名”。
+ * @file Sub-Store 节点重命名脚本：仅按名称识别地区，整理序号、关键词和订阅名。
+ * 用于订阅或组合订阅的节点处理，在配置文件注入节点前执行。
+ * 入口：async function operator(proxies, targetPlatform, context)；接入与参数见 README.md。
  *
- * 参数 (通过 $arguments 传入):
- *   remove: boolean              是否删除原节点名，默认 true
- *   filter: string               过滤词，节点名匹配则直接丢弃，不参与后续处理
- *                                默认应用内置预设（过期|剩余|官网|套餐|重置|到期|Traffic|Expire|一元机场|客户端|网站）
- *                                传空字符串禁用过滤；传词组则追加到内置预设
- *                                例如: "测试|备用"
- *   block: string                屏蔽正则，忽略大小写并全局替换，识别地区前从名称中去除，不影响输出原名或关键词
- *                                例如: "TG:LSMOO|公益|测试"
- *   one: boolean                 去掉两位序号后的完整名称唯一时移除 01（含后缀判断），默认 false
- *   hot: boolean|string          只保留热门地区节点，默认不过滤
- *                                传 true/1 使用预设热门地区（HK/TW/CN/JP/SG/US）
- *                                传 "HK|SG|JP" 形式则只保留指定地区
- *   retain: string               remove=true 时从原节点名中提取并保留的关键词，默认启用内置关键词提取
- *                                传 false/0 禁用；传词组则在内置基础上追加自定义关键词
- *                                多个用 | 连接，例如: "IPLC|专线"
- *   out: string                  国家标签的组成部分，默认 "FG|EN"
- *                                可选值：FG（旗帜）、ZH（中文名）、EN（英文代码）、QC（英文全称）
- *                                多个用 | 连接，按顺序拼接，例如: "FG|ZH"、"ZH"、"FG|ZH|EN"
- *
- * URL 参数中的布尔值/空字符串应使用 # + encodeURIComponent(JSON.stringify(args))。
- * 普通 #key=value 传入字符串，filter= 会被 Sub-Store 转成 true；remove=false 等也不是布尔 false。
- *
- * 输出格式 (默认 out=FG|EN；_subName 为订阅名，空的后缀部分省略):
- *   remove=false: "🇺🇸 US 01 | 原节点名 _subName"
- *   remove=true 默认 retain 有命中:  "🇺🇸 US 01 | 洛杉矶 _subName"
- *   remove=true 无命中或 retain=false: "🇺🇸 US 01 | _subName"
- *   序号按 _subName + 地区从 01 重新生成；以下例子均为组内首个节点且无 _subName：
- *   VikingLinks 格式:               "🇯🇵 JP-SH-12-GCP" → "🇯🇵 JP 01 | SH GCP"
- *   良心云格式:                     "🇯🇵日本高速01|CTCU|0.5x" → "🇯🇵 JP 01 | 高速 CTCU 0.5x"
+ * 此文件由 npm run build 自动生成，请修改 src/ 中的源码。
+ * 源码入口：src/entries/rename.js。
  */
-
-// prettier-ignore
-const EN = ['CN','HK','MO','TW','JP','KR','SG','US','GB','FR','DE','AU','AE','AF','AL','DZ','AO','AR','AM','AT','AZ','BH','BD','BY','BE','BZ','BJ','BT','BO','BA','BW','BR','VG','BN','BG','BF','BI','KH','CM','CA','CV','KY','CF','TD','CL','CO','KM','CG','CD','CR','HR','CY','CZ','DK','DJ','DO','EC','EG','SV','GQ','ER','EE','ET','FJ','FI','GA','GM','GE','GH','GR','GL','GT','GN','GY','HT','HN','HU','IS','IN','ID','IR','IQ','IE','IM','IL','IT','CI','JM','JO','KZ','KE','KW','KG','LA','LV','LB','LS','LR','LY','LT','LU','MK','MG','MW','MY','MV','ML','MT','MR','MU','MX','MD','MC','MN','ME','MA','MZ','MM','NA','NP','NL','NZ','NI','NE','NG','KP','NO','OM','PK','PA','PY','PE','PH','PT','PR','QA','RO','RU','RW','SM','SA','SN','RS','SL','SK','SI','SO','ZA','ES','LK','SD','SR','SZ','SE','CH','SY','TJ','TZ','TH','TG','TO','TT','TN','TR','TM','VI','UG','UA','UY','UZ','VE','VN','YE','ZM','ZW','AD','RE','PL','GU','VA','LI','CW','SC','AQ','GI','CU','FO','AX','BM','TL'];
-// prettier-ignore
-const ZH = ['中国','香港','澳门','台湾','日本','韩国','新加坡','美国','英国','法国','德国','澳大利亚','阿联酋','阿富汗','阿尔巴尼亚','阿尔及利亚','安哥拉','阿根廷','亚美尼亚','奥地利','阿塞拜疆','巴林','孟加拉国','白俄罗斯','比利时','伯利兹','贝宁','不丹','玻利维亚','波斯尼亚和黑塞哥维那','博茨瓦纳','巴西','英属维京群岛','文莱','保加利亚','布基纳法索','布隆迪','柬埔寨','喀麦隆','加拿大','佛得角','开曼群岛','中非共和国','乍得','智利','哥伦比亚','科摩罗','刚果(布)','刚果(金)','哥斯达黎加','克罗地亚','塞浦路斯','捷克','丹麦','吉布提','多米尼加共和国','厄瓜多尔','埃及','萨尔瓦多','赤道几内亚','厄立特里亚','爱沙尼亚','埃塞俄比亚','斐济','芬兰','加蓬','冈比亚','格鲁吉亚','加纳','希腊','格陵兰','危地马拉','几内亚','圭亚那','海地','洪都拉斯','匈牙利','冰岛','印度','印尼','伊朗','伊拉克','爱尔兰','马恩岛','以色列','意大利','科特迪瓦','牙买加','约旦','哈萨克斯坦','肯尼亚','科威特','吉尔吉斯斯坦','老挝','拉脱维亚','黎巴嫩','莱索托','利比里亚','利比亚','立陶宛','卢森堡','马其顿','马达加斯加','马拉维','马来','马尔代夫','马里','马耳他','毛利塔尼亚','毛里求斯','墨西哥','摩尔多瓦','摩纳哥','蒙古','黑山共和国','摩洛哥','莫桑比克','缅甸','纳米比亚','尼泊尔','荷兰','新西兰','尼加拉瓜','尼日尔','尼日利亚','朝鲜','挪威','阿曼','巴基斯坦','巴拿马','巴拉圭','秘鲁','菲律宾','葡萄牙','波多黎各','卡塔尔','罗马尼亚','俄罗斯','卢旺达','圣马力诺','沙特阿拉伯','塞内加尔','塞尔维亚','塞拉利昂','斯洛伐克','斯洛文尼亚','索马里','南非','西班牙','斯里兰卡','苏丹','苏里南','斯威士兰','瑞典','瑞士','叙利亚','塔吉克斯坦','坦桑尼亚','泰国','多哥','汤加','特立尼达和多巴哥','突尼斯','土耳其','土库曼斯坦','美属维尔京群岛','乌干达','乌克兰','乌拉圭','乌兹别克斯坦','委内瑞拉','越南','也门','赞比亚','津巴布韦','安道尔','留尼汪','波兰','关岛','梵蒂冈','列支敦士登','库拉索','塞舌尔','南极','直布罗陀','古巴','法罗群岛','奥兰群岛','百慕达','东帝汶'];
-// prettier-ignore
-const QC = ['China','Hong Kong','Macao','Taiwan','Japan','Korea','Singapore','United States','United Kingdom','France','Germany','Australia','Dubai','Afghanistan','Albania','Algeria','Angola','Argentina','Armenia','Austria','Azerbaijan','Bahrain','Bangladesh','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','British Virgin Islands','Brunei','Bulgaria','Burkina-faso','Burundi','Cambodia','Cameroon','Canada','CapeVerde','CaymanIslands','Central African Republic','Chad','Chile','Colombia','Comoros','Congo-Brazzaville','Congo-Kinshasa','CostaRica','Croatia','Cyprus','Czech Republic','Denmark','Djibouti','Dominican Republic','Ecuador','Egypt','EISalvador','Equatorial Guinea','Eritrea','Estonia','Ethiopia','Fiji','Finland','Gabon','Gambia','Georgia','Ghana','Greece','Greenland','Guatemala','Guinea','Guyana','Haiti','Honduras','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Isle of Man','Israel','Italy','Ivory Coast','Jamaica','Jordan','Kazakstan','Kenya','Kuwait','Kyrgyzstan','Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Lithuania','Luxembourg','Macedonia','Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Mauritania','Mauritius','Mexico','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar(Burma)','Namibia','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','NorthKorea','Norway','Oman','Pakistan','Panama','Paraguay','Peru','Philippines','Portugal','PuertoRico','Qatar','Romania','Russia','Rwanda','SanMarino','SaudiArabia','Senegal','Serbia','SierraLeone','Slovakia','Slovenia','Somalia','SouthAfrica','Spain','SriLanka','Sudan','Suriname','Swaziland','Sweden','Switzerland','Syria','Tajikstan','Tanzania','Thailand','Togo','Tonga','TrinidadandTobago','Tunisia','Turkey','Turkmenistan','U.S.Virgin Islands','Uganda','Ukraine','Uruguay','Uzbekistan','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe','Andorra','Reunion','Poland','Guam','Vatican','Liechtensteins','Curacao','Seychelles','Antarctica','Gibraltar','Cuba','Faroe Islands','Ahvenanmaa','Bermuda','Timor-Leste'];
-// prettier-ignore
-const FG = ['🇨🇳','🇭🇰','🇲🇴','🇹🇼','🇯🇵','🇰🇷','🇸🇬','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇦🇺','🇦🇪','🇦🇫','🇦🇱','🇩🇿','🇦🇴','🇦🇷','🇦🇲','🇦🇹','🇦🇿','🇧🇭','🇧🇩','🇧🇾','🇧🇪','🇧🇿','🇧🇯','🇧🇹','🇧🇴','🇧🇦','🇧🇼','🇧🇷','🇻🇬','🇧🇳','🇧🇬','🇧🇫','🇧🇮','🇰🇭','🇨🇲','🇨🇦','🇨🇻','🇰🇾','🇨🇫','🇹🇩','🇨🇱','🇨🇴','🇰🇲','🇨🇬','🇨🇩','🇨🇷','🇭🇷','🇨🇾','🇨🇿','🇩🇰','🇩🇯','🇩🇴','🇪🇨','🇪🇬','🇸🇻','🇬🇶','🇪🇷','🇪🇪','🇪🇹','🇫🇯','🇫🇮','🇬🇦','🇬🇲','🇬🇪','🇬🇭','🇬🇷','🇬🇱','🇬🇹','🇬🇳','🇬🇾','🇭🇹','🇭🇳','🇭🇺','🇮🇸','🇮🇳','🇮🇩','🇮🇷','🇮🇶','🇮🇪','🇮🇲','🇮🇱','🇮🇹','🇨🇮','🇯🇲','🇯🇴','🇰🇿','🇰🇪','🇰🇼','🇰🇬','🇱🇦','🇱🇻','🇱🇧','🇱🇸','🇱🇷','🇱🇾','🇱🇹','🇱🇺','🇲🇰','🇲🇬','🇲🇼','🇲🇾','🇲🇻','🇲🇱','🇲🇹','🇲🇷','🇲🇺','🇲🇽','🇲🇩','🇲🇨','🇲🇳','🇲🇪','🇲🇦','🇲🇿','🇲🇲','🇳🇦','🇳🇵','🇳🇱','🇳🇿','🇳🇮','🇳🇪','🇳🇬','🇰🇵','🇳🇴','🇴🇲','🇵🇰','🇵🇦','🇵🇾','🇵🇪','🇵🇭','🇵🇹','🇵🇷','🇶🇦','🇷🇴','🇷🇺','🇷🇼','🇸🇲','🇸🇦','🇸🇳','🇷🇸','🇸🇱','🇸🇰','🇸🇮','🇸🇴','🇿🇦','🇪🇸','🇱🇰','🇸🇩','🇸🇷','🇸🇿','🇸🇪','🇨🇭','🇸🇾','🇹🇯','🇹🇿','🇹🇭','🇹🇬','🇹🇴','🇹🇹','🇹🇳','🇹🇷','🇹🇲','🇻🇮','🇺🇬','🇺🇦','🇺🇾','🇺🇿','🇻🇪','🇻🇳','🇾🇪','🇿🇲','🇿🇼','🇦🇩','🇷🇪','🇵🇱','🇬🇺','🇻🇦','🇱🇮','🇨🇼','🇸🇨','🇦🇶','🇬🇮','🇨🇺','🇫🇴','🇦🇽','🇧🇲','🇹🇱'];
-
-const EN_TO_ZH = new Map(EN.map((code, i) => [code, ZH[i]]));
-
-// 热门地区（hot 参数过滤用）
-const HOT_REGIONS = new Set(["HK", "TW", "CN", "JP", "SG", "US"]);
-
-// 节点名预处理替换表：将别名/城市名替换为标准地区名，便于后续 ZH/QC 匹配
-// key 为替换目标（ZH 或 QC 数组中的值），value 为匹配正则
-const RURE_KEY = {
-  香港: /Hongkong|HONG KONG|HKG|港(?!.*线)/gi,
-  台湾: /新台|新北|TPE|TSA|台(?!.*线)/g,
-  Taiwan: /Taipei/g,
-  日本: /东京|大坂|NRT|HND|KIX|OSA|(深|沪|呼|京|广|杭|中|辽)日(?!.*(I|线))/g,
-  Japan: /Tokyo|Osaka/g,
-  韩国: /春川|首尔|ICN|GMP|韩(?!.*国)/g,
-  Korea: /Seoul|Chuncheon/g,
-  新加坡: /狮城|SIN|(深|沪|呼|京|广|杭)新/g,
-  美国: /USA|LAX|SJC|SEA|SFO|JFK|EWR|IAD|ORD|DFW|MIA|ATL|IAH|PHX|DEN|LAS|BOS|Los Angeles|San Jose|Silicon Valley|Michigan|波特兰|芝加哥|哥伦布|纽约|硅谷|俄勒冈|西雅图|(深|沪|呼|京|广|杭)美/g,
-  英国: /伦敦|LHR|LGW|STN|MAN|BHX|EDI|GLA/g,
-  "United Kingdom": /UK|Great Britain|London/g,
-  澳大利亚: /澳洲|墨尔本|悉尼|SYD|MEL|BNE|PER|ADL|CBR|(深|沪|呼|京|广|杭)澳/g,
-  Australia: /Sydney|Melbourne/g,
-  德国: /法兰克福|FRA|MUC|DUS|BER|HAM|STR|CGN|(深|沪|呼|京|广|杭)德(?!.*(I|线))/g,
-  Germany: /Frankfurt/g,
-  俄罗斯: /莫斯科|SVO|DME|LED|VKO/g,
-  Russia: /Moscow/g,
-  土耳其: /伊斯坦布尔|IST|SAW|ESB/g,
-  Turkey: /Istanbul/g,
-  印度: /孟买|BOM|DEL|BLR|MAA|CCU|HYD/g,
-  India: /Mumbai/g,
-  印尼: /印度尼西亚|雅加达|CGK|SUB|DPS/g,
-  Indonesia: /Jakarta/g,
-  法国: /巴黎|CDG|ORY|LYS|NCE|MRS/g,
-  France: /Paris/g,
-  Switzerland: /Zurich|ZRH|GVA/g,
-  阿联酋: /迪拜|阿拉伯联合酋长国|DXB|AUH|SHJ/g,
-  Dubai: /United Arab Emirates/g,
-  泰国: /泰國|曼谷|BKK|DMK|HKT/g,
-  中国: /中國/g,
-  // 新增地区机场代码
-  荷兰: /AMS/g,
-  马来: /KUL|PEN|BKI/g,
-  菲律宾: /MNL|CEB/g,
-  加拿大: /YYZ|YVR|YUL|YYC|YEG|YOW/g,
-  波兰: /WAW|KRK/g,
-  捷克: /PRG/g,
-  奥地利: /VIE/g,
-  匈牙利: /BUD/g,
-  比利时: /BRU/g,
-  葡萄牙: /LIS|OPO/g,
-  西班牙: /MAD|BCN/g,
-  意大利: /FCO|MXP|VCE/g,
-  挪威: /OSL/g,
-  瑞典: /ARN/g,
-  芬兰: /HEL/g,
-  丹麦: /CPH/g,
-  罗马尼亚: /OTP/g,
-  以色列: /TLV/g,
-  沙特阿拉伯: /RUH|JED/g,
-  卡塔尔: /DOH/g,
-  南非: /JNB|CPT/g,
-  墨西哥: /MEX|CUN/g,
-  阿根廷: /EZE/g,
-  哥伦比亚: /BOG/g,
-  巴西: /GRU|GIG/g,
-};
-
-/**
- * 用节点名全量匹配地区，参考 scripts/rename.js 逻辑
- * 先用 RURE_KEY 预处理替换别名，再依次尝试 ZH、FG、QC、EN 四个数组的 includes 匹配
- * 返回 country_code 或 null
- */
-function matchNameToCode(name) {
-  // 预处理：将别名/城市名替换为标准地区名
-  let processed = name;
-  for (const [target, regex] of Object.entries(RURE_KEY)) {
-    if (regex.test(processed)) {
-      processed = processed.replace(regex, target);
+var __proxyConfigScript = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
     }
-  }
-  // 先尝试 ZH（中文）
-  for (let i = 0; i < ZH.length; i++) {
-    if (processed.includes(ZH[i])) return EN[i];
-  }
-  // 再尝试 FG（国旗 emoji）
-  for (let i = 0; i < FG.length; i++) {
-    if (processed.includes(FG[i])) return EN[i];
-  }
-  // 再尝试 QC（英文全称）
-  for (let i = 0; i < QC.length; i++) {
-    if (processed.includes(QC[i])) return EN[i];
-  }
-  // 最后尝试 EN 代码直接匹配（支持前后有特殊符号，如 US_1|1.0MB/s、HK-01 等）
-  for (let i = 0; i < EN.length; i++) {
-    const re = new RegExp(`(?<![A-Za-z])${EN[i]}(?![A-Za-z])`, "i");
-    if (re.test(processed)) return EN[i];
-  }
-  return null;
-}
-
-/**
- * 从节点名中提取 RURE_KEY 命中的城市/别名关键词（原始文本）
- * 返回第一个命中的原始匹配文本，未命中返回 null
- */
-function extractCityKeyword(name) {
-  for (const regex of Object.values(RURE_KEY)) {
-    // 重置 lastIndex（全局正则有状态）
-    regex.lastIndex = 0;
-    const match = regex.exec(name);
-    if (match) return match[0];
-  }
-  return null;
-}
-
-// 内置过滤词预设：节点名匹配则直接丢弃（可通过 filter 参数追加，传空值禁用）
-const DEFAULT_FILTER_WORDS = [
-  "过期",
-  "剩余",
-  "官网",
-  "套餐",
-  "重置",
-  "到期",
-  "Traffic",
-  "Expire",
-  "一元机场",
-  "客户端",
-  "网站",
-];
-const RETAIN_KEYWORDS = [
-  // 日本
-  "东京",
-  "大坂",
-  "Tokyo",
-  "Osaka",
-  "NRT",
-  "HND",
-  "KIX",
-  "OSA",
-  // 韩国
-  "首尔",
-  "春川",
-  "Seoul",
-  "Chuncheon",
-  "ICN",
-  "GMP",
-  // 美国
-  "纽约",
-  "洛杉矶",
-  "硅谷",
-  "西雅图",
-  "芝加哥",
-  "波特兰",
-  "哥伦布",
-  "俄勒冈",
-  "Los Angeles",
-  "San Jose",
-  "Silicon Valley",
-  "New York",
-  "Seattle",
-  "Chicago",
-  "LAX",
-  "SJC",
-  "SEA",
-  "SFO",
-  "JFK",
-  "EWR",
-  "IAD",
-  "ORD",
-  "DFW",
-  "MIA",
-  "ATL",
-  "IAH",
-  "PHX",
-  "DEN",
-  "LAS",
-  "BOS",
-  // 英国
-  "伦敦",
-  "London",
-  "LHR",
-  "LGW",
-  "STN",
-  "MAN",
-  // 澳大利亚
-  "悉尼",
-  "墨尔本",
-  "Sydney",
-  "Melbourne",
-  "SYD",
-  "MEL",
-  "BNE",
-  "PER",
-  // 德国
-  "法兰克福",
-  "Frankfurt",
-  "FRA",
-  "MUC",
-  "BER",
-  // 俄罗斯
-  "莫斯科",
-  "Moscow",
-  "SVO",
-  "DME",
-  // 土耳其
-  "伊斯坦布尔",
-  "Istanbul",
-  "IST",
-  "SAW",
-  // 印度
-  "孟买",
-  "Mumbai",
-  "BOM",
-  "DEL",
-  "BLR",
-  // 印尼
-  "雅加达",
-  "Jakarta",
-  "CGK",
-  "DPS",
-  // 法国
-  "巴黎",
-  "Paris",
-  "CDG",
-  "ORY",
-  // 瑞士
-  "苏黎世",
-  "Zurich",
-  "ZRH",
-  // 阿联酋
-  "迪拜",
-  "Dubai",
-  "DXB",
-  "AUH",
-  // 泰国
-  "曼谷",
-  "Bangkok",
-  "BKK",
-  "DMK",
-  // 台湾
-  "台北",
-  "Taipei",
-  "TPE",
-  // 荷兰
-  "阿姆斯特丹",
-  "Amsterdam",
-  "AMS",
-  // 加拿大
-  "多伦多",
-  "温哥华",
-  "Toronto",
-  "Vancouver",
-  "YYZ",
-  "YVR",
-  // 马来西亚
-  "吉隆坡",
-  "Kuala Lumpur",
-  "KUL",
-  // 菲律宾
-  "马尼拉",
-  "Manila",
-  "MNL",
-  // 波兰
-  "华沙",
-  "Warsaw",
-  "WAW",
-  // 捷克
-  "布拉格",
-  "Prague",
-  "PRG",
-  // 奥地利
-  "维也纳",
-  "Vienna",
-  "VIE",
-  // 西班牙
-  "马德里",
-  "巴塞罗那",
-  "Madrid",
-  "Barcelona",
-  "MAD",
-  "BCN",
-  // 意大利
-  "米兰",
-  "罗马",
-  "Milan",
-  "Rome",
-  "MXP",
-  "FCO",
-  // 葡萄牙
-  "里斯本",
-  "Lisbon",
-  "LIS",
-  // 瑞典
-  "斯德哥尔摩",
-  "Stockholm",
-  "ARN",
-  // 芬兰
-  "赫尔辛基",
-  "Helsinki",
-  "HEL",
-  // 丹麦
-  "哥本哈根",
-  "Copenhagen",
-  "CPH",
-  // 挪威
-  "奥斯陆",
-  "Oslo",
-  "OSL",
-  // 以色列
-  "特拉维夫",
-  "Tel Aviv",
-  "TLV",
-  // 沙特阿拉伯
-  "利雅得",
-  "吉达",
-  "Riyadh",
-  "Jeddah",
-  "RUH",
-  "JED",
-  // 卡塔尔
-  "多哈",
-  "Doha",
-  "DOH",
-  // 南非
-  "约翰内斯堡",
-  "Johannesburg",
-  "JNB",
-  // 巴西
-  "圣保罗",
-  "Sao Paulo",
-  "GRU",
-  // 墨西哥
-  "墨西哥城",
-  "Mexico City",
-  "MEX",
-
-  "via",
-
-  //VPS商/专线常见词
-  "BAGE",
-  "GOMAMI",
-  "AKARI",
-  "DMIT",
-  "NETCUP",
-  "NUBE",
-  "MISAKA",
-  "Sakura",
-  "家宽",
-  "专线",
-  "高级专线",
-  "IEPL",
-  "Edge",
-  "HKT",
-  "HINET",
-  "GIA",
-  "CIA",
-  "BGP",
-  "流媒体",
-  "高速",
-  "移动",
-  "联通",
-  "电信",
-  "移联",
-  "AWS",
-  "RS",
-  "OVH",
-  "CDN",
-  "下载",
-  "OCTO",
-  "CTCUCM",
-  "CMCU",
-  "CUCM",
-  "CTCU",
-  "CM",
-  "CT",
-  "CU"
-];
-
-const RETAIN_PIPE_TAG_PATTERNS = [
-  /^(?:CM|CT|CU)+$/i,
-  /^(?:\d+(?:\.\d+)?|\.\d+)x$/i,
-];
-
-function extractRetainPipeTags(name) {
-  const parts = String(name || "")
-    .split("|")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (parts.length < 2) return [];
-
-  return parts
-    .slice(1)
-    .filter((part) => RETAIN_PIPE_TAG_PATTERNS.some((re) => re.test(part)));
-}
-
-/**
- * 从原节点名中提取命中的保留关键词列表
- * 先匹配城市/线路关键词，再匹配良心云这类尾部管道标签，最后匹配用户自定义 retainKeys
- * 返回命中词数组（去重），未命中返回空数组
- */
-function extractRetainKeywords(name, retainKeys) {
-  const hits = [];
-  const nameLower = name.toLowerCase();
-  const pushOriginal = (value) => {
-    if (value && !hits.includes(value)) hits.push(value);
+    return to;
   };
-  const pushHit = (kw) => {
-    const kwLower = kw.toLowerCase();
-    // 英文关键词加单词边界，避免匹配单词内部（如 ist 命中 Registry）
-    const isAscii = /^[A-Za-z0-9]+$/.test(kw);
-    const re = isAscii
-      ? new RegExp(`(?<![A-Za-z0-9])${kwLower}(?![A-Za-z0-9])`)
-      : new RegExp(kwLower);
-    const m = re.exec(nameLower);
-    if (!m) return;
-    const original = name.slice(m.index, m.index + kw.length);
-    pushOriginal(original);
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // src/entries/rename.js
+  var rename_exports = {};
+  __export(rename_exports, {
+    operator: () => operator
+  });
+
+  // src/rename/regions.js
+  var REGIONS = [
+    { code: "CN", chineseName: "中国", englishName: "China", flag: "🇨🇳" },
+    { code: "HK", chineseName: "香港", englishName: "Hong Kong", flag: "🇭🇰" },
+    { code: "MO", chineseName: "澳门", englishName: "Macao", flag: "🇲🇴" },
+    { code: "TW", chineseName: "台湾", englishName: "Taiwan", flag: "🇹🇼" },
+    { code: "JP", chineseName: "日本", englishName: "Japan", flag: "🇯🇵" },
+    { code: "KR", chineseName: "韩国", englishName: "Korea", flag: "🇰🇷" },
+    { code: "SG", chineseName: "新加坡", englishName: "Singapore", flag: "🇸🇬" },
+    { code: "US", chineseName: "美国", englishName: "United States", flag: "🇺🇸" },
+    { code: "GB", chineseName: "英国", englishName: "United Kingdom", flag: "🇬🇧" },
+    { code: "FR", chineseName: "法国", englishName: "France", flag: "🇫🇷" },
+    { code: "DE", chineseName: "德国", englishName: "Germany", flag: "🇩🇪" },
+    { code: "AU", chineseName: "澳大利亚", englishName: "Australia", flag: "🇦🇺" },
+    { code: "AE", chineseName: "阿联酋", englishName: "Dubai", flag: "🇦🇪" },
+    { code: "AF", chineseName: "阿富汗", englishName: "Afghanistan", flag: "🇦🇫" },
+    { code: "AL", chineseName: "阿尔巴尼亚", englishName: "Albania", flag: "🇦🇱" },
+    { code: "DZ", chineseName: "阿尔及利亚", englishName: "Algeria", flag: "🇩🇿" },
+    { code: "AO", chineseName: "安哥拉", englishName: "Angola", flag: "🇦🇴" },
+    { code: "AR", chineseName: "阿根廷", englishName: "Argentina", flag: "🇦🇷" },
+    { code: "AM", chineseName: "亚美尼亚", englishName: "Armenia", flag: "🇦🇲" },
+    { code: "AT", chineseName: "奥地利", englishName: "Austria", flag: "🇦🇹" },
+    { code: "AZ", chineseName: "阿塞拜疆", englishName: "Azerbaijan", flag: "🇦🇿" },
+    { code: "BH", chineseName: "巴林", englishName: "Bahrain", flag: "🇧🇭" },
+    { code: "BD", chineseName: "孟加拉国", englishName: "Bangladesh", flag: "🇧🇩" },
+    { code: "BY", chineseName: "白俄罗斯", englishName: "Belarus", flag: "🇧🇾" },
+    { code: "BE", chineseName: "比利时", englishName: "Belgium", flag: "🇧🇪" },
+    { code: "BZ", chineseName: "伯利兹", englishName: "Belize", flag: "🇧🇿" },
+    { code: "BJ", chineseName: "贝宁", englishName: "Benin", flag: "🇧🇯" },
+    { code: "BT", chineseName: "不丹", englishName: "Bhutan", flag: "🇧🇹" },
+    { code: "BO", chineseName: "玻利维亚", englishName: "Bolivia", flag: "🇧🇴" },
+    {
+      code: "BA",
+      chineseName: "波斯尼亚和黑塞哥维那",
+      englishName: "Bosnia and Herzegovina",
+      flag: "🇧🇦"
+    },
+    { code: "BW", chineseName: "博茨瓦纳", englishName: "Botswana", flag: "🇧🇼" },
+    { code: "BR", chineseName: "巴西", englishName: "Brazil", flag: "🇧🇷" },
+    { code: "VG", chineseName: "英属维京群岛", englishName: "British Virgin Islands", flag: "🇻🇬" },
+    { code: "BN", chineseName: "文莱", englishName: "Brunei", flag: "🇧🇳" },
+    { code: "BG", chineseName: "保加利亚", englishName: "Bulgaria", flag: "🇧🇬" },
+    { code: "BF", chineseName: "布基纳法索", englishName: "Burkina-faso", flag: "🇧🇫" },
+    { code: "BI", chineseName: "布隆迪", englishName: "Burundi", flag: "🇧🇮" },
+    { code: "KH", chineseName: "柬埔寨", englishName: "Cambodia", flag: "🇰🇭" },
+    { code: "CM", chineseName: "喀麦隆", englishName: "Cameroon", flag: "🇨🇲" },
+    { code: "CA", chineseName: "加拿大", englishName: "Canada", flag: "🇨🇦" },
+    { code: "CV", chineseName: "佛得角", englishName: "CapeVerde", flag: "🇨🇻" },
+    { code: "KY", chineseName: "开曼群岛", englishName: "CaymanIslands", flag: "🇰🇾" },
+    { code: "CF", chineseName: "中非共和国", englishName: "Central African Republic", flag: "🇨🇫" },
+    { code: "TD", chineseName: "乍得", englishName: "Chad", flag: "🇹🇩" },
+    { code: "CL", chineseName: "智利", englishName: "Chile", flag: "🇨🇱" },
+    { code: "CO", chineseName: "哥伦比亚", englishName: "Colombia", flag: "🇨🇴" },
+    { code: "KM", chineseName: "科摩罗", englishName: "Comoros", flag: "🇰🇲" },
+    { code: "CG", chineseName: "刚果(布)", englishName: "Congo-Brazzaville", flag: "🇨🇬" },
+    { code: "CD", chineseName: "刚果(金)", englishName: "Congo-Kinshasa", flag: "🇨🇩" },
+    { code: "CR", chineseName: "哥斯达黎加", englishName: "CostaRica", flag: "🇨🇷" },
+    { code: "HR", chineseName: "克罗地亚", englishName: "Croatia", flag: "🇭🇷" },
+    { code: "CY", chineseName: "塞浦路斯", englishName: "Cyprus", flag: "🇨🇾" },
+    { code: "CZ", chineseName: "捷克", englishName: "Czech Republic", flag: "🇨🇿" },
+    { code: "DK", chineseName: "丹麦", englishName: "Denmark", flag: "🇩🇰" },
+    { code: "DJ", chineseName: "吉布提", englishName: "Djibouti", flag: "🇩🇯" },
+    { code: "DO", chineseName: "多米尼加共和国", englishName: "Dominican Republic", flag: "🇩🇴" },
+    { code: "EC", chineseName: "厄瓜多尔", englishName: "Ecuador", flag: "🇪🇨" },
+    { code: "EG", chineseName: "埃及", englishName: "Egypt", flag: "🇪🇬" },
+    { code: "SV", chineseName: "萨尔瓦多", englishName: "EISalvador", flag: "🇸🇻" },
+    { code: "GQ", chineseName: "赤道几内亚", englishName: "Equatorial Guinea", flag: "🇬🇶" },
+    { code: "ER", chineseName: "厄立特里亚", englishName: "Eritrea", flag: "🇪🇷" },
+    { code: "EE", chineseName: "爱沙尼亚", englishName: "Estonia", flag: "🇪🇪" },
+    { code: "ET", chineseName: "埃塞俄比亚", englishName: "Ethiopia", flag: "🇪🇹" },
+    { code: "FJ", chineseName: "斐济", englishName: "Fiji", flag: "🇫🇯" },
+    { code: "FI", chineseName: "芬兰", englishName: "Finland", flag: "🇫🇮" },
+    { code: "GA", chineseName: "加蓬", englishName: "Gabon", flag: "🇬🇦" },
+    { code: "GM", chineseName: "冈比亚", englishName: "Gambia", flag: "🇬🇲" },
+    { code: "GE", chineseName: "格鲁吉亚", englishName: "Georgia", flag: "🇬🇪" },
+    { code: "GH", chineseName: "加纳", englishName: "Ghana", flag: "🇬🇭" },
+    { code: "GR", chineseName: "希腊", englishName: "Greece", flag: "🇬🇷" },
+    { code: "GL", chineseName: "格陵兰", englishName: "Greenland", flag: "🇬🇱" },
+    { code: "GT", chineseName: "危地马拉", englishName: "Guatemala", flag: "🇬🇹" },
+    { code: "GN", chineseName: "几内亚", englishName: "Guinea", flag: "🇬🇳" },
+    { code: "GY", chineseName: "圭亚那", englishName: "Guyana", flag: "🇬🇾" },
+    { code: "HT", chineseName: "海地", englishName: "Haiti", flag: "🇭🇹" },
+    { code: "HN", chineseName: "洪都拉斯", englishName: "Honduras", flag: "🇭🇳" },
+    { code: "HU", chineseName: "匈牙利", englishName: "Hungary", flag: "🇭🇺" },
+    { code: "IS", chineseName: "冰岛", englishName: "Iceland", flag: "🇮🇸" },
+    { code: "IN", chineseName: "印度", englishName: "India", flag: "🇮🇳" },
+    { code: "ID", chineseName: "印尼", englishName: "Indonesia", flag: "🇮🇩" },
+    { code: "IR", chineseName: "伊朗", englishName: "Iran", flag: "🇮🇷" },
+    { code: "IQ", chineseName: "伊拉克", englishName: "Iraq", flag: "🇮🇶" },
+    { code: "IE", chineseName: "爱尔兰", englishName: "Ireland", flag: "🇮🇪" },
+    { code: "IM", chineseName: "马恩岛", englishName: "Isle of Man", flag: "🇮🇲" },
+    { code: "IL", chineseName: "以色列", englishName: "Israel", flag: "🇮🇱" },
+    { code: "IT", chineseName: "意大利", englishName: "Italy", flag: "🇮🇹" },
+    { code: "CI", chineseName: "科特迪瓦", englishName: "Ivory Coast", flag: "🇨🇮" },
+    { code: "JM", chineseName: "牙买加", englishName: "Jamaica", flag: "🇯🇲" },
+    { code: "JO", chineseName: "约旦", englishName: "Jordan", flag: "🇯🇴" },
+    { code: "KZ", chineseName: "哈萨克斯坦", englishName: "Kazakstan", flag: "🇰🇿" },
+    { code: "KE", chineseName: "肯尼亚", englishName: "Kenya", flag: "🇰🇪" },
+    { code: "KW", chineseName: "科威特", englishName: "Kuwait", flag: "🇰🇼" },
+    { code: "KG", chineseName: "吉尔吉斯斯坦", englishName: "Kyrgyzstan", flag: "🇰🇬" },
+    { code: "LA", chineseName: "老挝", englishName: "Laos", flag: "🇱🇦" },
+    { code: "LV", chineseName: "拉脱维亚", englishName: "Latvia", flag: "🇱🇻" },
+    { code: "LB", chineseName: "黎巴嫩", englishName: "Lebanon", flag: "🇱🇧" },
+    { code: "LS", chineseName: "莱索托", englishName: "Lesotho", flag: "🇱🇸" },
+    { code: "LR", chineseName: "利比里亚", englishName: "Liberia", flag: "🇱🇷" },
+    { code: "LY", chineseName: "利比亚", englishName: "Libya", flag: "🇱🇾" },
+    { code: "LT", chineseName: "立陶宛", englishName: "Lithuania", flag: "🇱🇹" },
+    { code: "LU", chineseName: "卢森堡", englishName: "Luxembourg", flag: "🇱🇺" },
+    { code: "MK", chineseName: "马其顿", englishName: "Macedonia", flag: "🇲🇰" },
+    { code: "MG", chineseName: "马达加斯加", englishName: "Madagascar", flag: "🇲🇬" },
+    { code: "MW", chineseName: "马拉维", englishName: "Malawi", flag: "🇲🇼" },
+    { code: "MY", chineseName: "马来", englishName: "Malaysia", flag: "🇲🇾" },
+    { code: "MV", chineseName: "马尔代夫", englishName: "Maldives", flag: "🇲🇻" },
+    { code: "ML", chineseName: "马里", englishName: "Mali", flag: "🇲🇱" },
+    { code: "MT", chineseName: "马耳他", englishName: "Malta", flag: "🇲🇹" },
+    { code: "MR", chineseName: "毛利塔尼亚", englishName: "Mauritania", flag: "🇲🇷" },
+    { code: "MU", chineseName: "毛里求斯", englishName: "Mauritius", flag: "🇲🇺" },
+    { code: "MX", chineseName: "墨西哥", englishName: "Mexico", flag: "🇲🇽" },
+    { code: "MD", chineseName: "摩尔多瓦", englishName: "Moldova", flag: "🇲🇩" },
+    { code: "MC", chineseName: "摩纳哥", englishName: "Monaco", flag: "🇲🇨" },
+    { code: "MN", chineseName: "蒙古", englishName: "Mongolia", flag: "🇲🇳" },
+    { code: "ME", chineseName: "黑山共和国", englishName: "Montenegro", flag: "🇲🇪" },
+    { code: "MA", chineseName: "摩洛哥", englishName: "Morocco", flag: "🇲🇦" },
+    { code: "MZ", chineseName: "莫桑比克", englishName: "Mozambique", flag: "🇲🇿" },
+    { code: "MM", chineseName: "缅甸", englishName: "Myanmar(Burma)", flag: "🇲🇲" },
+    { code: "NA", chineseName: "纳米比亚", englishName: "Namibia", flag: "🇳🇦" },
+    { code: "NP", chineseName: "尼泊尔", englishName: "Nepal", flag: "🇳🇵" },
+    { code: "NL", chineseName: "荷兰", englishName: "Netherlands", flag: "🇳🇱" },
+    { code: "NZ", chineseName: "新西兰", englishName: "New Zealand", flag: "🇳🇿" },
+    { code: "NI", chineseName: "尼加拉瓜", englishName: "Nicaragua", flag: "🇳🇮" },
+    { code: "NE", chineseName: "尼日尔", englishName: "Niger", flag: "🇳🇪" },
+    { code: "NG", chineseName: "尼日利亚", englishName: "Nigeria", flag: "🇳🇬" },
+    { code: "KP", chineseName: "朝鲜", englishName: "NorthKorea", flag: "🇰🇵" },
+    { code: "NO", chineseName: "挪威", englishName: "Norway", flag: "🇳🇴" },
+    { code: "OM", chineseName: "阿曼", englishName: "Oman", flag: "🇴🇲" },
+    { code: "PK", chineseName: "巴基斯坦", englishName: "Pakistan", flag: "🇵🇰" },
+    { code: "PA", chineseName: "巴拿马", englishName: "Panama", flag: "🇵🇦" },
+    { code: "PY", chineseName: "巴拉圭", englishName: "Paraguay", flag: "🇵🇾" },
+    { code: "PE", chineseName: "秘鲁", englishName: "Peru", flag: "🇵🇪" },
+    { code: "PH", chineseName: "菲律宾", englishName: "Philippines", flag: "🇵🇭" },
+    { code: "PT", chineseName: "葡萄牙", englishName: "Portugal", flag: "🇵🇹" },
+    { code: "PR", chineseName: "波多黎各", englishName: "PuertoRico", flag: "🇵🇷" },
+    { code: "QA", chineseName: "卡塔尔", englishName: "Qatar", flag: "🇶🇦" },
+    { code: "RO", chineseName: "罗马尼亚", englishName: "Romania", flag: "🇷🇴" },
+    { code: "RU", chineseName: "俄罗斯", englishName: "Russia", flag: "🇷🇺" },
+    { code: "RW", chineseName: "卢旺达", englishName: "Rwanda", flag: "🇷🇼" },
+    { code: "SM", chineseName: "圣马力诺", englishName: "SanMarino", flag: "🇸🇲" },
+    { code: "SA", chineseName: "沙特阿拉伯", englishName: "SaudiArabia", flag: "🇸🇦" },
+    { code: "SN", chineseName: "塞内加尔", englishName: "Senegal", flag: "🇸🇳" },
+    { code: "RS", chineseName: "塞尔维亚", englishName: "Serbia", flag: "🇷🇸" },
+    { code: "SL", chineseName: "塞拉利昂", englishName: "SierraLeone", flag: "🇸🇱" },
+    { code: "SK", chineseName: "斯洛伐克", englishName: "Slovakia", flag: "🇸🇰" },
+    { code: "SI", chineseName: "斯洛文尼亚", englishName: "Slovenia", flag: "🇸🇮" },
+    { code: "SO", chineseName: "索马里", englishName: "Somalia", flag: "🇸🇴" },
+    { code: "ZA", chineseName: "南非", englishName: "SouthAfrica", flag: "🇿🇦" },
+    { code: "ES", chineseName: "西班牙", englishName: "Spain", flag: "🇪🇸" },
+    { code: "LK", chineseName: "斯里兰卡", englishName: "SriLanka", flag: "🇱🇰" },
+    { code: "SD", chineseName: "苏丹", englishName: "Sudan", flag: "🇸🇩" },
+    { code: "SR", chineseName: "苏里南", englishName: "Suriname", flag: "🇸🇷" },
+    { code: "SZ", chineseName: "斯威士兰", englishName: "Swaziland", flag: "🇸🇿" },
+    { code: "SE", chineseName: "瑞典", englishName: "Sweden", flag: "🇸🇪" },
+    { code: "CH", chineseName: "瑞士", englishName: "Switzerland", flag: "🇨🇭" },
+    { code: "SY", chineseName: "叙利亚", englishName: "Syria", flag: "🇸🇾" },
+    { code: "TJ", chineseName: "塔吉克斯坦", englishName: "Tajikstan", flag: "🇹🇯" },
+    { code: "TZ", chineseName: "坦桑尼亚", englishName: "Tanzania", flag: "🇹🇿" },
+    { code: "TH", chineseName: "泰国", englishName: "Thailand", flag: "🇹🇭" },
+    { code: "TG", chineseName: "多哥", englishName: "Togo", flag: "🇹🇬" },
+    { code: "TO", chineseName: "汤加", englishName: "Tonga", flag: "🇹🇴" },
+    { code: "TT", chineseName: "特立尼达和多巴哥", englishName: "TrinidadandTobago", flag: "🇹🇹" },
+    { code: "TN", chineseName: "突尼斯", englishName: "Tunisia", flag: "🇹🇳" },
+    { code: "TR", chineseName: "土耳其", englishName: "Turkey", flag: "🇹🇷" },
+    { code: "TM", chineseName: "土库曼斯坦", englishName: "Turkmenistan", flag: "🇹🇲" },
+    { code: "VI", chineseName: "美属维尔京群岛", englishName: "U.S.Virgin Islands", flag: "🇻🇮" },
+    { code: "UG", chineseName: "乌干达", englishName: "Uganda", flag: "🇺🇬" },
+    { code: "UA", chineseName: "乌克兰", englishName: "Ukraine", flag: "🇺🇦" },
+    { code: "UY", chineseName: "乌拉圭", englishName: "Uruguay", flag: "🇺🇾" },
+    { code: "UZ", chineseName: "乌兹别克斯坦", englishName: "Uzbekistan", flag: "🇺🇿" },
+    { code: "VE", chineseName: "委内瑞拉", englishName: "Venezuela", flag: "🇻🇪" },
+    { code: "VN", chineseName: "越南", englishName: "Vietnam", flag: "🇻🇳" },
+    { code: "YE", chineseName: "也门", englishName: "Yemen", flag: "🇾🇪" },
+    { code: "ZM", chineseName: "赞比亚", englishName: "Zambia", flag: "🇿🇲" },
+    { code: "ZW", chineseName: "津巴布韦", englishName: "Zimbabwe", flag: "🇿🇼" },
+    { code: "AD", chineseName: "安道尔", englishName: "Andorra", flag: "🇦🇩" },
+    { code: "RE", chineseName: "留尼汪", englishName: "Reunion", flag: "🇷🇪" },
+    { code: "PL", chineseName: "波兰", englishName: "Poland", flag: "🇵🇱" },
+    { code: "GU", chineseName: "关岛", englishName: "Guam", flag: "🇬🇺" },
+    { code: "VA", chineseName: "梵蒂冈", englishName: "Vatican", flag: "🇻🇦" },
+    { code: "LI", chineseName: "列支敦士登", englishName: "Liechtensteins", flag: "🇱🇮" },
+    { code: "CW", chineseName: "库拉索", englishName: "Curacao", flag: "🇨🇼" },
+    { code: "SC", chineseName: "塞舌尔", englishName: "Seychelles", flag: "🇸🇨" },
+    { code: "AQ", chineseName: "南极", englishName: "Antarctica", flag: "🇦🇶" },
+    { code: "GI", chineseName: "直布罗陀", englishName: "Gibraltar", flag: "🇬🇮" },
+    { code: "CU", chineseName: "古巴", englishName: "Cuba", flag: "🇨🇺" },
+    { code: "FO", chineseName: "法罗群岛", englishName: "Faroe Islands", flag: "🇫🇴" },
+    { code: "AX", chineseName: "奥兰群岛", englishName: "Ahvenanmaa", flag: "🇦🇽" },
+    { code: "BM", chineseName: "百慕达", englishName: "Bermuda", flag: "🇧🇲" },
+    { code: "TL", chineseName: "东帝汶", englishName: "Timor-Leste", flag: "🇹🇱" }
+  ];
+  var REGIONS_BY_CODE = new Map(REGIONS.map((region) => [region.code, region]));
+  var HOT_REGIONS = /* @__PURE__ */ new Set(["HK", "TW", "CN", "JP", "SG", "US"]);
+
+  // src/rename/options.js
+  var DEFAULT_FILTER_WORDS = [
+    "过期",
+    "剩余",
+    "官网",
+    "套餐",
+    "重置",
+    "到期",
+    "Traffic",
+    "Expire",
+    "一元机场",
+    "客户端",
+    "网站"
+  ];
+  var VALID_OUTPUT_FIELDS = /* @__PURE__ */ new Set(["FG", "ZH", "EN", "QC"]);
+  function parseHotRegions(value) {
+    if (!value) return null;
+    const codes = String(value).toUpperCase().split("|").map((code) => code.trim()).filter(Boolean);
+    const matched = new Set(codes.filter((code) => REGIONS_BY_CODE.has(code)));
+    return matched.size > 0 ? matched : HOT_REGIONS;
+  }
+  function parseFilterPattern(value) {
+    if (value !== void 0 && String(value).trim() === "") return null;
+    const customWords = value ? decodeURIComponent(String(value)).split("|").map((word) => word.trim()).filter(Boolean) : [];
+    return new RegExp(
+      [...DEFAULT_FILTER_WORDS, ...customWords].map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
+      "i"
+    );
+  }
+  function parseRetainKeywords(value) {
+    if (value === void 0) return [];
+    const text = String(value).trim();
+    if (text === "0" || text.toLowerCase() === "false") return null;
+    return text.split("|").map((word) => word.trim()).filter((word) => word && word !== "1" && word.toLowerCase() !== "true");
+  }
+  function parseRenameOptions(args = {}) {
+    const outputFields = (args?.out ? String(args.out) : "FG|EN").split("|").map((field) => field.trim().toUpperCase()).filter((field) => VALID_OUTPUT_FIELDS.has(field));
+    return {
+      removeOriginalName: args?.remove === void 0 ? true : !!args.remove,
+      removeUniqueSequence: !!args?.one,
+      hotRegions: parseHotRegions(args?.hot),
+      filterPattern: parseFilterPattern(args?.filter),
+      blockPattern: args?.block ? new RegExp(decodeURIComponent(String(args.block)), "gi") : null,
+      retainKeywords: parseRetainKeywords(args?.retain),
+      outputFields: outputFields.length > 0 ? outputFields : ["FG", "EN"]
+    };
+  }
+
+  // src/rename/aliases.js
+  var REGION_ALIASES = {
+    香港: /Hongkong|HONG KONG|HKG|港(?!.*线)/gi,
+    台湾: /新台|新北|TPE|TSA|台(?!.*线)/g,
+    Taiwan: /Taipei/g,
+    日本: /东京|大坂|NRT|HND|KIX|OSA|(深|沪|呼|京|广|杭|中|辽)日(?!.*(I|线))/g,
+    Japan: /Tokyo|Osaka/g,
+    韩国: /春川|首尔|ICN|GMP|韩(?!.*国)/g,
+    Korea: /Seoul|Chuncheon/g,
+    新加坡: /狮城|SIN|(深|沪|呼|京|广|杭)新/g,
+    美国: /USA|LAX|SJC|SEA|SFO|JFK|EWR|IAD|ORD|DFW|MIA|ATL|IAH|PHX|DEN|LAS|BOS|Los Angeles|San Jose|Silicon Valley|Michigan|波特兰|芝加哥|哥伦布|纽约|硅谷|俄勒冈|西雅图|(深|沪|呼|京|广|杭)美/g,
+    英国: /伦敦|LHR|LGW|STN|MAN|BHX|EDI|GLA/g,
+    "United Kingdom": /UK|Great Britain|London/g,
+    澳大利亚: /澳洲|墨尔本|悉尼|SYD|MEL|BNE|PER|ADL|CBR|(深|沪|呼|京|广|杭)澳/g,
+    Australia: /Sydney|Melbourne/g,
+    德国: /法兰克福|FRA|MUC|DUS|BER|HAM|STR|CGN|(深|沪|呼|京|广|杭)德(?!.*(I|线))/g,
+    Germany: /Frankfurt/g,
+    俄罗斯: /莫斯科|SVO|DME|LED|VKO/g,
+    Russia: /Moscow/g,
+    土耳其: /伊斯坦布尔|IST|SAW|ESB/g,
+    Turkey: /Istanbul/g,
+    印度: /孟买|BOM|DEL|BLR|MAA|CCU|HYD/g,
+    India: /Mumbai/g,
+    印尼: /印度尼西亚|雅加达|CGK|SUB|DPS/g,
+    Indonesia: /Jakarta/g,
+    法国: /巴黎|CDG|ORY|LYS|NCE|MRS/g,
+    France: /Paris/g,
+    Switzerland: /Zurich|ZRH|GVA/g,
+    阿联酋: /迪拜|阿拉伯联合酋长国|DXB|AUH|SHJ/g,
+    Dubai: /United Arab Emirates/g,
+    泰国: /泰國|曼谷|BKK|DMK|HKT/g,
+    中国: /中國/g,
+    // 新增地区机场代码
+    荷兰: /AMS/g,
+    马来: /KUL|PEN|BKI/g,
+    菲律宾: /MNL|CEB/g,
+    加拿大: /YYZ|YVR|YUL|YYC|YEG|YOW/g,
+    波兰: /WAW|KRK/g,
+    捷克: /PRG/g,
+    奥地利: /VIE/g,
+    匈牙利: /BUD/g,
+    比利时: /BRU/g,
+    葡萄牙: /LIS|OPO/g,
+    西班牙: /MAD|BCN/g,
+    意大利: /FCO|MXP|VCE/g,
+    挪威: /OSL/g,
+    瑞典: /ARN/g,
+    芬兰: /HEL/g,
+    丹麦: /CPH/g,
+    罗马尼亚: /OTP/g,
+    以色列: /TLV/g,
+    沙特阿拉伯: /RUH|JED/g,
+    卡塔尔: /DOH/g,
+    南非: /JNB|CPT/g,
+    墨西哥: /MEX|CUN/g,
+    阿根廷: /EZE/g,
+    哥伦比亚: /BOG/g,
+    巴西: /GRU|GIG/g
   };
-  for (const kw of RETAIN_KEYWORDS) pushHit(kw);
-  for (const tag of extractRetainPipeTags(name)) pushOriginal(tag);
-  for (const kw of retainKeys) pushHit(kw);
-  // 按关键词在原节点名中的首次出现位置排序，保留源词序
-  hits.sort(
-    (a, b) =>
-      nameLower.indexOf(a.toLowerCase()) - nameLower.indexOf(b.toLowerCase()),
-  );
-  // 过滤掉被其他命中词包含的子串（如同时命中"高级专线"和"专线"，保留前者）
-  return hits.filter(
-    (kw) =>
-      !hits.some(
-        (other) =>
-          other !== kw && other.toLowerCase().includes(kw.toLowerCase()),
-      ),
-  );
-}
 
-const COUNTRY_CODE_ALIASES = {
-  UK: "GB",
-};
-
-function normalizeCountryCode(code) {
-  const upper = String(code || "").toUpperCase();
-  if (EN.includes(upper)) return upper;
-  return COUNTRY_CODE_ALIASES[upper] || null;
-}
-
-/**
- * 解析 VikingLinks 的节点名：COUNTRY-NN-PROVIDER 或 COUNTRY-LINE-NN-PROVIDER。
- * 例：HK-Go-01-Hytron -> { countryCode: "HK", suffix: "Go Hytron" }
- */
-function parseVkGistName(name) {
-  const trimmed = String(name || "").trim();
-  const flagMatch = trimmed.match(/^([\u{1F1E6}-\u{1F1FF}]{2})\s*/u);
-  const rawName = flagMatch ? trimmed.slice(flagMatch[0].length) : trimmed;
-  const parts = rawName
-    .split("-")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  if (parts.length < 3 || !/^[A-Z]{2}$/i.test(parts[0])) return null;
-
-  const displayCode = parts[0].toUpperCase();
-  const countryCode = normalizeCountryCode(displayCode);
-  if (!countryCode) return null;
-
-  let line = "";
-  let providerParts = [];
-
-  if (/^\d{1,3}$/.test(parts[1])) {
-    providerParts = parts.slice(2);
-  } else if (parts.length >= 4 && /^\d{1,3}$/.test(parts[2])) {
-    line = parts[1];
-    providerParts = parts.slice(3);
-  } else {
+  // src/rename/identify.js
+  function matchNameToCode(name) {
+    let processed = name;
+    for (const [target, pattern] of Object.entries(REGION_ALIASES)) {
+      if (pattern.test(processed)) processed = processed.replace(pattern, target);
+    }
+    for (const field of ["chineseName", "flag", "englishName"]) {
+      for (const region of REGIONS) {
+        if (processed.includes(region[field])) return region.code;
+      }
+    }
+    for (const region of REGIONS) {
+      const pattern = new RegExp(`(?<![A-Za-z])${region.code}(?![A-Za-z])`, "i");
+      if (pattern.test(processed)) return region.code;
+    }
     return null;
   }
-
-  const provider = providerParts.join(" ").replace(/\s+/g, " ").trim();
-  if (!provider) return null;
-
-  return {
-    countryCode,
-    displayCode,
-    flag: flagMatch?.[1] || "",
-    suffix: [line, provider].filter(Boolean).join(" "),
-  };
-}
-
-async function operator(proxies, targetPlatform, context) {
-  const removeOriginalName =
-    $arguments?.remove === undefined ? true : !!$arguments.remove;
-  const numone = !!$arguments?.one;
-  const hotArg = $arguments?.hot;
-  const hotRegions = (() => {
-    if (!hotArg) return null;
-    const codes = String(hotArg)
-      .toUpperCase()
-      .split("|")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const matched = new Set(codes.filter((c) => EN.includes(c) || c === "CN"));
-    return matched.size > 0 ? matched : HOT_REGIONS;
-  })();
-  const hotOnly = hotRegions !== null;
-  const filterWordsRaw = $arguments?.filter;
-  const filterRegex = (() => {
-    // 传空值：禁用过滤
-    if (filterWordsRaw !== undefined && String(filterWordsRaw).trim() === "")
+  function normalizeCountryCode(code) {
+    const upper = String(code || "").toUpperCase();
+    if (REGIONS_BY_CODE.has(upper)) return upper;
+    return upper === "UK" ? "GB" : null;
+  }
+  function parseVikingName(name) {
+    const trimmed = String(name || "").trim();
+    const flagMatch = trimmed.match(/^([\u{1F1E6}-\u{1F1FF}]{2})\s*/u);
+    const rawName = flagMatch ? trimmed.slice(flagMatch[0].length) : trimmed;
+    const parts = rawName.split("-").map((part) => part.trim()).filter(Boolean);
+    if (parts.length < 3 || !/^[A-Z]{2}$/i.test(parts[0])) return null;
+    const displayCode = parts[0].toUpperCase();
+    const countryCode = normalizeCountryCode(displayCode);
+    if (!countryCode) return null;
+    let line = "";
+    let providerParts = [];
+    if (/^\d{1,3}$/.test(parts[1])) {
+      providerParts = parts.slice(2);
+    } else if (parts.length >= 4 && /^\d{1,3}$/.test(parts[2])) {
+      line = parts[1];
+      providerParts = parts.slice(3);
+    } else {
       return null;
-    const custom = filterWordsRaw
-      ? decodeURIComponent(String(filterWordsRaw))
-          .split("|")
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : [];
-    const words = [...DEFAULT_FILTER_WORDS, ...custom];
-    return new RegExp(
-      words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
-      "i",
-    );
-  })();
-  const blockWordsRaw = $arguments?.block;
-  const blockRegex = blockWordsRaw
-    ? new RegExp(decodeURIComponent(String(blockWordsRaw)), "gi")
-    : null;
-  const retainKeysRaw = $arguments?.retain;
-  // 默认启用内置关键词提取（等同于 retain=true）；传 false/0 禁用；传词组则追加自定义词
-  const retainKeys = (() => {
-    if (retainKeysRaw === undefined) return [];
-    const s = String(retainKeysRaw).trim();
-    if (s === "0" || s.toLowerCase() === "false") return null;
-    return s
-      .split("|")
-      .map((s) => s.trim())
-      .filter((s) => s && s !== "1" && s.toLowerCase() !== "true");
-  })();
-  const VALID_OUT = new Set(["FG", "ZH", "EN", "QC"]);
-  const outParts = ($arguments?.out ? String($arguments.out) : "FG|EN")
-    .split("|")
-    .map((s) => s.trim().toUpperCase())
-    .filter((s) => VALID_OUT.has(s));
-  const outFields = outParts.length > 0 ? outParts : ["FG", "EN"];
+    }
+    const provider = providerParts.join(" ").replace(/\s+/g, " ").trim();
+    if (!provider) return null;
+    return {
+      countryCode,
+      displayCode,
+      flag: flagMatch?.[1] || "",
+      suffix: [line, provider].filter(Boolean).join(" ")
+    };
+  }
+  function identifyCountry(proxy, blockPattern) {
+    if (!proxy.server) return null;
+    const cleanName = blockPattern ? proxy.name.replace(blockPattern, "") : proxy.name;
+    const vikingName = parseVikingName(cleanName);
+    const withoutDomains = cleanName.replace(/[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]+/g, "");
+    return vikingName?.countryCode || matchNameToCode(withoutDomains);
+  }
 
-  console.log(
-    `[geo-tag] 开始处理，共 ${proxies.length} 个节点，removeOriginalName=${removeOriginalName}，hotOnly=${hotOnly}`,
-  );
-
-  if (filterRegex) {
-    const before = proxies.length;
-    proxies = proxies.filter((p) => !filterRegex.test(p.name));
-    console.log(
-      `[geo-tag] filter 过滤: ${before - proxies.length} 个节点被丢弃，剩余 ${proxies.length} 个`,
+  // src/rename/keywords.js
+  var RETAIN_KEYWORDS = [
+    // 日本
+    "东京",
+    "大坂",
+    "Tokyo",
+    "Osaka",
+    "NRT",
+    "HND",
+    "KIX",
+    "OSA",
+    // 韩国
+    "首尔",
+    "春川",
+    "Seoul",
+    "Chuncheon",
+    "ICN",
+    "GMP",
+    // 美国
+    "纽约",
+    "洛杉矶",
+    "硅谷",
+    "西雅图",
+    "芝加哥",
+    "波特兰",
+    "哥伦布",
+    "俄勒冈",
+    "Los Angeles",
+    "San Jose",
+    "Silicon Valley",
+    "New York",
+    "Seattle",
+    "Chicago",
+    "LAX",
+    "SJC",
+    "SEA",
+    "SFO",
+    "JFK",
+    "EWR",
+    "IAD",
+    "ORD",
+    "DFW",
+    "MIA",
+    "ATL",
+    "IAH",
+    "PHX",
+    "DEN",
+    "LAS",
+    "BOS",
+    // 英国
+    "伦敦",
+    "London",
+    "LHR",
+    "LGW",
+    "STN",
+    "MAN",
+    // 澳大利亚
+    "悉尼",
+    "墨尔本",
+    "Sydney",
+    "Melbourne",
+    "SYD",
+    "MEL",
+    "BNE",
+    "PER",
+    // 德国
+    "法兰克福",
+    "Frankfurt",
+    "FRA",
+    "MUC",
+    "BER",
+    // 俄罗斯
+    "莫斯科",
+    "Moscow",
+    "SVO",
+    "DME",
+    // 土耳其
+    "伊斯坦布尔",
+    "Istanbul",
+    "IST",
+    "SAW",
+    // 印度
+    "孟买",
+    "Mumbai",
+    "BOM",
+    "DEL",
+    "BLR",
+    // 印尼
+    "雅加达",
+    "Jakarta",
+    "CGK",
+    "DPS",
+    // 法国
+    "巴黎",
+    "Paris",
+    "CDG",
+    "ORY",
+    // 瑞士
+    "苏黎世",
+    "Zurich",
+    "ZRH",
+    // 阿联酋
+    "迪拜",
+    "Dubai",
+    "DXB",
+    "AUH",
+    // 泰国
+    "曼谷",
+    "Bangkok",
+    "BKK",
+    "DMK",
+    // 台湾
+    "台北",
+    "Taipei",
+    "TPE",
+    // 荷兰
+    "阿姆斯特丹",
+    "Amsterdam",
+    "AMS",
+    // 加拿大
+    "多伦多",
+    "温哥华",
+    "Toronto",
+    "Vancouver",
+    "YYZ",
+    "YVR",
+    // 马来西亚
+    "吉隆坡",
+    "Kuala Lumpur",
+    "KUL",
+    // 菲律宾
+    "马尼拉",
+    "Manila",
+    "MNL",
+    // 波兰
+    "华沙",
+    "Warsaw",
+    "WAW",
+    // 捷克
+    "布拉格",
+    "Prague",
+    "PRG",
+    // 奥地利
+    "维也纳",
+    "Vienna",
+    "VIE",
+    // 西班牙
+    "马德里",
+    "巴塞罗那",
+    "Madrid",
+    "Barcelona",
+    "MAD",
+    "BCN",
+    // 意大利
+    "米兰",
+    "罗马",
+    "Milan",
+    "Rome",
+    "MXP",
+    "FCO",
+    // 葡萄牙
+    "里斯本",
+    "Lisbon",
+    "LIS",
+    // 瑞典
+    "斯德哥尔摩",
+    "Stockholm",
+    "ARN",
+    // 芬兰
+    "赫尔辛基",
+    "Helsinki",
+    "HEL",
+    // 丹麦
+    "哥本哈根",
+    "Copenhagen",
+    "CPH",
+    // 挪威
+    "奥斯陆",
+    "Oslo",
+    "OSL",
+    // 以色列
+    "特拉维夫",
+    "Tel Aviv",
+    "TLV",
+    // 沙特阿拉伯
+    "利雅得",
+    "吉达",
+    "Riyadh",
+    "Jeddah",
+    "RUH",
+    "JED",
+    // 卡塔尔
+    "多哈",
+    "Doha",
+    "DOH",
+    // 南非
+    "约翰内斯堡",
+    "Johannesburg",
+    "JNB",
+    // 巴西
+    "圣保罗",
+    "Sao Paulo",
+    "GRU",
+    // 墨西哥
+    "墨西哥城",
+    "Mexico City",
+    "MEX",
+    "via",
+    //VPS商/专线常见词
+    "BAGE",
+    "GOMAMI",
+    "AKARI",
+    "DMIT",
+    "NETCUP",
+    "NUBE",
+    "MISAKA",
+    "Sakura",
+    "家宽",
+    "专线",
+    "高级专线",
+    "IEPL",
+    "Edge",
+    "HKT",
+    "HINET",
+    "GIA",
+    "CIA",
+    "BGP",
+    "流媒体",
+    "高速",
+    "移动",
+    "联通",
+    "电信",
+    "移联",
+    "AWS",
+    "RS",
+    "OVH",
+    "CDN",
+    "下载",
+    "OCTO",
+    "CTCUCM",
+    "CMCU",
+    "CUCM",
+    "CTCU",
+    "CM",
+    "CT",
+    "CU"
+  ];
+  var RETAIN_PIPE_TAG_PATTERNS = [/^(?:CM|CT|CU)+$/i, /^(?:\d+(?:\.\d+)?|\.\d+)x$/i];
+  function extractRetainPipeTags(name) {
+    const parts = String(name || "").split("|").map((s) => s.trim()).filter(Boolean);
+    if (parts.length < 2) return [];
+    return parts.slice(1).filter((part) => RETAIN_PIPE_TAG_PATTERNS.some((re) => re.test(part)));
+  }
+  function extractRetainKeywords(name, retainKeys) {
+    const hits = [];
+    const nameLower = name.toLowerCase();
+    const pushOriginal = (value) => {
+      if (value && !hits.includes(value)) hits.push(value);
+    };
+    const pushHit = (kw) => {
+      const kwLower = kw.toLowerCase();
+      const isAscii = /^[A-Za-z0-9]+$/.test(kw);
+      const re = isAscii ? new RegExp(`(?<![A-Za-z0-9])${kwLower}(?![A-Za-z0-9])`) : new RegExp(kwLower);
+      const m = re.exec(nameLower);
+      if (!m) return;
+      const original = name.slice(m.index, m.index + kw.length);
+      pushOriginal(original);
+    };
+    for (const kw of RETAIN_KEYWORDS) pushHit(kw);
+    for (const tag of extractRetainPipeTags(name)) pushOriginal(tag);
+    for (const kw of retainKeys) pushHit(kw);
+    hits.sort((a, b) => nameLower.indexOf(a.toLowerCase()) - nameLower.indexOf(b.toLowerCase()));
+    return hits.filter(
+      (kw) => !hits.some((other) => other !== kw && other.toLowerCase().includes(kw.toLowerCase()))
     );
   }
 
-  let nameHitCount = 0;
-
-  // 第一阶段：仅用节点名匹配地区，同一服务器的不同节点各自识别。
-  const countryMap = new Map(); // proxy -> country_code
-
-  for (const proxy of proxies) {
-    if (!proxy.server) continue;
-    let cleanName = blockRegex
-      ? proxy.name.replace(blockRegex, "")
-      : proxy.name;
-    const parsedName = parseVkGistName(cleanName);
-    // 自动剥离节点名中的域名（含点的多级域名），避免误匹配国家代码
-    cleanName = cleanName.replace(
-      /[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]+/g,
-      "",
-    );
-    const code = parsedName?.countryCode || matchNameToCode(cleanName);
-    if (code) {
-      countryMap.set(proxy, code);
-      nameHitCount++;
-      console.log(`[geo-tag] 名称命中: ${proxy.name} → ${code}`);
-    }
+  // src/rename/format.js
+  function getFlagEmoji(countryCode) {
+    if (!countryCode) return "🌐";
+    if (countryCode.toUpperCase() === "TW") return "🇼🇸";
+    return countryCode.toUpperCase().replace(/[A-Z]/gu, (char) => String.fromCodePoint(char.charCodeAt(0) + 127397));
   }
-  console.log(`[geo-tag] 名称命中 ${nameHitCount}/${proxies.length} 个节点`);
-
-  // 第二阶段：按 _subName + country_code 分组计数，生成新名称。
-  const counterMap = new Map(); // `${subName}|${countryCode}` -> 当前计数
-
-  const renamedProxies = proxies.map((proxy) => {
-    const countryCode = countryMap.get(proxy);
-    const parsedName = parseVkGistName(proxy.name);
-    const parsedNameMatched = parsedName?.countryCode === countryCode;
-
-    if (!countryCode) {
-      return proxy;
-    }
-
+  function formatCountryLabel(countryCode, vikingName, outputFields) {
+    const region = REGIONS_BY_CODE.get(countryCode);
+    const values = {
+      FG: vikingName?.flag || getFlagEmoji(countryCode),
+      ZH: region?.chineseName || countryCode,
+      QC: region?.englishName || countryCode,
+      EN: vikingName ? vikingName.displayCode : countryCode
+    };
+    return outputFields.map((field) => values[field]).join(" ");
+  }
+  function formatProxyName(proxy, countryCode, sequence, options) {
+    const parsedName = parseVikingName(proxy.name);
+    const vikingName = parsedName?.countryCode === countryCode ? parsedName : null;
     const subName = proxy._subName || "";
-    const flag = getFlagEmoji(countryCode);
-    const outputFlag =
-      parsedNameMatched && parsedName.flag ? parsedName.flag : flag;
-    const outputCountryCode = parsedNameMatched
-      ? parsedName.displayCode
-      : countryCode;
-    const zhName = EN_TO_ZH.get(countryCode) || countryCode;
-    const qcName = QC[EN.indexOf(countryCode)] || countryCode;
-    const countryLabel = outFields
-      .map((f) =>
-        f === "FG"
-          ? outputFlag
-          : f === "ZH"
-            ? zhName
-            : f === "QC"
-              ? qcName
-              : outputCountryCode,
-      )
-      .join(" ");
-    const key = `${subName}|${countryCode}`;
-    const count = (counterMap.get(key) || 0) + 1;
-    counterMap.set(key, count);
-    const seq = String(count).padStart(2, "0");
-
-    const baseName = [countryLabel, seq].filter(Boolean).join(" ");
+    const countryLabel = formatCountryLabel(countryCode, vikingName, options.outputFields);
+    const baseName = [countryLabel, String(sequence).padStart(2, "0")].filter(Boolean).join(" ");
     const appendSubName = (name) => [name, subName].filter(Boolean).join(" ");
     const joinNameParts = (...parts) => parts.filter(Boolean).join(" | ");
-
-    const newName = removeOriginalName
-      ? (() => {
-          if (!retainKeys) return joinNameParts(baseName, subName);
-          if (parsedNameMatched) {
-            return joinNameParts(baseName, appendSubName(parsedName.suffix));
-          }
-          const retained = extractRetainKeywords(proxy.name, retainKeys);
-          return joinNameParts(
-            baseName,
-            appendSubName(retained.length > 0 ? retained.join(" ") : ""),
-          );
-        })()
-      : joinNameParts(baseName, appendSubName(proxy.name));
-
-    console.log(`[geo-tag] 重命名: ${proxy.name} → ${newName}`);
-    const renamedProxy = { ...proxy, name: newName };
-    countryMap.set(renamedProxy, countryCode);
-    return renamedProxy;
-  });
-
-  console.log(
-    `[geo-tag] 完成。名称命中: ${nameHitCount}，未识别: ${proxies.length - nameHitCount}`,
-  );
-
-  // hot 参数：只保留热门地区节点
-  let result = hotOnly
-    ? renamedProxies.filter((p) => {
-        const code = countryMap.get(p);
-        return code && hotRegions.has(code);
-      })
-    : renamedProxies;
-
-  if (hotOnly) {
-    console.log(`[geo-tag] hot 过滤后剩余: ${result.length} 个节点`);
+    if (!options.removeOriginalName) return joinNameParts(baseName, appendSubName(proxy.name));
+    if (!options.retainKeywords) return joinNameParts(baseName, subName);
+    if (vikingName) return joinNameParts(baseName, appendSubName(vikingName.suffix));
+    const retained = extractRetainKeywords(proxy.name, options.retainKeywords);
+    return joinNameParts(baseName, appendSubName(retained.join(" ")));
   }
-
-  // 第三阶段：热门地区优先，内部按 country_code 字母序；其余也按字母序；无归属地排最后
-  result.sort((a, b) => {
-    const ca = countryMap.get(a);
-    const cb = countryMap.get(b);
-    if (!ca && !cb) return 0;
-    if (!ca) return 1;
-    if (!cb) return -1;
-    const hotA = HOT_REGIONS.has(ca);
-    const hotB = HOT_REGIONS.has(cb);
-    if (hotA && !hotB) return -1;
-    if (!hotA && hotB) return 1;
-    return ca.localeCompare(cb) || a.name.localeCompare(b.name);
-  });
-
-  // one 参数：去掉只有一个节点的地区的序号
-  if (numone) {
-    const nameCount = new Map();
-    for (const p of result) {
-      const base = p.name.replace(
-        /\s+\d{2}(\s*\|.*)?$/,
-        (_, suffix) => suffix || "",
-      );
-      nameCount.set(base, (nameCount.get(base) || 0) + 1);
+  function removeUniqueSequence(proxies) {
+    const withoutSequence = (name) => name.replace(/\s+\d{2}(\s*\|.*)?$/, (_, suffix) => suffix || "");
+    const nameCounts = /* @__PURE__ */ new Map();
+    for (const proxy of proxies) {
+      const baseName = withoutSequence(proxy.name);
+      nameCounts.set(baseName, (nameCounts.get(baseName) || 0) + 1);
     }
-    for (const p of result) {
-      const base = p.name.replace(
-        /\s+\d{2}(\s*\|.*)?$/,
-        (_, suffix) => suffix || "",
-      );
-      if (nameCount.get(base) === 1) {
-        p.name = p.name.replace(/\s+01(\s*\|)/, "$1").replace(/\s+01$/, "");
+    for (const proxy of proxies) {
+      if (nameCounts.get(withoutSequence(proxy.name)) === 1) {
+        proxy.name = proxy.name.replace(/\s+01(\s*\|)/, "$1").replace(/\s+01$/, "");
       }
     }
   }
 
-  return result;
-}
-
-/**
- * 国家代码转 Emoji 旗帜
- */
-function getFlagEmoji(countryCode) {
-  if (!countryCode) return "🌐";
-  if (countryCode.toUpperCase() === "TW") return "🇼🇸";
-  return countryCode
-    .toUpperCase()
-    .replace(/[A-Z]/gu, (char) =>
-      String.fromCodePoint(char.charCodeAt(0) + 127397),
+  // src/rename/index.js
+  function compareProxiesByRegion(a, b, countries) {
+    const countryA = countries.get(a);
+    const countryB = countries.get(b);
+    if (!countryA && !countryB) return 0;
+    if (!countryA) return 1;
+    if (!countryB) return -1;
+    const hotA = HOT_REGIONS.has(countryA);
+    const hotB = HOT_REGIONS.has(countryB);
+    if (hotA && !hotB) return -1;
+    if (!hotA && hotB) return 1;
+    return countryA.localeCompare(countryB) || a.name.localeCompare(b.name);
+  }
+  function renameProxies(proxies, args = {}, logger = console) {
+    const options = parseRenameOptions(args);
+    const hotOnly = options.hotRegions !== null;
+    logger.log(
+      `[geo-tag] 开始处理，共 ${proxies.length} 个节点，removeOriginalName=${options.removeOriginalName}，hotOnly=${hotOnly}`
     );
+    if (options.filterPattern) {
+      const before = proxies.length;
+      proxies = proxies.filter((proxy) => !options.filterPattern.test(proxy.name));
+      logger.log(
+        `[geo-tag] filter 过滤: ${before - proxies.length} 个节点被丢弃，剩余 ${proxies.length} 个`
+      );
+    }
+    const countries = /* @__PURE__ */ new Map();
+    let nameHitCount = 0;
+    for (const proxy of proxies) {
+      const countryCode = identifyCountry(proxy, options.blockPattern);
+      if (countryCode) {
+        countries.set(proxy, countryCode);
+        nameHitCount++;
+        logger.log(`[geo-tag] 名称命中: ${proxy.name} → ${countryCode}`);
+      }
+    }
+    logger.log(`[geo-tag] 名称命中 ${nameHitCount}/${proxies.length} 个节点`);
+    const sequenceByGroup = /* @__PURE__ */ new Map();
+    const renamedProxies = proxies.map((proxy) => {
+      const countryCode = countries.get(proxy);
+      if (!countryCode) return proxy;
+      const key = `${proxy._subName || ""}|${countryCode}`;
+      const sequence = (sequenceByGroup.get(key) || 0) + 1;
+      sequenceByGroup.set(key, sequence);
+      const name = formatProxyName(proxy, countryCode, sequence, options);
+      logger.log(`[geo-tag] 重命名: ${proxy.name} → ${name}`);
+      const renamed = { ...proxy, name };
+      countries.set(renamed, countryCode);
+      return renamed;
+    });
+    logger.log(`[geo-tag] 完成。名称命中: ${nameHitCount}，未识别: ${proxies.length - nameHitCount}`);
+    const result = hotOnly ? renamedProxies.filter((proxy) => {
+      const code = countries.get(proxy);
+      return code && options.hotRegions.has(code);
+    }) : renamedProxies;
+    if (hotOnly) logger.log(`[geo-tag] hot 过滤后剩余: ${result.length} 个节点`);
+    result.sort((a, b) => compareProxiesByRegion(a, b, countries));
+    if (options.removeUniqueSequence) removeUniqueSequence(result);
+    return result;
+  }
+
+  // src/entries/rename.js
+  async function operator(proxies, targetPlatform, context) {
+    return renameProxies(proxies, $arguments, console);
+  }
+  return __toCommonJS(rename_exports);
+})();
+async function operator(proxies, targetPlatform, context) {
+  return __proxyConfigScript.operator(proxies, targetPlatform, context);
 }
