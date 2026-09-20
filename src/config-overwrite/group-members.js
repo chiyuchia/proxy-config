@@ -1,14 +1,9 @@
 /**
- * @file 根据节点名称、实际协议与链式代理状态更新代理组成员。
- * 普通组按原顺序合并去重，专用组重建成员，全球直连组保留手工配置。
+ * @file 按配置声明的生成方式、协议限制、链式代理限制及 filter 更新成员。
+ * 保留候选顺序，移除只供 Sub-Store 使用的生成策略，不依据组名决定行为。
  */
 
-const AIRPORT_ASIA_GROUPS = new Set(['✈️ VikingLinks 亚太', '✈️ 良心云 亚太', '✈️ 吹雪云 亚太']);
-
-const GROUP_PROTOCOLS = new Map([
-  ['✈️ 良心云 Hy2', ['hysteria2', 'hy2']],
-  ['✈️ 良心云 亚太', ['vless']],
-]);
+import { readMemberPolicy } from './member-policy.js';
 
 function hasText(value) {
   return typeof value === 'string' && value.trim() !== '';
@@ -52,34 +47,38 @@ function mergeProxyNames(existing, added) {
   return [...new Set([...(existing ?? []), ...added])];
 }
 
-function updateGroup(group, allProxies, directProxies) {
-  const name = group?.name ?? '';
-  if (name.includes('全球直连')) return group;
+function matchesPolicy(proxy, policy) {
+  return (
+    (!policy.excludeDialer || !proxy['dialer-proxy']) &&
+    (!policy.types || policy.types.has(String(proxy.type).toLowerCase()))
+  );
+}
 
-  const allowedTypes = GROUP_PROTOCOLS.get(name);
-  const isAsiaGroup = AIRPORT_ASIA_GROUPS.has(name);
-  const rebuildMembers = isAsiaGroup || allowedTypes !== undefined;
-  const requiresDirect = name.includes('中转') || rebuildMembers;
-  let candidates = requiresDirect ? directProxies : allProxies;
+function updateGroup(group, policy, allProxies, proxiesByName) {
+  const { 'x-substore': metadata, ...output } = group;
+  if (policy.mode === 'manual') return output;
 
-  if (allowedTypes) {
-    // 协议以节点 type 为准，名称中的 Hy2/VLESS 等字样不能作为依据。
-    candidates = candidates.filter((proxy) =>
-      allowedTypes.includes(String(proxy.type).toLowerCase()),
-    );
-  }
-
-  // 机场亚太组和协议专用组每次重建，清除地区、协议或链式代理状态已变的旧成员。
-  const existing = rebuildMembers ? [] : group?.proxies;
+  const candidates = allProxies.filter((proxy) => matchesPolicy(proxy, policy));
+  // 已有真实节点也须符合协议/中转限制；手工组引用与内置策略保留，filter 仅筛新增节点。
+  const existing =
+    policy.mode === 'replace'
+      ? []
+      : (group.proxies ?? []).filter((name) => {
+          const proxy = proxiesByName.get(name);
+          return !proxy || matchesPolicy(proxy, policy);
+        });
   return {
-    ...group,
+    ...output,
     proxies: mergeProxyNames(existing, matchingProxyNames(group, candidates)),
   };
 }
 
-/** 保留组的顺序与设置，只更新节点成员。 */
+/** 先校验全部策略再计算结果，不修改输入组或订阅节点。 */
 export function updateGroupMembers(groups, proxies) {
+  const policies = groups.map(readMemberPolicy);
   const allProxies = proxies.filter((proxy) => proxy?.name);
-  const directProxies = allProxies.filter((proxy) => !proxy['dialer-proxy']);
-  return groups.map((group) => updateGroup(group, allProxies, directProxies));
+  const proxiesByName = new Map(allProxies.map((proxy) => [proxy.name, proxy]));
+  return groups.map((group, index) =>
+    updateGroup(group, policies[index], allProxies, proxiesByName),
+  );
 }

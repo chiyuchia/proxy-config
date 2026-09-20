@@ -53,6 +53,9 @@ tun:
 # ==========================================
 proxy-groups:
   - name: "🚀 节点选择"
+    x-substore:
+      members:
+        mode: append
     type: select
     interval: 300
     url: "https://cp.cloudflare.com/generate_204"
@@ -72,6 +75,10 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "🛡️ Edge 中转"
+    x-substore:
+      members:
+        mode: append
+        exclude-dialer: true
     type: select
     proxies:
       - "✈️ VikingLinks 亚太"
@@ -83,6 +90,10 @@ proxy-groups:
       - "✈️ 良心云 Hy2"
 
   - name: "🛡️ 亚太中转"
+    x-substore:
+      members:
+        mode: append
+        exclude-dialer: true
     type: select
     proxies:
       - "✈️ VikingLinks 亚太"
@@ -94,6 +105,10 @@ proxy-groups:
       - "✈️ 良心云 Hy2"
 
   - name: "🛡️ 美西中转"
+    x-substore:
+      members:
+        mode: append
+        exclude-dialer: true
     type: select
     proxies:
       - "✈️ VikingLinks"
@@ -102,10 +117,16 @@ proxy-groups:
       - "✈️ 良心云 Hy2"
 
   - name: "🏝️ 精品节点"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(自建|合租)"
 
   - name: "♊ Gemini"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🏝️ 精品节点"
@@ -123,6 +144,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "💬 Ai平台"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🏝️ 精品节点"
@@ -140,6 +164,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "🍎 Apple Push"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🚀 节点选择"
@@ -158,6 +185,9 @@ proxy-groups:
       - DIRECT
 
   - name: "🎥 奈飞视频"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🇸🇬 狮城节点"
@@ -175,6 +205,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "📹 油管视频"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🇺🇲 美国节点"
@@ -192,6 +225,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "📼 EMBY"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🚀 节点选择"
@@ -209,6 +245,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "📲 电报消息"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🇸🇬 狮城节点"
@@ -226,6 +265,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "🐙 Github"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🚀 节点选择"
@@ -243,6 +285,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "🍎 Apple"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - DIRECT
@@ -261,6 +306,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "Ⓜ️ Microsoft"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🚀 节点选择"
@@ -278,6 +326,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "📢 Google"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🏝️ 精品节点"
@@ -295,6 +346,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "📺 国内媒体"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - DIRECT
@@ -313,6 +367,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "🌍 国外媒体"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🚀 节点选择"
@@ -331,6 +388,9 @@ proxy-groups:
       - DIRECT
 
   - name: "🎮 游戏平台"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🚀 节点选择"
@@ -349,6 +409,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "👛 Paypal"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🇺🇲 美国节点"
@@ -366,6 +429,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "💰 加密货币"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🇸🇬 狮城节点"
@@ -383,6 +449,9 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "🐟 漏网之鱼"
+    x-substore:
+      members:
+        mode: append
     type: select
     proxies:
       - "🚀 节点选择"
@@ -401,34 +470,59 @@ proxy-groups:
       - "✈️ 一元机场"
 
   - name: "🇭🇰 香港节点"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(港|HK|hk|Hong Kong|HongKong|hongkong)"
 
   - name: "🇺🇲 美国节点"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲)"
 
   - name: "🇸🇬 狮城节点"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(新加坡|坡|狮城|SG|Singapore)"
 
   - name: "🇯🇵 日本节点"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)"
 
   - name: "🇼🇸 台湾节点"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(台|新北|彰化|TW|Taiwan)"
 
   - name: "🌍 其他节点"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan)).*"
 
   - name: "✈️ VikingLinks"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(VikingLinks)"
 
   - name: "✈️ VikingLinks 亚太"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
     # 公共测速参数在此定义，后续测速组通过 YAML 合并键复用。
     <<: &url_test_defaults
       type: url-test
@@ -440,43 +534,72 @@ proxy-groups:
       max-failed-times: 3
       expected-status: 204
     # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
-    # scripts/config-overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
+    # x-substore.members 声明重建成员，并排除带 dialer-proxy 的节点。
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
   - name: "✈️ oixCloud Edge"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(oixCloud Edge)"
 
   - name: "✈️ 吹雪云"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(吹雪云)"
 
   - name: "✈️ 吹雪云 亚太"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
     <<: *url_test_defaults
     # 仅筛选 HK、SG、JP、TW 地区且名称包含“电信”的节点；不限制协议类型。
-    # scripts/config-overwrite.js 按机场亚太组识别，排除带 dialer-proxy 的落地节点。
+    # x-substore.members 声明重建成员，并排除带 dialer-proxy 的节点。
     filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 良心云"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(良心云)"
 
   - name: "✈️ 良心云 亚太"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        types: [vless]
     <<: *url_test_defaults
     # 仅筛选 HK、SG、JP、TW 地区且名称包含 CT 的节点，兼容 CTCU、CTCUCM 标签。
-    # scripts/config-overwrite.js 按实际协议类型仅注入 VLESS 节点，并排除带 dialer-proxy 的节点。
+    # x-substore.members 声明仅纳入实际 VLESS 协议，并排除带 dialer-proxy 的节点。
     filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 良心云 Hy2"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        types: [hysteria2, hy2]
     <<: *url_test_defaults
-    # scripts/config-overwrite.js 按实际协议类型注入 Hy2 节点，并排除带 dialer-proxy 的节点。
+    # x-substore.members 声明仅纳入实际 Hy2 协议，并排除带 dialer-proxy 的节点。
     filter: "(良心云)"
 
   - name: "✈️ 一元机场"
+    x-substore:
+      members:
+        mode: append
     type: select
     filter: "(一元机场)"
 
   - name: "🎯 全球直连"
+    x-substore:
+      members:
+        mode: manual
     type: select
     proxies:
       - DIRECT

@@ -9,7 +9,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 import { mergeConfigDocuments } from '../src/merge-config/index.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -545,10 +545,11 @@ test('both live source profiles work with the existing airport and transit node 
     }
     const firstMembers = plain(result['proxy-groups']);
     assert.deepEqual(
-      plain(overwrite(result)['proxy-groups']),
+      plain(overwrite(await main({ proxies: plain(proxies) }))['proxy-groups']),
       firstMembers,
-      `${client}: repeated overwrite must remain idempotent`,
+      `${client}: regeneration from a fresh template must remain stable`,
     );
+    assert.throws(() => overwrite(result), /x-substore/);
   }
 });
 
@@ -576,12 +577,16 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
   const node = { name: '良心云 HK CT', type: 'vless', server: 'example.com', port: 443 };
 
   for (const client of ['mihomo', 'stash']) {
-    for (const input of [{}, { proxies: [node] }]) {
+    for (const { input, injected } of [
+      { input: {} },
+      { input: { proxies: [node] } },
+      { input: {}, injected: [node] },
+    ]) {
       let dumpCount = 0;
       const requests = [];
       const context = vm.createContext({
         console,
-        $content: JSON.stringify(input),
+        $content: stringify(input),
         $arguments: { client },
         ProxyUtils: {
           yaml: {
@@ -593,8 +598,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
                 'the wrapper must await async main before serializing',
               );
               dumpCount += 1;
-              // JSON is valid YAML; the next script still reparses it as YAML.
-              return JSON.stringify(value);
+              return stringify(value);
             },
           },
         },
@@ -622,6 +626,15 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
       assert.equal(hasDirective(merged), false, 'source markers and patch operators must not leak');
       assert.deepEqual(merged.proxies ?? [], input.proxies ?? []);
       assert.ok(merged['proxy-groups'].length > 0);
+      assert.ok(
+        merged['proxy-groups'].every((group) => group['x-substore']?.members?.mode),
+        'member policies must survive serialization between independent scripts',
+      );
+      if (injected) {
+        merged.proxies = injected;
+        context.$content = stringify(merged);
+      }
+      const expectedProxies = injected ?? input.proxies ?? [];
 
       context.$arguments = {};
       await runWrapped('scripts/config-overwrite.js', context);
@@ -630,11 +643,18 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
       const result = parseYaml(context.$content);
       assert.equal(dumpCount, 2);
       assert.equal(requests.length, 2);
-      assert.deepEqual(result.proxies ?? [], input.proxies ?? []);
+      assert.deepEqual(result.proxies ?? [], expectedProxies);
       assert.equal(hasDirective(result), false);
+      assert.ok(result['proxy-groups'].every((group) => !Object.hasOwn(group, 'x-substore')));
       assert.deepEqual(result.rules, merged.rules);
       const airport = result['proxy-groups'].find(({ name }) => name === '✈️ 良心云 亚太');
-      assert.deepEqual(airport.proxies, input.proxies ? [node.name] : []);
+      assert.deepEqual(
+        airport.proxies,
+        expectedProxies.map(({ name }) => name),
+      );
+      const serialized = context.$content;
+      await assert.rejects(runWrapped('scripts/config-overwrite.js', context), /x-substore/);
+      assert.equal(context.$content, serialized, 'rejected overwrite must not replace the output');
     }
   }
 });

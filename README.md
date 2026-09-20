@@ -4,7 +4,7 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 
 | 文件 | 维护内容 |
 | --- | --- |
-| [configs/base.yaml](configs/base.yaml) | 公共网络设置、全部共同代理组及其候选顺序、筛选、测速设置、规则集和分流规则 |
+| [configs/base.yaml](configs/base.yaml) | 公共网络设置、全部共同代理组及其候选顺序、成员生成声明、筛选、测速设置、规则集和分流规则 |
 | [configs/mihomo.yaml](configs/mihomo.yaml) | Mihomo 的 DNS、嗅探、oixCloud provider、Optimized 组及相关 `use` 和菜单引用 |
 | [configs/stash.yaml](configs/stash.yaml) | Stash 的 DNS 差异 |
 | [scripts/merge-config.js](scripts/merge-config.js) | 服务端拉取、合并与配置检查的发布脚本；源码在 [src/merge-config/](src/merge-config/) |
@@ -59,6 +59,8 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/config-o
 Stash 输出不需要添加 `oixCloudEdgePath`；该参数会额外生成 oixCloud provider。
 
 这两个 JavaScript 文件必须作为**两个独立的脚本操作**执行，它们分别提供 `main(config)`，不能拼接到同一个脚本中。Sub-Store 会等待异步 `main` 并将返回值序列化为 YAML，参见[官方脚本处理实现](https://github.com/sub-store-org/Sub-Store/blob/master/backend/src/core/proxy-utils/processors/index.js)。
+
+代理组通过模板中的 `x-substore.members` 声明成员生成方式，覆写不再根据组名决定行为；声明在最终输出前移除。每次刷新都应重新执行合并与覆写，不能直接对上次输出再次覆写。新增组和声明字段的说明见[贡献指南的成员生成声明](CONTRIBUTING.md#成员生成声明)。
 
 首次切换后，在 Sub-Store 预览最终配置，确认原来的订阅节点仍在 `proxies` 中，并检查三个机场亚太组的成员，再更新客户端订阅。
 

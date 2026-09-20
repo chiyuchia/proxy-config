@@ -31,12 +31,46 @@ var __proxyConfigScript = (() => {
     main: () => main
   });
 
+  // src/config-overwrite/member-policy.js
+  var MEMBER_MODES = /* @__PURE__ */ new Set(["append", "replace", "manual"]);
+  var MEMBER_FIELDS = /* @__PURE__ */ new Set(["mode", "exclude-dialer", "types"]);
+  function policyError(group, field, message) {
+    throw new Error(`[config-overwrite] ${group?.name || "未命名代理组"}.${field} ${message}`);
+  }
+  function requireMap(value, group, field) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      policyError(group, field, "必须为映射；请从合并后的模板生成，不要重复覆写最终配置");
+    }
+  }
+  function readMemberPolicy(group) {
+    const metadata = group?.["x-substore"];
+    requireMap(metadata, group, "x-substore");
+    for (const key of Object.keys(metadata)) {
+      if (key !== "members") policyError(group, `x-substore.${key}`, "是未知字段");
+    }
+    const policy = metadata.members;
+    const field = "x-substore.members";
+    requireMap(policy, group, field);
+    for (const key of Object.keys(policy)) {
+      if (!MEMBER_FIELDS.has(key)) policyError(group, `${field}.${key}`, "是未知字段");
+    }
+    if (!MEMBER_MODES.has(policy.mode)) {
+      policyError(group, `${field}.mode`, "必须为 append、replace 或 manual");
+    }
+    if (Object.hasOwn(policy, "exclude-dialer") && typeof policy["exclude-dialer"] !== "boolean") {
+      policyError(group, `${field}.exclude-dialer`, "必须为布尔值");
+    }
+    let types = null;
+    if (Object.hasOwn(policy, "types")) {
+      if (!Array.isArray(policy.types) || policy.types.length === 0 || policy.types.some((type) => typeof type !== "string" || !type.trim())) {
+        policyError(group, `${field}.types`, "必须为非空协议名称数组；不限协议时省略该字段");
+      }
+      types = new Set(policy.types.map((type) => type.trim().toLowerCase()));
+    }
+    return { mode: policy.mode, excludeDialer: policy["exclude-dialer"] ?? false, types };
+  }
+
   // src/config-overwrite/group-members.js
-  var AIRPORT_ASIA_GROUPS = /* @__PURE__ */ new Set(["✈️ VikingLinks 亚太", "✈️ 良心云 亚太", "✈️ 吹雪云 亚太"]);
-  var GROUP_PROTOCOLS = /* @__PURE__ */ new Map([
-    ["✈️ 良心云 Hy2", ["hysteria2", "hy2"]],
-    ["✈️ 良心云 亚太", ["vless"]]
-  ]);
   function hasText(value) {
     return typeof value === "string" && value.trim() !== "";
   }
@@ -67,29 +101,29 @@ var __proxyConfigScript = (() => {
   function mergeProxyNames(existing, added) {
     return [.../* @__PURE__ */ new Set([...existing ?? [], ...added])];
   }
-  function updateGroup(group, allProxies, directProxies) {
-    const name = group?.name ?? "";
-    if (name.includes("全球直连")) return group;
-    const allowedTypes = GROUP_PROTOCOLS.get(name);
-    const isAsiaGroup = AIRPORT_ASIA_GROUPS.has(name);
-    const rebuildMembers = isAsiaGroup || allowedTypes !== void 0;
-    const requiresDirect = name.includes("中转") || rebuildMembers;
-    let candidates = requiresDirect ? directProxies : allProxies;
-    if (allowedTypes) {
-      candidates = candidates.filter(
-        (proxy) => allowedTypes.includes(String(proxy.type).toLowerCase())
-      );
-    }
-    const existing = rebuildMembers ? [] : group?.proxies;
+  function matchesPolicy(proxy, policy) {
+    return (!policy.excludeDialer || !proxy["dialer-proxy"]) && (!policy.types || policy.types.has(String(proxy.type).toLowerCase()));
+  }
+  function updateGroup(group, policy, allProxies, proxiesByName) {
+    const { "x-substore": metadata, ...output } = group;
+    if (policy.mode === "manual") return output;
+    const candidates = allProxies.filter((proxy) => matchesPolicy(proxy, policy));
+    const existing = policy.mode === "replace" ? [] : (group.proxies ?? []).filter((name) => {
+      const proxy = proxiesByName.get(name);
+      return !proxy || matchesPolicy(proxy, policy);
+    });
     return {
-      ...group,
+      ...output,
       proxies: mergeProxyNames(existing, matchingProxyNames(group, candidates))
     };
   }
   function updateGroupMembers(groups, proxies) {
+    const policies = groups.map(readMemberPolicy);
     const allProxies = proxies.filter((proxy) => proxy?.name);
-    const directProxies = allProxies.filter((proxy) => !proxy["dialer-proxy"]);
-    return groups.map((group) => updateGroup(group, allProxies, directProxies));
+    const proxiesByName = new Map(allProxies.map((proxy) => [proxy.name, proxy]));
+    return groups.map(
+      (group, index) => updateGroup(group, policies[index], allProxies, proxiesByName)
+    );
   }
 
   // src/config-overwrite/provider.js

@@ -196,6 +196,9 @@ proxy-groups:
     use: *oix_provider
 
   - name: "✈️ oixCloud Optimized"
+    x-substore:
+      members:
+        mode: append
     $before: "✈️ oixCloud Edge"
     <<: *oix_health_check
     type: url-test
