@@ -5,7 +5,7 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 | 文件 | 维护内容 |
 | --- | --- |
 | [configs/base.yaml](configs/base.yaml) | 公共网络设置、全部共同代理组及其候选顺序、成员生成声明、筛选、测速设置、规则集和分流规则 |
-| [configs/mihomo.yaml](configs/mihomo.yaml) | Mihomo 的 DNS、嗅探、oixCloud 运行时 provider 声明、Optimized 组及相关 `use` 和菜单引用 |
+| [configs/mihomo.yaml](configs/mihomo.yaml) | Mihomo 的 DNS、嗅探、oixCloud 文件 provider 声明、Optimized 组及相关 `use` 和菜单引用 |
 | [configs/stash.yaml](configs/stash.yaml) | Stash 的 DNS 差异 |
 | [scripts/merge-config.js](scripts/merge-config.js) | 服务端拉取、合并与配置检查的发布脚本；源码在 [src/merge-config/](src/merge-config/) |
 | [scripts/config-overwrite.js](scripts/config-overwrite.js) | 组成员筛选、去重和最终配置校验的发布脚本；源码在 [src/config-overwrite/](src/config-overwrite/) |
@@ -56,9 +56,18 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-co
 https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/config-overwrite.js
 ```
 
-本仓库的 Mihomo 配置依赖 OpenClash 中已启用的 oix 运行时，由内核创建完整的 `oixCloud` provider 并管理其订阅地址、本地文件和健康检查。模板只通过顶层 `x-substore.runtime-proxy-providers: [oixCloud]` 声明这项依赖，保留组内的 `use: [oixCloud]`；Sub-Store 不创建 `proxy-providers.oixCloud`，也不检查客户端本地文件是否存在。Stash 配置没有这项声明和依赖。
+本仓库的 Mihomo 配置依赖 OpenClash 中已启用的 oix 运行时。模板预定义以下文件 provider，使下载后的独立内核检查能解析 `use: [oixCloud]`，不依赖测试进程携带 oix 凭据：
 
-升级时请移除旧的 `oixCloudEdgePath` 参数：覆写脚本已不再读取该参数或创建、更新 provider。如需自行管理其他 HTTP provider，在配置中显式定义其有效 `url`，并按需添加组内 `use` 引用。运行时声明的字段规则见[贡献指南](CONTRIBUTING.md#运行时-provider-声明)。
+```yaml
+proxy-providers:
+  oixCloud:
+    type: file
+    path: ./proxy_provider/oixCloud
+```
+
+[内核 `-t` 检查](https://github.com/vernesong/mihomo-oix/blob/cd52e9e2facb5523e76526896a6abf283fddc858/main.go#L208-L224)不要求这个文件已经存在；Sub-Store 也不会读取或检查客户端文件。正式启动仍需启用 oix，由内核[接管同名 provider](https://github.com/vernesong/mihomo-oix/blob/cd52e9e2facb5523e76526896a6abf283fddc858/component/oix/oix.go#L199-L236)、生成并管理文件和解密密钥，模板无需填写订阅 URL 或密钥。上述声明只解决配置解析，不提供离线订阅内容。Stash 配置没有这项 provider 和依赖。
+
+如需自行管理其他 HTTP provider，在配置中显式定义其有效 `url`，并按需添加组内 `use` 引用。
 
 这两个 JavaScript 文件必须作为**两个独立的脚本操作**执行，它们分别提供 `main(config)`，不能拼接到同一个脚本中。Sub-Store 会等待异步 `main` 并将返回值序列化为 YAML，参见[官方脚本处理实现](https://github.com/sub-store-org/Sub-Store/blob/master/backend/src/core/proxy-utils/processors/index.js)。
 

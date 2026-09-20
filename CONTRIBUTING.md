@@ -9,7 +9,7 @@
 | 修改内容 | 维护位置 |
 | --- | --- |
 | 公共网络设置、全部共同代理组及候选顺序、成员生成声明、筛选、测速设置、规则集和分流规则 | `configs/base.yaml` |
-| Mihomo 的 DNS、嗅探、oixCloud 运行时 provider 声明、Optimized 组及相关 `use` 和菜单引用 | `configs/mihomo.yaml` |
+| Mihomo 的 DNS、嗅探、oixCloud 文件 provider 声明、Optimized 组及相关 `use` 和菜单引用 | `configs/mihomo.yaml` |
 | Stash 的 DNS 差异 | `configs/stash.yaml` |
 | 服务端下载、配置合并及引用检查 | `src/merge-config/` |
 | 节点协议筛选、代理组成员生成和最终配置校验 | `src/config-overwrite/` |
@@ -85,8 +85,10 @@ dns:
 
 ```yaml
 $profile: mihomo
-x-substore:
-  runtime-proxy-providers: [oixCloud]
+proxy-providers:
+  oixCloud:
+    type: file
+    path: ./proxy_provider/oixCloud
 proxy-groups:
   - name: "🚀 节点选择"
     use: [oixCloud]
@@ -124,18 +126,20 @@ proxy-groups:
 
 ### 运行时 provider 声明
 
-由客户端运行时创建的代理 provider，通过顶层 `x-substore.runtime-proxy-providers` 声明；例如 Mihomo 模板依赖启用 oix 的内核提供 `oixCloud`：
+自定义配置可通过顶层 `x-substore.runtime-proxy-providers` 声明由客户端运行时创建的代理 provider，例如：
 
 ```yaml
 x-substore:
-  runtime-proxy-providers: [oixCloud]
+  runtime-proxy-providers: [runtimeSubscription]
 ```
 
-顶层 `x-substore` 只接受 `runtime-proxy-providers` 字段。声明可省略，列表允许 `[]`；提供时必须是数组，成员必须是非空字符串，不能重复。未知字段、错误类型，以及同时在 `proxy-providers` 中定义同名 provider 都会报错，避免本地配置和运行时同时管理同一个 provider。
+顶层 `x-substore` 只接受 `runtime-proxy-providers` 字段。声明可省略，列表允许 `[]`；提供时必须是数组，成员必须是非空字符串，不能重复。未知字段、错误类型，以及同时在 `proxy-providers` 中定义同名 provider 都会报错，避免对同一名称重复声明。
 
 合并与最终校验均允许组内 `use` 引用本地定义的 provider 或已声明的运行时 provider；未声明且没有本地定义的名称仍然报错。运行时 provider 声明不创建 provider，不代表其中的节点已存在，也不能充当规则目标、`dialer-proxy` 目标或 `rule-providers` 引用。Sub-Store 不读取或检查客户端运行时生成的本地文件。
 
-声明在合并结果和两个独立脚本之间的 YAML 序列化中保留，覆写校验成功后移除顶层 `x-substore`，仅保留组内 `use` 供客户端解析。Mihomo 模板不预定义 `proxy-providers.oixCloud` 的 URL、文件路径、更新间隔和健康检查；这些设置由 oix 内核负责。Stash 模板没有运行时 provider 声明或 oixCloud 依赖。使用步骤及旧参数迁移见 [README](README.md#接入-sub-store)。
+声明在合并结果和两个独立脚本之间的 YAML 序列化中保留，覆写校验成功后移除顶层 `x-substore`，仅保留组内 `use` 供客户端解析。它只允许引用通过 Sub-Store 校验，不能让内核跳过自己的引用检查；使用前必须确认客户端在所有配置解析阶段都能提供该 provider，包括下载后的独立 `-t` 检查。
+
+本仓库的 Mihomo 模板使用显式 `oixCloud` 文件 provider，不依赖这项豁免；Stash 模板没有 oixCloud 依赖。文件声明及 oix 启用要求见 [README](README.md#接入-sub-store)。
 
 ### 最终配置校验
 
@@ -246,6 +250,14 @@ npm run check
 
 `npm run check` 依次检查格式、严格类型、源码与 `scripts/` 产物一致性并执行测试，不会修改文件。可单独运行 `npm run typecheck` 检查类型，或运行 `npm test` 测试当前 TypeScript 源码与已有 JavaScript 发布产物；修改源码后须先构建再做完整检查。GitHub Actions 对所有推送和 PR 依次执行 `npm ci`、`npm run build`、`npm run check`，同样包含类型检查，不要求提交前已更新产物。
 
+如已安装 oix 内核，可额外运行原生解析回归；未设置 `MIHOMO_BIN` 时该项默认跳过：
+
+```bash
+MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
+```
+
+该回归从最终模板提取 `proxy-providers` 和 oixCloud Optimized 组，隔离其他分组、DNS 和规则等外部依赖，在不传 oix 凭据且 provider 文件不存在的临时目录中执行 `-t`，并验证移除 provider 后会失败。它只验证 oixCloud 注册与 Optimized 组引用，不验证完整最终配置、实际订阅下载或客户端启动。
+
 测试覆盖：
 
 - 覆写输出移除内部声明后的类型，以及节点附加字段和其他配置字段的类型保留。
@@ -254,7 +266,7 @@ npm run check
 - 最终覆写后的名称、引用、中转与组成员混合循环、HTTP provider 地址检查，以及校验失败时输入对象和内部声明不变。
 - 远程读取、URL 与超时参数、请求和 YAML 错误处理，以及 Sub-Store 独立脚本的异步执行与序列化流程。
 - 成员声明的字段校验、模式和默认值、组名变化不改变行为、声明在中间配置中的保留及最终移除，以及实际机场与中转节点筛选、协议限制、节点注入和覆写结果。
-- 运行时 provider 声明的字段与名称校验、与本地定义的冲突、`use` 引用边界、声明在中间配置中的保留及最终移除，以及 Mihomo 依赖与 Stash 无依赖的输出。
+- 运行时 provider 声明的字段与名称校验、与本地定义的冲突、`use` 引用边界、声明在中间配置中的保留及最终移除，以及 Mihomo 文件 provider 与 Stash 无依赖的输出。
 - 中转模式参数、自建原节点名的大小写敏感匹配、机场全部节点设置、已有字段覆盖与保留，以及自建保留原名和机场可选重命名后注入、覆写的完整流程。
 - 重命名仅按节点名称识别地区、未知地区保留原名，以及启用 `hot` 后过滤未知地区节点的行为。
 - 参数边界、关键词与旗帜保留、单节点序号处理，以及覆写的无效筛选、正则状态、从合并结果重复生成和拒绝直接覆写最终输出。

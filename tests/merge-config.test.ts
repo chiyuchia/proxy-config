@@ -593,7 +593,7 @@ test('failed downloads and invalid YAML are rejected without returning fallback 
   await assert.rejects(() => mismatched.main({ proxies: [] }));
 });
 
-test('live profiles share group definitions and menu order except for the Mihomo runtime provider', () => {
+test('live profiles share group definitions and menu order except for the Mihomo managed provider', () => {
   const { mihomo, stash } = liveConfigs();
   assert.deepEqual(sharedGroups(stash), sharedGroups(mihomo));
   assert.equal(stash['proxy-providers'], undefined);
@@ -604,8 +604,10 @@ test('live profiles share group definitions and menu order except for the Mihomo
         group.name !== '✈️ oixCloud Optimized' && !group.proxies?.includes('✈️ oixCloud Optimized'),
     ),
   );
-  assert.equal(mihomo['proxy-providers'], undefined);
-  assert.deepEqual(mihomo['x-substore'], { 'runtime-proxy-providers': ['oixCloud'] });
+  assert.deepEqual(mihomo['proxy-providers'], {
+    oixCloud: { type: 'file', path: './proxy_provider/oixCloud' },
+  });
+  assert.equal(mihomo['x-substore'], undefined);
   assert.equal(stash['x-substore'], undefined);
   const optimized = mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized')!;
   assert.equal(optimized.type, 'url-test');
@@ -734,7 +736,9 @@ test('the same injected nodes produce matching group members in both live profil
   }
   assert.equal(stash['proxy-providers'], undefined);
   assert.ok(stash['proxy-groups'].every((group) => !group.use?.length));
-  assert.equal(mihomo['proxy-providers'], undefined);
+  assert.deepEqual(mihomo['proxy-providers'], {
+    oixCloud: { type: 'file', path: './proxy_provider/oixCloud' },
+  });
   assert.equal(mihomo['x-substore'], undefined);
   assert.equal(stash['x-substore'], undefined);
   assert.deepEqual(
@@ -886,10 +890,13 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
         ),
         'member policies must survive serialization between independent scripts',
       );
+      assert.equal(merged['x-substore'], undefined);
       assert.deepEqual(
-        merged['x-substore'],
-        client === 'mihomo' ? { 'runtime-proxy-providers': ['oixCloud'] } : undefined,
-        'runtime provider declarations must survive serialization between independent scripts',
+        merged['proxy-providers'],
+        client === 'mihomo'
+          ? { oixCloud: { type: 'file', path: './proxy_provider/oixCloud' } }
+          : undefined,
+        'the managed provider declaration must survive serialization between independent scripts',
       );
       if (injected) {
         merged.proxies = injected;
@@ -907,7 +914,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
       assert.deepEqual(result.proxies ?? [], expectedProxies);
       assert.equal(hasDirective(result), false);
       assert.equal(Object.hasOwn(result, 'x-substore'), false);
-      assert.equal(result['proxy-providers'], undefined);
+      assert.deepEqual(result['proxy-providers'], merged['proxy-providers']);
       assert.ok(result['proxy-groups'].every((group) => !Object.hasOwn(group, 'x-substore')));
       assert.deepEqual(result.rules, merged.rules);
       const airport = result['proxy-groups'].find(({ name }) => name === '✈️ 良心云 亚太')!;
@@ -1045,7 +1052,7 @@ test('final validation checks locally declared HTTP provider URLs in both file r
   }
 });
 
-test('file output leaves runtime provider creation to the client and ignores retired URL parameters', async () => {
+test('file output preserves the managed file provider and ignores retired URL parameters', async () => {
   for (const client of ['mihomo', 'stash']) {
     for (const args of [
       {},
@@ -1055,11 +1062,16 @@ test('file output leaves runtime provider creation to the client and ignores ret
       const { context, outputs, requests } = fileRuntime(client);
       await runWrapped('scripts/merge-config.js', context);
       const merged = parseYaml(context.$content) as MergedConfig;
-      assert.equal(merged['proxy-providers'], undefined);
+      assert.deepEqual(
+        merged['proxy-providers'],
+        client === 'mihomo'
+          ? { oixCloud: { type: 'file', path: './proxy_provider/oixCloud' } }
+          : undefined,
+      );
       context.$arguments = args;
       await runWrapped('scripts/config-overwrite.js', context);
       const result = parseYaml(context.$content) as MergedConfig;
-      assert.equal(result['proxy-providers'], undefined);
+      assert.deepEqual(result['proxy-providers'], merged['proxy-providers']);
       assert.equal(Object.hasOwn(result, 'x-substore'), false);
       assert.equal(
         result['proxy-groups'].some((group) => group.use?.includes('oixCloud')),
@@ -1071,12 +1083,12 @@ test('file output leaves runtime provider creation to the client and ignores ret
   }
 });
 
-test('final validation rejects undeclared runtime providers and invalid late runtime references', async () => {
+test('final validation rejects missing managed providers and invalid late provider references', async () => {
   const scenarios: { field: string; value: unknown; pattern: RegExp }[] = [
-    { field: 'x-substore', value: undefined, pattern: /oixCloud/ },
+    { field: 'proxy-providers', value: undefined, pattern: /oixCloud/ },
     {
-      field: 'x-substore',
-      value: { 'runtime-proxy-providers': ['oixCluod'] },
+      field: 'proxy-providers',
+      value: { oixCluod: { type: 'file', path: './proxy_provider/oixCloud' } },
       pattern: /oixCloud/,
     },
     {
@@ -1085,8 +1097,8 @@ test('final validation rejects undeclared runtime providers and invalid late run
       pattern: /oixCloud/,
     },
     {
-      field: 'proxy-providers',
-      value: { oixCloud: { type: 'http', url: 'https://example.com/provider' } },
+      field: 'x-substore',
+      value: { 'runtime-proxy-providers': ['oixCloud'] },
       pattern: /oixCloud/,
     },
     {
