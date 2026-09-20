@@ -8,6 +8,16 @@ import { identifyCountry } from './identify.js';
 import { formatProxyName, removeUniqueSequence } from './format.js';
 import { HOT_REGIONS } from './regions.js';
 
+/**
+ * 按热门地区、其他已识别地区、未知地区排序，已识别节点再按地区代码和最终名称排序。
+ * 两个未知节点视为相等，以便稳定排序保留它们的输入顺序。
+ *
+ * @preserve
+ * @param {{name: string}} a 待比较的前一个节点。
+ * @param {{name: string}} b 待比较的后一个节点。
+ * @param {Map<Object, string>} countries 按节点对象引用保存的已识别地区代码。
+ * @returns {number} 负数表示 a 在前，正数表示 b 在前，0 表示排序等价。
+ */
 function compareProxiesByRegion(a, b, countries) {
   const countryA = countries.get(a);
   const countryB = countries.get(b);
@@ -21,7 +31,19 @@ function compareProxiesByRegion(a, b, countries) {
   return countryA.localeCompare(countryB) || a.name.localeCompare(b.name);
 }
 
-/** 仅依赖传入节点、参数和日志对象，不读取 Sub-Store 全局变量或访问网络。 */
+/**
+ * 过滤信息节点、识别地区，按订阅和地区编号命名，再进行 hot 筛选、排序和可选去序号。
+ * 仅使用传入数据并通过 logger.log 输出处理日志，不读取 Sub-Store 全局变量或访问网络。
+ * 已识别节点浅拷贝后改名，未知节点保留对象引用；启用 one 时可能修改未知节点的原对象名称。
+ *
+ * @preserve
+ * @param {Object[]} proxies 输入节点数组，节点应包含 name，并可包含 server、_subName 及其他协议字段。
+ * @param {Object|null} [args={}] 原始脚本参数，字段和默认值由 parseRenameOptions 定义。
+ * @param {{log: function(...*): void}} [logger=console] 接收处理进度和重命名信息的日志对象。
+ * @returns {Object[]} 筛选和排序后的新数组，保留节点的非名称字段。
+ * @throws {URIError} filter 或 block 参数包含无效 URL 编码时抛出。
+ * @throws {SyntaxError} block 或保留关键词无法编译为正则时抛出。
+ */
 export function renameProxies(proxies, args = {}, logger = console) {
   const options = parseRenameOptions(args);
   const hotOnly = options.hotRegions !== null;

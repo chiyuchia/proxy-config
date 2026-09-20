@@ -4,6 +4,15 @@
 
 import { assignDialerProxy } from '../dialer-proxy/index.js';
 
+/**
+ * 读取 Sub-Store 的 $arguments.mode，为来源订阅节点设置中转。
+ * @preserve
+ * @param {Array<Object>} proxies 来源订阅节点，命中的节点会就地更新 dialer-proxy。
+ * @param {string} targetPlatform Sub-Store 传入的目标平台，本脚本不使用。
+ * @param {Object} context Sub-Store 传入的处理上下文，本脚本不使用。
+ * @returns {Array<Object>} 保持输入顺序的新数组，元素引用及节点名称保持不变。
+ * @throws {Error} mode 缺失或不是 self-hosted、edge。
+ */
 export function operator(proxies, targetPlatform, context) {
   return assignDialerProxy(proxies, typeof $arguments === 'undefined' ? {} : $arguments);
 }

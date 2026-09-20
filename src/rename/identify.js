@@ -6,7 +6,14 @@
 import { REGION_ALIASES } from './aliases.js';
 import { REGIONS, REGIONS_BY_CODE } from './regions.js';
 
-/** 中文名 → 国旗 → 英文全称 → 地区代码；各阶段均使用地区表原有顺序。 */
+/**
+ * 先替换地区别名，再依次匹配中文名、国旗、英文全称和地区代码。
+ * 各阶段均按地区表顺序返回首个命中；别名替换后的代码匹配忽略大小写并限制字母边界。
+ *
+ * @preserve
+ * @param {string} name 待识别的节点名称。
+ * @returns {string|null} 命中的标准地区代码；没有匹配时返回 null。
+ */
 export function matchNameToCode(name) {
   let processed = name;
   for (const [target, pattern] of Object.entries(REGION_ALIASES)) {
@@ -25,6 +32,13 @@ export function matchNameToCode(name) {
   return null;
 }
 
+/**
+ * 将地区代码转为大写，并把展示用的 UK 映射为标准代码 GB。
+ *
+ * @preserve
+ * @param {*} code 待归一化的代码；假值按空字符串处理。
+ * @returns {string|null} 地区表中存在的标准代码；未知代码返回 null。
+ */
 function normalizeCountryCode(code) {
   const upper = String(code || '').toUpperCase();
   if (REGIONS_BY_CODE.has(upper)) return upper;
@@ -32,8 +46,21 @@ function normalizeCountryCode(code) {
 }
 
 /**
- * VikingLinks：COUNTRY-NN-PROVIDER 或 COUNTRY-LINE-NN-PROVIDER。
- * 地区识别使用标准代码，输出保留 UK 等原展示码以及节点自带的旗帜。
+ * @preserve
+ * @typedef {Object} VikingName
+ * @property {string} countryCode 用于识别和分组的标准地区代码。
+ * @property {string} displayCode 原名中的大写展示代码，保留 UK 等写法。
+ * @property {string} flag 原名开头的旗帜；未提供时为空字符串。
+ * @property {string} suffix 用空格拼接的线路和服务商，不包含原序号。
+ */
+
+/**
+ * 解析 COUNTRY-NN-PROVIDER 或 COUNTRY-LINE-NN-PROVIDER 格式。
+ * 不检查订阅来源；允许开头带国旗，序号为一至三位数字，服务商可包含连字符分段。
+ *
+ * @preserve
+ * @param {*} name 原节点名；假值按空字符串处理，其余值转为字符串并去除首尾空白。
+ * @returns {VikingName|null} 标准代码、展示代码、原旗帜及后缀；格式或地区无效时返回 null。
  */
 export function parseVikingName(name) {
   const trimmed = String(name || '').trim();
@@ -70,6 +97,17 @@ export function parseVikingName(name) {
   };
 }
 
+/**
+ * 仅从节点名称识别地区：先移除屏蔽内容并尝试 Viking 格式，再剥离域名并匹配地区。
+ * 不修改节点；server 为假值时直接返回 null，不执行名称识别。
+ *
+ * @preserve
+ * @param {Object} proxy 待识别的节点。
+ * @param {string} proxy.name 原节点名。
+ * @param {string} [proxy.server] 节点服务器；仅用于判断是否允许识别，不查询其地理位置。
+ * @param {RegExp|null} [blockPattern] 识别前移除名称片段的正则；省略或 null 时不屏蔽。
+ * @returns {string|null} 命中的标准地区代码；无法识别时返回 null。
+ */
 export function identifyCountry(proxy, blockPattern) {
   if (!proxy.server) return null;
   const cleanName = blockPattern ? proxy.name.replace(blockPattern, '') : proxy.name;

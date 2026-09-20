@@ -22,6 +22,13 @@ const publishedFiles = [
   'scripts/rename.js',
 ];
 
+/**
+ * 创建隔离的本地工作仓库、裸远端和 hook 目录，测试结束后自动清理。
+ * 所有提交、推送及文件写入仅发生在临时目录中，不使用项目真实远端。
+ * @param {import('node:test').TestContext} t 用于注册清理回调的测试上下文。
+ * @returns {Object} 仓库路径、源提交及构建、Git 操作、竞争提交和发布辅助函数。
+ * @throws {Error} 临时文件操作或初始化 Git 命令失败时抛出。
+ */
 function fixture(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'proxy-config-publish-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
@@ -54,6 +61,13 @@ function fixture(t) {
     env[`GIT_CONFIG_VALUE_${index}`] = value;
   });
 
+  /**
+   * 在隔离的 Git 环境中执行命令，并断言进程正常退出。
+   * @param {string[]} args 直接传给 Git 的参数数组，不经过 shell 展开。
+   * @param {string} [cwd=checkout] 命令工作目录，默认使用测试工作仓库。
+   * @returns {string} 去除首尾空白的标准输出。
+   * @throws {Error} 无法启动进程或 Git 返回非零状态时抛出。
+   */
   function git(args, cwd = checkout) {
     const result = spawnSync('git', args, { cwd, env, encoding: 'utf8' });
     assert.ifError(result.error);
@@ -61,6 +75,13 @@ function fixture(t) {
     return result.stdout.trim();
   }
 
+  /**
+   * 创建必要的父目录并写入测试文件，已有文件会被覆盖。
+   * @param {string} file 相对于目标目录的文件路径。
+   * @param {string} content 要写入的完整文本。
+   * @param {string} [cwd=checkout] 文件所属目录，默认使用测试工作仓库。
+   * @returns {void} 通过文件系统写入生效，无返回值。
+   */
   function write(file, content, cwd = checkout) {
     const target = path.join(cwd, file);
     fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -79,10 +100,20 @@ function fixture(t) {
   const sourceCommit = git(['rev-parse', 'HEAD']);
   git(['checkout', '--detach', sourceCommit]);
 
+  /**
+   * 改写约定的四个发布文件，模拟构建产生待提交的产物差异。
+   * @returns {void} 仅更新测试工作仓库中的文件。
+   */
   function build() {
     for (const file of publishedFiles) write(file, `generated ${file}\n`);
   }
 
+  /**
+   * 创建第二个本地检出，提交文档变化并推送到测试远端以制造发布竞争。
+   * @param {string} [branch='master'] 接收竞争提交的测试远端分支。
+   * @returns {string} 新竞争提交的完整 SHA。
+   * @throws {Error} 克隆、文件写入、提交或推送失败时抛出。
+   */
   function competingCommit(branch = 'master') {
     const competitor = path.join(directory, 'competitor');
     git(['clone', remote, competitor], directory);
@@ -93,6 +124,13 @@ function fixture(t) {
     return git(['rev-parse', 'HEAD'], competitor);
   }
 
+  /**
+   * 执行工作流中的真实发布命令，只断言进程可启动，保留退出状态供测试判断。
+   * 命令可能在临时工作仓库提交产物并推送到本地裸远端。
+   * @param {Object<string, string>} [extraEnv={}] 发布进程需要的附加或覆盖环境变量。
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} Bash 的退出状态及输出。
+   * @throws {Error} 无法启动 Bash 进程时抛出。
+   */
   function publish(extraEnv = {}) {
     const result = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', publishStep.run], {
       cwd: checkout,
@@ -103,6 +141,10 @@ function fixture(t) {
     return result;
   }
 
+  /**
+   * 读取测试裸远端的 master 提交，不访问网络或修改分支。
+   * @returns {string} 远端 master 当前指向的完整提交 SHA。
+   */
   function remoteHead() {
     return git(['--git-dir', remote, 'rev-parse', 'refs/heads/master']);
   }
@@ -110,6 +152,12 @@ function fixture(t) {
   return { build, competingCommit, git, hooks, publish, remote, remoteHead, sourceCommit, write };
 }
 
+/**
+ * 断言发布进程成功退出，失败时附上标准输出和错误输出以便定位。
+ * @param {import('node:child_process').SpawnSyncReturns<string>} result 发布命令的执行结果。
+ * @returns {void} 断言成功时无返回值。
+ * @throws {Error} 进程退出状态不为零时抛出断言错误。
+ */
 function assertSuccess(result) {
   assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
 }

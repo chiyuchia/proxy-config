@@ -6,6 +6,16 @@
 import { updateGroupMembers } from './group-members.js';
 import { buildOixCloudProvider } from './provider.js';
 
+/**
+ * 就地更新代理组成员并移除内部声明，按参数补入 oixCloud provider 的订阅地址。
+ * 成员声明全部校验成功后才替换组数组；保留规则和注入节点。
+ * @preserve
+ * @param {Object} config 本次合并、注入节点后的配置对象，会被就地修改。
+ * @param {Object} [args={}] 覆写脚本参数。
+ * @param {string} [args.oixCloudEdgePath] 可选订阅地址；缺失或为空白时不更新 provider。
+ * @returns {Object} 传入的同一个配置对象，其中组已不再包含 x-substore 声明。
+ * @throws {Error} 任一组的成员声明无效，包括直接再次覆写已移除声明的最终配置。
+ */
 export function overwriteConfig(config, args = {}) {
   config['proxy-groups'] = updateGroupMembers(
     config?.['proxy-groups'] ?? [],

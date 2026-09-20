@@ -8,14 +8,31 @@ import test from 'node:test';
 import { updateGroupMembers } from '../src/config-overwrite/group-members.js';
 import { overwriteConfig } from '../src/config-overwrite/index.js';
 
+/**
+ * 从测试配置中读取指定代理组的成员，供结果断言使用。
+ * @param {Object} config 含 proxy-groups 的待检查配置。
+ * @param {string} name 必须存在的代理组名称。
+ * @returns {string[]|undefined} 该组的 proxies 字段。
+ */
 function members(config, name) {
   return config['proxy-groups'].find((group) => group.name === name).proxies;
 }
 
+/**
+ * 构造成员生成声明；允许传入无效值以覆盖声明校验的失败场景。
+ * @param {*} mode 成员生成模式或测试用的无效模式值。
+ * @param {Object} [options={}] 合并到 members 中的附加字段。
+ * @returns {Object} 可展开到代理组上的 x-substore 声明。
+ */
 function policy(mode, options = {}) {
   return { 'x-substore': { members: { mode, ...options } } };
 }
 
+/**
+ * 原地递归冻结无循环的测试数据，使被测代码的意外修改立即报错。
+ * @param {*} value 待冻结的对象、数组或原始值。
+ * @returns {*} 同一输入值；对象及其后代均已冻结。
+ */
 function freezeDeep(value) {
   if (value && typeof value === 'object') {
     Object.values(value).forEach(freezeDeep);
@@ -126,6 +143,11 @@ test('replace uses declared actual protocols and direct nodes on every fresh gen
       ...policy('replace', { 'exclude-dialer': true }),
     },
   ];
+  /**
+   * 复制成员策略模板并注入当前节点，模拟每次从新合并配置开始生成。
+   * @param {Object[]} proxies 本次生成使用的节点数组。
+   * @returns {Object} 完成成员覆写的新配置，模板本身不变。
+   */
   const generate = (proxies) =>
     overwriteConfig({ proxies, 'proxy-groups': structuredClone(template) });
   const config = generate([vless, hy2, hysteria2, viking, blowing]);

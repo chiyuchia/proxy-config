@@ -5,6 +5,16 @@
 
 import { configError, isConfigMap, requireArray } from './value.js';
 
+/**
+ * 检查代理组列表及名称的有效性，收集名称并拒绝同一列表中的重复项。
+ * 名称只用 trim 判断是否为空，重复比较仍使用原始字符串，不修改任何组。
+ *
+ * @preserve
+ * @param {*} groups 待校验的代理组数组，每个元素须为带非空字符串 name 的映射。
+ * @param {string} label 错误信息中的来源说明，例如 base.proxy-groups。
+ * @returns {Set<string>} 按首次出现顺序收集的原始组名集合。
+ * @throws {Error} 输入不是数组、组缺少有效名称或组名重复时抛出配置错误。
+ */
 export function checkGroupNames(groups, label) {
   const names = new Set();
   for (const group of requireArray(groups, label)) {
@@ -17,6 +27,15 @@ export function checkGroupNames(groups, label) {
   return names;
 }
 
+/**
+ * 校验当前配置的组名、节点名冲突、组 type 字段，以及成员、provider 和规则策略引用。
+ * 只检查已提供的数据，不修改配置，也不校验节点的 dialer-proxy 或覆写阶段的成员声明。
+ *
+ * @preserve
+ * @param {Object<string, *>} config 含 proxy-groups 与 rules 的配置；节点和 provider 定义可省略。
+ * @returns {void} 当前配置通过上述结构与引用检查时正常返回。
+ * @throws {Error} 名称冲突、必需字段或列表类型无效，或引用目标不存在时抛出配置错误。
+ */
 export function validateMergedConfig(config) {
   const groupNames = checkGroupNames(config['proxy-groups'], '合并结果');
   const targets = new Set([

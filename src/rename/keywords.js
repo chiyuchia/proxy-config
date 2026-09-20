@@ -254,6 +254,14 @@ const RETAIN_KEYWORDS = [
 
 const RETAIN_PIPE_TAG_PATTERNS = [/^(?:CM|CT|CU)+$/i, /^(?:\d+(?:\.\d+)?|\.\d+)x$/i];
 
+/**
+ * 从首个管道之后的分段中提取完整的运营商组合标签或数字倍率标签。
+ * 保留标签原文和顺序，此步骤不去重。
+ *
+ * @preserve
+ * @param {*} name 原节点名；假值按空字符串处理，其余值转为字符串。
+ * @returns {string[]} 去除首尾空白的匹配标签；没有后续分段或匹配时返回空数组。
+ */
 function extractRetainPipeTags(name) {
   const parts = String(name || '')
     .split('|')
@@ -265,16 +273,38 @@ function extractRetainPipeTags(name) {
 }
 
 /**
- * 从原节点名中提取命中的保留关键词列表
- * 先匹配城市/线路关键词，再匹配良心云这类尾部管道标签，最后匹配用户自定义 retainKeys
- * 返回命中词数组（去重），未命中返回空数组
+ * 依次提取内置城市及线路关键词、尾部管道标签和自定义关键词。
+ * 保留原文大小写，按首次出现位置排序并去重，再移除被其他完整命中词包含的片段。
+ * 关键词按正则解释，纯字母数字词额外限制字母数字边界。
+ *
+ * @preserve
+ * @param {string} name 原节点名。
+ * @param {string[]} retainKeys 追加的自定义关键词；空数组仅使用内置关键词和管道标签。
+ * @returns {string[]} 整理后的命中词；未命中时返回空数组。
+ * @throws {SyntaxError} 内置或自定义关键词不能编译为正则时抛出。
  */
 export function extractRetainKeywords(name, retainKeys) {
   const hits = [];
   const nameLower = name.toLowerCase();
+  /**
+   * 将非空且未出现过的原文片段追加到当前 hits 数组。
+   *
+   * @preserve
+   * @param {string} value 待保留的原文片段，使用大小写敏感的完全相等判断去重。
+   * @returns {void} 无返回值，直接更新外层 hits 数组。
+   */
   const pushOriginal = (value) => {
     if (value && !hits.includes(value)) hits.push(value);
   };
+  /**
+   * 查找关键词正则的首个匹配，并截取与关键词等长的原文加入当前命中列表。
+   * 通过小写文本匹配；纯字母数字关键词增加边界，其余词保留原有正则语义。
+   *
+   * @preserve
+   * @param {string} kw 内置或自定义关键词。
+   * @returns {void} 无返回值；命中时通过 pushOriginal 更新外层 hits 数组。
+   * @throws {SyntaxError} 关键词不能编译为正则时抛出。
+   */
   const pushHit = (kw) => {
     const kwLower = kw.toLowerCase();
     // 英文关键词加单词边界，避免匹配单词内部（如 ist 命中 Registry）

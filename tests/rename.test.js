@@ -12,20 +12,44 @@ import { renameProxies } from '../src/rename/index.js';
 
 const scriptPath = fileURLToPath(new URL('../scripts/rename.js', import.meta.url));
 
+/**
+ * 创建可重复调用的重命名 VM 会话，记录并禁止名称识别期间的联网和计时器调用。
+ * @returns {Function} 接收节点与参数、返回普通节点数组 Promise 的会话执行函数。
+ * @throws {Error} 发布脚本读取或加载失败时抛出。
+ */
 function createRenameSession() {
   const externalCalls = [];
   const context = vm.createContext({
     $arguments: {},
-    console: { log() {} },
+    console: {
+      /**
+       * 丢弃模拟运行时传入的日志，避免测试输出被逐节点信息占满。
+       * @returns {void} 不记录日志，无返回值。
+       */
+      log() {},
+    },
     AbortController,
+    /**
+     * 记录意外的联网尝试并立即失败，不发起实际网络请求。
+     * @returns {never} 始终抛出错误，不返回响应。
+     * @throws {Error} 调用时抛出禁止联网的错误。
+     */
     fetch() {
       externalCalls.push('fetch');
       throw new Error('Network requests are forbidden during name recognition');
     },
+    /**
+     * 记录意外的计时器注册，返回占位句柄但不调度任何任务。
+     * @returns {number} 固定的测试计时器句柄 1。
+     */
     setTimeout() {
       externalCalls.push('setTimeout');
       return 1;
     },
+    /**
+     * 记录计时器清理尝试，供会话结束时的离线行为断言检查。
+     * @returns {void} 仅追加调用记录，无返回值。
+     */
     clearTimeout() {
       externalCalls.push('clearTimeout');
     },
@@ -33,6 +57,13 @@ function createRenameSession() {
   vm.runInContext(fs.readFileSync(scriptPath, 'utf8'), context, {
     filename: scriptPath,
   });
+  /**
+   * 在同一 VM 中替换参数并执行重命名，检查本会话从未调用网络或计时器。
+   * @param {Object[]} proxies 待交给发布脚本处理的节点数组。
+   * @param {Object} [args={}] 本次调用的 Sub-Store 脚本参数。
+   * @returns {Promise<Object[]>} 经过 JSON 转换、可跨 VM 进行断言的结果节点。
+   * @throws {Error} 重命名失败或发现外部调用时抛出。
+   */
   return async (proxies, args = {}) => {
     context.$arguments = args;
     const result = await context.operator(proxies, 'ClashMeta', {});
@@ -42,10 +73,24 @@ function createRenameSession() {
   };
 }
 
+/**
+ * 在新建的隔离会话中执行一次重命名，避免不同测试共享正则或运行时状态。
+ * @param {Object[]} proxies 待重命名的测试节点。
+ * @param {Object} [args={}] 本次重命名参数。
+ * @returns {Promise<Object[]>} 发布脚本返回并转换为普通对象的节点数组。
+ * @throws {Error} 会话执行失败或触发禁止的外部调用时抛出。
+ */
 async function rename(proxies, args = {}) {
   return createRenameSession()(proxies, args);
 }
 
+/**
+ * 构造带默认协议和测试地址的节点，允许用附加字段覆盖任意默认值。
+ * @param {string} id 用于追踪排序和过滤结果的测试标识。
+ * @param {string} name 待识别、重命名的原始节点名称。
+ * @param {Object} [extra={}] 附加节点字段或默认字段覆盖值。
+ * @returns {Object} 新建的测试节点对象。
+ */
 function node(id, name, extra = {}) {
   return { id, name, server: '192.0.2.1', port: 443, type: 'vless', ...extra };
 }
@@ -149,6 +194,11 @@ test('the source API accepts explicit arguments and logger without Sub-Store glo
     [node('source', '东京')],
     { out: 'EN', retain: false },
     {
+      /**
+       * 收集源码接口的日志，以验证显式传入的日志依赖被使用。
+       * @param {string} message 重命名流程产生的日志文本。
+       * @returns {void} 将文本追加到 messages，无返回值。
+       */
       log(message) {
         messages.push(message);
       },

@@ -3,6 +3,17 @@
  * 自建模式按原始名称分配中转；Edge 模式供 oixCloud Edge 和一元机场共用。
  */
 
+/**
+ * 按来源模式就地设置节点的 dialer-proxy，保留原节点名称和输入顺序。
+ * edge 为全部节点设置 Edge 中转；self-hosted 仅处理名称含“落地”的节点，
+ * 其中含大写 SG 的使用亚太中转，其余使用美西中转，未命中的节点保留原字段。
+ * @preserve
+ * @param {Array<Object>} proxies 来源订阅节点；self-hosted 模式要求 name 为字符串。
+ * @param {Object} [args={}] 中转脚本参数。
+ * @param {'self-hosted'|'edge'} args.mode 必填的中转模式，无默认模式。
+ * @returns {Array<Object>} 新数组，元素仍为原节点对象；命中节点的中转字段已被覆盖。
+ * @throws {Error} mode 缺失或不受支持；模式校验失败时不会修改任何节点。
+ */
 export function assignDialerProxy(proxies, args = {}) {
   const mode = args?.mode;
   if (mode !== 'self-hosted' && mode !== 'edge') {

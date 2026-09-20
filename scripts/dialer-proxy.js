@@ -32,6 +32,17 @@ var __proxyConfigScript = (() => {
   });
 
   // src/dialer-proxy/index.js
+  /**
+   * 按来源模式就地设置节点的 dialer-proxy，保留原节点名称和输入顺序。
+   * edge 为全部节点设置 Edge 中转；self-hosted 仅处理名称含“落地”的节点，
+   * 其中含大写 SG 的使用亚太中转，其余使用美西中转，未命中的节点保留原字段。
+   * @preserve
+   * @param {Array<Object>} proxies 来源订阅节点；self-hosted 模式要求 name 为字符串。
+   * @param {Object} [args={}] 中转脚本参数。
+   * @param {'self-hosted'|'edge'} args.mode 必填的中转模式，无默认模式。
+   * @returns {Array<Object>} 新数组，元素仍为原节点对象；命中节点的中转字段已被覆盖。
+   * @throws {Error} mode 缺失或不受支持；模式校验失败时不会修改任何节点。
+   */
   function assignDialerProxy(proxies, args = {}) {
     const mode = args?.mode;
     if (mode !== "self-hosted" && mode !== "edge") {
@@ -48,11 +59,29 @@ var __proxyConfigScript = (() => {
   }
 
   // src/entries/dialer-proxy.js
+  /**
+   * 读取 Sub-Store 的 $arguments.mode，为来源订阅节点设置中转。
+   * @preserve
+   * @param {Array<Object>} proxies 来源订阅节点，命中的节点会就地更新 dialer-proxy。
+   * @param {string} targetPlatform Sub-Store 传入的目标平台，本脚本不使用。
+   * @param {Object} context Sub-Store 传入的处理上下文，本脚本不使用。
+   * @returns {Array<Object>} 保持输入顺序的新数组，元素引用及节点名称保持不变。
+   * @throws {Error} mode 缺失或不是 self-hosted、edge。
+   */
   function operator(proxies, targetPlatform, context) {
     return assignDialerProxy(proxies, typeof $arguments === "undefined" ? {} : $arguments);
   }
   return __toCommonJS(dialer_proxy_exports);
 })();
+/**
+ * 读取 Sub-Store 的 $arguments.mode，为来源订阅节点设置中转。
+ * @preserve
+ * @param {Array<Object>} proxies 来源订阅节点，命中的节点会就地更新 dialer-proxy。
+ * @param {string} targetPlatform Sub-Store 传入的目标平台，本脚本不使用。
+ * @param {Object} context Sub-Store 传入的处理上下文，本脚本不使用。
+ * @returns {Array<Object>} 保持输入顺序的新数组，元素引用及节点名称保持不变。
+ * @throws {Error} mode 缺失或不是 self-hosted、edge。
+ */
 function operator(proxies, targetPlatform, context) {
   return __proxyConfigScript.operator(proxies, targetPlatform, context);
 }

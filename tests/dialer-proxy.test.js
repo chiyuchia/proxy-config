@@ -10,6 +10,12 @@ import { assignDialerProxy } from '../src/dialer-proxy/index.js';
 
 const script = fs.readFileSync(new URL('../scripts/dialer-proxy.js', import.meta.url), 'utf8');
 
+/**
+ * 在独立 VM 中加载中转发布脚本，取得不依赖源码模块加载器的入口。
+ * @param {Object} [globals={}] 注入 VM 的 Sub-Store 全局对象与脚本参数。
+ * @returns {Function} 接收节点、目标平台和上下文的 operator 函数。
+ * @throws {Error} 发布脚本加载或执行失败时抛出。
+ */
 function loadOperator(globals = {}) {
   const context = vm.createContext(globals);
   vm.runInContext(script, context, { filename: 'scripts/dialer-proxy.js' });

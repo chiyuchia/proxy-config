@@ -10,6 +10,20 @@ import { build } from 'esbuild';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const checkOnly = process.argv.includes('--check');
 
+/**
+ * 提取源码中 main/operator 入口紧邻的 JSDoc，供发布脚本的外层入口复用。
+ * @param {string} source 入口模块的完整源码。
+ * @returns {string} 含注释定界符的原始 JSDoc，不复制文件头或其他函数的说明。
+ * @throws {Error} 入口函数缺少 JSDoc，无法生成带完整说明的发布入口。
+ */
+function readEntrypointDocumentation(source) {
+  const documentation = source.match(
+    /\/\*\*(?:(?!\*\/)[\s\S])*\*\/(?=\s*export (?:async )?function (?:main|operator)\()/,
+  );
+  if (!documentation) throw new Error('Sub-Store 入口缺少 JSDoc 注释');
+  return documentation[0];
+}
+
 // Sub-Store 将脚本放进函数作用域后直接调用 main/operator，不能依赖模块加载器。
 const scripts = [
   {
@@ -44,6 +58,8 @@ const scripts = [
 
 for (const { name, description, usage, signature, call } of scripts) {
   const outfile = `scripts/${name}.js`;
+  const source = await readFile(new URL(`../src/entries/${name}.js`, import.meta.url), 'utf8');
+  const entryDocumentation = readEntrypointDocumentation(source);
   const result = await build({
     absWorkingDir: root,
     entryPoints: [`src/entries/${name}.js`],
@@ -56,7 +72,8 @@ for (const { name, description, usage, signature, call } of scripts) {
     target: 'es2022',
     charset: 'utf8',
     minify: false,
-    legalComments: 'none',
+    // 保留带 @preserve 的函数说明，使发布脚本与源码均可直接阅读。
+    legalComments: 'inline',
     banner: {
       js: [
         '/**',
@@ -70,7 +87,7 @@ for (const { name, description, usage, signature, call } of scripts) {
       ].join('\n'),
     },
     footer: {
-      js: `${signature} {\n  return __proxyConfigScript.${call};\n}`,
+      js: `${entryDocumentation}\n${signature} {\n  return __proxyConfigScript.${call};\n}`,
     },
   });
 

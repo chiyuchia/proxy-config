@@ -15,15 +15,33 @@ import { mergeConfigDocuments } from '../src/merge-config/index.js';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const defaultConfigUrl = 'https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs';
 
-// Match the Sub-Store parser's YAML merge-key support and duplicate-key rejection.
+/**
+ * 按 Sub-Store 的解析约定读取 YAML，支持合并键并拒绝重复键。
+ * @param {string} source 待解析的 YAML 或兼容的 JSON 文本。
+ * @returns {*} 解析后的文档值，空文档返回解析器对应的空值。
+ * @throws {Error} 文本语法错误或存在重复键时抛出。
+ */
 function parseYaml(source) {
   return parse(source, { merge: true, uniqueKeys: true });
 }
 
+/**
+ * 经 JSON 往返转换清除 VM 对象的跨上下文原型，便于深度比较。
+ * @param {*} value 可进行 JSON 序列化且具有有效 JSON 结果的值。
+ * @returns {*} JSON 表示对应的普通对象、数组或原始值。
+ * @throws {Error} 输入无法序列化或无法解析为 JSON 时抛出。
+ */
 function plain(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+/**
+ * 在独立 VM 中加载仓库的发布脚本，并暴露其顶层入口供集成测试调用。
+ * @param {string} file 相对于仓库根目录的脚本路径。
+ * @param {Object} [globals={}] 注入的运行时全局对象，可覆盖默认 console。
+ * @returns {import('node:vm').Context} 已执行脚本并包含入口函数的 VM 上下文。
+ * @throws {Error} 文件读取、脚本解析或执行失败时抛出。
+ */
 function loadScript(file, globals = {}) {
   const context = vm.createContext({ console, ...globals });
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, {
@@ -32,6 +50,10 @@ function loadScript(file, globals = {}) {
   return context;
 }
 
+/**
+ * 为合并单元测试创建独立的公共配置，包含可覆盖的 DNS、代理组及规则引用。
+ * @returns {Object} 带 $base 标记且无注入节点的全新公共配置。
+ */
 function fixture() {
   return {
     $base: true,
@@ -54,10 +76,23 @@ function fixture() {
   };
 }
 
+/**
+ * 调用源码合并入口，简化补丁和引用校验测试中的调用。
+ * @param {Object} base 带 $base 标记的公共配置。
+ * @param {Object} profile 带 $profile 标记的客户端差异配置。
+ * @returns {Object} 完成合并与校验的新配置。
+ * @throws {Error} 来源标记、补丁或合并后引用不合法时抛出。
+ */
 function merge(base, profile) {
   return mergeConfigDocuments(base, profile);
 }
 
+/**
+ * 构建配置合并脚本的模拟运行时，注入参数、YAML 解析器及可控 HTTP 响应。
+ * @param {Object} args 传给发布脚本的 Sub-Store 参数。
+ * @param {Function} responder 接收请求对象、返回响应或响应 Promise 的模拟处理函数。
+ * @returns {{calls: Object[], main: Function}} 请求记录及已加载的异步配置合并入口。
+ */
 function runtime(args, responder) {
   const calls = [];
   const context = loadScript('scripts/merge-config.js', {
@@ -65,6 +100,12 @@ function runtime(args, responder) {
     ProxyUtils: { yaml: { safeLoad: parseYaml } },
     $substore: {
       http: {
+        /**
+         * 记录 HTTP 请求并转交模拟响应函数，不访问真实远端。
+         * @param {Object} request 合并脚本发出的 URL、超时等请求参数。
+         * @returns {Promise<Object>} 模拟处理函数提供的 HTTP 响应。
+         * @throws {Error} 模拟处理函数抛错或拒绝时向调用者传播。
+         */
         get: async (request) => {
           calls.push(request);
           return responder(request);
@@ -75,14 +116,36 @@ function runtime(args, responder) {
   return { calls, main: context.main };
 }
 
+/**
+ * 创建按 URL 文件名选择公共配置或客户端差异的成功响应函数。
+ * @param {Object} base 请求 base.yaml 时返回的公共配置。
+ * @param {Object} profile 其他请求返回的客户端差异配置。
+ * @returns {Function} 接收含 url 的请求对象并返回 HTTP 响应对象的函数。
+ */
 function respondWith(base, profile) {
+  /**
+   * 将选定配置编码为 JSON 响应体，供兼容 JSON 的 YAML 解析器读取。
+   * @param {{url: string}} request 请求对象，解构后的 url 用于选择配置。
+   * @returns {{statusCode: number, body: string}} 状态码为 200 的模拟 HTTP 响应。
+   */
   return ({ url }) => ({
     statusCode: 200,
     body: JSON.stringify(url.endsWith('/base.yaml') ? base : profile),
   });
 }
 
+/**
+ * 读取仓库真实 YAML 模板，为同一批注入节点生成两个客户端的合并配置。
+ * @param {Object[]} [proxies] 用于引用校验及配置输出的可选注入节点。
+ * @returns {{mihomo: Object, stash: Object}} 转为普通对象的两端合并结果。
+ * @throws {Error} 模板读取、解析或合并校验失败时抛出。
+ */
 function liveConfigs(proxies) {
+  /**
+   * 读取并解析 configs 目录中的指定 YAML 模板。
+   * @param {string} name 不含扩展名的配置文件名。
+   * @returns {Object} 解析后的公共或客户端配置。
+   */
   const read = (name) =>
     parseYaml(fs.readFileSync(path.join(root, 'configs', `${name}.yaml`), 'utf8'));
   const base = read('base');
@@ -94,6 +157,11 @@ function liveConfigs(proxies) {
   );
 }
 
+/**
+ * 复制代理组并移除 Mihomo 独有的 oixCloud 差异，以比较两端共同定义及顺序。
+ * @param {Object} config 含 proxy-groups 的客户端合并或最终配置。
+ * @returns {Object[]} 去除独有组、其菜单引用和 oixCloud use 的代理组副本。
+ */
 function sharedGroups(config) {
   return plain(config['proxy-groups'])
     .filter(({ name }) => name !== '✈️ oixCloud Optimized')
@@ -554,8 +622,14 @@ test('both live source profiles work with the existing airport and transit node 
 });
 
 test('Mihomo file wrappers await merge and serialize each independently scoped script', async () => {
-  // Mirrors the Sub-Store Mihomo file processor's local script scope and its
-  // parse -> await main(config || {}) -> dump calling convention.
+  /**
+   * 模拟 Sub-Store 的独立脚本作用域及解析、等待 main、序列化的文件处理流程。
+   * 成功时更新 VM 中的 $content；脚本定义不会泄漏到 VM 全局作用域。
+   * @param {string} file 相对于仓库根目录的发布脚本路径。
+   * @param {import('node:vm').Context} context 已注入参数、内容及运行时依赖的 VM。
+   * @returns {Promise<void>} 文件处理完成后兑现的 Promise。
+   * @throws {Error} 文件读取失败时抛出；异步脚本或序列化错误使 Promise 拒绝。
+   */
   const runWrapped = (file, context) =>
     vm.runInContext(
       `
@@ -570,6 +644,11 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
       { filename: `sub-store-wrapper:${file}` },
     );
 
+  /**
+   * 递归检查无循环的配置数据中是否仍有以 $ 开头的来源或补丁指令。
+   * @param {*} value 待检查的配置值。
+   * @returns {*} 发现指令返回 true；未发现返回 false，假值输入原样返回。
+   */
   const hasDirective = (value) =>
     value &&
     typeof value === 'object' &&
@@ -591,6 +670,12 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
         ProxyUtils: {
           yaml: {
             safeLoad: parseYaml,
+            /**
+             * 断言传入的是已等待完成的配置，记录序列化次数并生成 YAML。
+             * @param {*} value 待序列化的配置对象，不应是 Promise。
+             * @returns {string} 序列化后的 YAML 文本。
+             * @throws {Error} 收到 Promise 或 YAML 序列化失败时抛出。
+             */
             safeDump: (value) => {
               assert.notEqual(
                 Object.prototype.toString.call(value),
@@ -604,6 +689,12 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
         },
         $substore: {
           http: {
+            /**
+             * 记录请求并异步读取同名本地模板，模拟成功的远程 YAML 下载。
+             * @param {{url: string}} request 请求对象，使用解构出的 URL 定位配置文件。
+             * @returns {Promise<{statusCode: number, body: string}>} 含模板文本的成功响应。
+             * @throws {Error} URL 无效或本地模板读取失败时使 Promise 拒绝。
+             */
             get: async ({ url }) => {
               requests.push(url);
               await Promise.resolve();
@@ -703,7 +794,13 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
   ]);
   const { operator: rename } = loadScript('scripts/rename.js', {
     $arguments: {},
-    console: { log() {} },
+    console: {
+      /**
+       * 丢弃重命名脚本的日志，保持节点中转集成测试的输出简洁。
+       * @returns {void} 忽略所有日志输入，无返回值。
+       */
+      log() {},
+    },
   });
   const proxies = plain([...selfHosted, ...(await rename(airports, 'ClashMeta', {}))]);
   assert.equal(proxies.length, prepared.length);
@@ -716,6 +813,11 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
     assert.equal(proxy['dialer-proxy'], expectedDialers.get(proxy.server), proxy.server);
   }
 
+  /**
+   * 以稳定的服务器地址查找重命名后的节点，生成对应分组的期望成员。
+   * @param {...string} servers 要匹配的服务器地址。
+   * @returns {string[]} 按当前节点数组顺序排列的匹配节点名称。
+   */
   const namesFor = (...servers) =>
     proxies.filter(({ server }) => servers.includes(server)).map(({ name }) => name);
   const relayGroups = ['🛡️ Edge 中转', '🛡️ 亚太中转', '🛡️ 美西中转'];

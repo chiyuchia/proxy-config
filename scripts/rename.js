@@ -247,12 +247,29 @@ var __proxyConfigScript = (() => {
     "网站"
   ];
   var VALID_OUTPUT_FIELDS = /* @__PURE__ */ new Set(["FG", "ZH", "EN", "QC"]);
+  /**
+   * 将 hot 参数转为允许保留的地区集合。
+   * 真值中没有有效地区代码时使用内置热门集合；返回内置集合时不复制它。
+   *
+   * @preserve
+   * @param {*} [value] hot 原始值；假值关闭筛选，真值按竖线分隔并忽略大小写。
+   * @returns {Set<string>|null} 有效地区集合；关闭筛选时返回 null。
+   */
   function parseHotRegions(value) {
     if (!value) return null;
     const codes = String(value).toUpperCase().split("|").map((code) => code.trim()).filter(Boolean);
     const matched = new Set(codes.filter((code) => REGIONS_BY_CODE.has(code)));
     return matched.size > 0 ? matched : HOT_REGIONS;
   }
+  /**
+   * 将内置信息节点过滤词和自定义词合并为不区分大小写的字面匹配正则。
+   * 仅显式值转为字符串并去空白后为空时禁用过滤；undefined、false 和 0 仍使用内置词表。
+   *
+   * @preserve
+   * @param {*} [value] filter 原始值；真值先 URL 解码，再按竖线拆分自定义过滤词。
+   * @returns {RegExp|null} 信息节点过滤正则；显式禁用时返回 null。
+   * @throws {URIError} 自定义值包含无效的 URL 百分号编码时抛出。
+   */
   function parseFilterPattern(value) {
     if (value !== void 0 && String(value).trim() === "") return null;
     const customWords = value ? decodeURIComponent(String(value)).split("|").map((word) => word.trim()).filter(Boolean) : [];
@@ -261,12 +278,48 @@ var __proxyConfigScript = (() => {
       "i"
     );
   }
+  /**
+   * 解析自定义保留关键词，独立识别 false/0 字符串并移除 true/1 开关词。
+   * 不进行 URL 解码；空数组表示启用内置保留词且不追加自定义词。
+   *
+   * @preserve
+   * @param {*} [value] retain 原始值；undefined 使用默认词表，字符串化后的 false 或 0 禁用保留。
+   * @returns {string[]|null} 按竖线拆分并去空白的自定义关键词；禁用时返回 null。
+   */
   function parseRetainKeywords(value) {
     if (value === void 0) return [];
     const text = String(value).trim();
     if (text === "0" || text.toLowerCase() === "false") return null;
     return text.split("|").map((word) => word.trim()).filter((word) => word && word !== "1" && word.toLowerCase() !== "true");
   }
+  /**
+   * @preserve
+   * @typedef {Object} RenameOptions
+   * @property {boolean} removeOriginalName 是否移除原名，默认 true。
+   * @property {boolean} removeUniqueSequence 是否移除唯一完整名称的 01 序号，默认 false。
+   * @property {Set<string>|null} hotRegions 允许保留的地区集合；null 表示不按地区过滤。
+   * @property {RegExp|null} filterPattern 信息节点过滤正则；null 表示不执行名称过滤。
+   * @property {RegExp|null} blockPattern 识别地区前移除文本的正则；null 表示不屏蔽。
+   * @property {string[]|null} retainKeywords 追加到内置词表的关键词；null 表示禁用保留词。
+   * @property {string[]} outputFields 按输出顺序排列的 FG、ZH、EN、QC 字段，默认 FG、EN。
+   */
+  /**
+   * 将 Sub-Store 参数归一化为过滤、地区选择、关键词保留和命名选项。
+   * remove/one 使用 JavaScript 真值语义，filter/block 解码 URL 文本，retain 单独识别 false/0。
+   *
+   * @preserve
+   * @param {Object|null} [args={}] 原始脚本参数；null 同样使用默认值。
+   * @param {*} [args.remove=true] 是否移除原名；只有 undefined 使用默认 true。
+   * @param {*} [args.one=false] 是否移除唯一完整名称的 01 序号。
+   * @param {*} [args.hot] 热门地区开关或竖线分隔代码；假值不筛选。
+   * @param {*} [args.filter] 自定义信息节点过滤词；省略保留内置词表，空白字符串关闭过滤。
+   * @param {*} [args.block] URL 编码的屏蔽正则；假值不屏蔽，启用时使用 gi 标记。
+   * @param {*} [args.retain] 自定义保留词或开关；省略启用内置词，false/0 禁用。
+   * @param {*} [args.out='FG|EN'] 竖线分隔输出字段；有效项为空时回退到 FG、EN。
+   * @returns {RenameOptions} 已解析的重命名选项，不修改传入参数。
+   * @throws {URIError} filter 或 block 包含无效 URL 编码时抛出。
+   * @throws {SyntaxError} 解码后的 block 无法编译为正则时抛出。
+   */
   function parseRenameOptions(args = {}) {
     const outputFields = (args?.out ? String(args.out) : "FG|EN").split("|").map((field) => field.trim().toUpperCase()).filter((field) => VALID_OUTPUT_FIELDS.has(field));
     return {
@@ -341,6 +394,14 @@ var __proxyConfigScript = (() => {
   };
 
   // src/rename/identify.js
+  /**
+   * 先替换地区别名，再依次匹配中文名、国旗、英文全称和地区代码。
+   * 各阶段均按地区表顺序返回首个命中；别名替换后的代码匹配忽略大小写并限制字母边界。
+   *
+   * @preserve
+   * @param {string} name 待识别的节点名称。
+   * @returns {string|null} 命中的标准地区代码；没有匹配时返回 null。
+   */
   function matchNameToCode(name) {
     let processed = name;
     for (const [target, pattern] of Object.entries(REGION_ALIASES)) {
@@ -357,11 +418,34 @@ var __proxyConfigScript = (() => {
     }
     return null;
   }
+  /**
+   * 将地区代码转为大写，并把展示用的 UK 映射为标准代码 GB。
+   *
+   * @preserve
+   * @param {*} code 待归一化的代码；假值按空字符串处理。
+   * @returns {string|null} 地区表中存在的标准代码；未知代码返回 null。
+   */
   function normalizeCountryCode(code) {
     const upper = String(code || "").toUpperCase();
     if (REGIONS_BY_CODE.has(upper)) return upper;
     return upper === "UK" ? "GB" : null;
   }
+  /**
+   * @preserve
+   * @typedef {Object} VikingName
+   * @property {string} countryCode 用于识别和分组的标准地区代码。
+   * @property {string} displayCode 原名中的大写展示代码，保留 UK 等写法。
+   * @property {string} flag 原名开头的旗帜；未提供时为空字符串。
+   * @property {string} suffix 用空格拼接的线路和服务商，不包含原序号。
+   */
+  /**
+   * 解析 COUNTRY-NN-PROVIDER 或 COUNTRY-LINE-NN-PROVIDER 格式。
+   * 不检查订阅来源；允许开头带国旗，序号为一至三位数字，服务商可包含连字符分段。
+   *
+   * @preserve
+   * @param {*} name 原节点名；假值按空字符串处理，其余值转为字符串并去除首尾空白。
+   * @returns {VikingName|null} 标准代码、展示代码、原旗帜及后缀；格式或地区无效时返回 null。
+   */
   function parseVikingName(name) {
     const trimmed = String(name || "").trim();
     const flagMatch = trimmed.match(/^([\u{1F1E6}-\u{1F1FF}]{2})\s*/u);
@@ -390,6 +474,17 @@ var __proxyConfigScript = (() => {
       suffix: [line, provider].filter(Boolean).join(" ")
     };
   }
+  /**
+   * 仅从节点名称识别地区：先移除屏蔽内容并尝试 Viking 格式，再剥离域名并匹配地区。
+   * 不修改节点；server 为假值时直接返回 null，不执行名称识别。
+   *
+   * @preserve
+   * @param {Object} proxy 待识别的节点。
+   * @param {string} proxy.name 原节点名。
+   * @param {string} [proxy.server] 节点服务器；仅用于判断是否允许识别，不查询其地理位置。
+   * @param {RegExp|null} [blockPattern] 识别前移除名称片段的正则；省略或 null 时不屏蔽。
+   * @returns {string|null} 命中的标准地区代码；无法识别时返回 null。
+   */
   function identifyCountry(proxy, blockPattern) {
     if (!proxy.server) return null;
     const cleanName = blockPattern ? proxy.name.replace(blockPattern, "") : proxy.name;
@@ -646,17 +741,52 @@ var __proxyConfigScript = (() => {
     "CU"
   ];
   var RETAIN_PIPE_TAG_PATTERNS = [/^(?:CM|CT|CU)+$/i, /^(?:\d+(?:\.\d+)?|\.\d+)x$/i];
+  /**
+   * 从首个管道之后的分段中提取完整的运营商组合标签或数字倍率标签。
+   * 保留标签原文和顺序，此步骤不去重。
+   *
+   * @preserve
+   * @param {*} name 原节点名；假值按空字符串处理，其余值转为字符串。
+   * @returns {string[]} 去除首尾空白的匹配标签；没有后续分段或匹配时返回空数组。
+   */
   function extractRetainPipeTags(name) {
     const parts = String(name || "").split("|").map((s) => s.trim()).filter(Boolean);
     if (parts.length < 2) return [];
     return parts.slice(1).filter((part) => RETAIN_PIPE_TAG_PATTERNS.some((re) => re.test(part)));
   }
+  /**
+   * 依次提取内置城市及线路关键词、尾部管道标签和自定义关键词。
+   * 保留原文大小写，按首次出现位置排序并去重，再移除被其他完整命中词包含的片段。
+   * 关键词按正则解释，纯字母数字词额外限制字母数字边界。
+   *
+   * @preserve
+   * @param {string} name 原节点名。
+   * @param {string[]} retainKeys 追加的自定义关键词；空数组仅使用内置关键词和管道标签。
+   * @returns {string[]} 整理后的命中词；未命中时返回空数组。
+   * @throws {SyntaxError} 内置或自定义关键词不能编译为正则时抛出。
+   */
   function extractRetainKeywords(name, retainKeys) {
     const hits = [];
     const nameLower = name.toLowerCase();
+    /**
+     * 将非空且未出现过的原文片段追加到当前 hits 数组。
+     *
+     * @preserve
+     * @param {string} value 待保留的原文片段，使用大小写敏感的完全相等判断去重。
+     * @returns {void} 无返回值，直接更新外层 hits 数组。
+     */
     const pushOriginal = (value) => {
       if (value && !hits.includes(value)) hits.push(value);
     };
+    /**
+     * 查找关键词正则的首个匹配，并截取与关键词等长的原文加入当前命中列表。
+     * 通过小写文本匹配；纯字母数字关键词增加边界，其余词保留原有正则语义。
+     *
+     * @preserve
+     * @param {string} kw 内置或自定义关键词。
+     * @returns {void} 无返回值；命中时通过 pushOriginal 更新外层 hits 数组。
+     * @throws {SyntaxError} 关键词不能编译为正则时抛出。
+     */
     const pushHit = (kw) => {
       const kwLower = kw.toLowerCase();
       const isAscii = /^[A-Za-z0-9]+$/.test(kw);
@@ -676,11 +806,28 @@ var __proxyConfigScript = (() => {
   }
 
   // src/rename/format.js
+  /**
+   * 将地区代码中的英文字母转为区域指示符，TW 按现有展示约定使用萨摩亚旗帜。
+   *
+   * @preserve
+   * @param {string|null} [countryCode] 地区代码；假值使用通用地球图标。
+   * @returns {string} 地区旗帜，或缺少代码时的 🌐。
+   */
   function getFlagEmoji(countryCode) {
     if (!countryCode) return "🌐";
     if (countryCode.toUpperCase() === "TW") return "🇼🇸";
     return countryCode.toUpperCase().replace(/[A-Z]/gu, (char) => String.fromCodePoint(char.charCodeAt(0) + 127397));
   }
+  /**
+   * 按指定字段顺序组合地区标签，优先保留 Viking 名称自带的旗帜和展示代码。
+   * 中文名和英文全称查不到地区记录时回退到传入代码。
+   *
+   * @preserve
+   * @param {string} countryCode 已识别的标准地区代码。
+   * @param {import('./identify.js').VikingName|null} vikingName Viking 解析结果；null 使用标准地区展示。
+   * @param {string[]} outputFields 输出字段顺序，可包含 FG、ZH、EN、QC。
+   * @returns {string} 用空格连接的地区标签。
+   */
   function formatCountryLabel(countryCode, vikingName, outputFields) {
     const region = REGIONS_BY_CODE.get(countryCode);
     const values = {
@@ -691,13 +838,41 @@ var __proxyConfigScript = (() => {
     };
     return outputFields.map((field) => values[field]).join(" ");
   }
+  /**
+   * 组合地区标签、至少两位序号、原名或保留关键词以及订阅名，不修改节点。
+   * Viking 后缀按未经 block 清理的原名解析，仅在其地区与识别结果一致时采用。
+   *
+   * @preserve
+   * @param {Object} proxy 待命名的节点。
+   * @param {string} proxy.name 原节点名，用于保留原文、提取关键词和解析 Viking 格式。
+   * @param {string} [proxy._subName] 追加到名称末尾的订阅名；假值不追加。
+   * @param {string} countryCode 已识别的标准地区代码。
+   * @param {number} sequence 当前订阅及地区分组中的序号，从 1 开始。
+   * @param {import('./options.js').RenameOptions} options 已解析的输出格式和保留选项。
+   * @returns {string} 格式化后的完整节点名称。
+   * @throws {SyntaxError} 需要提取关键词且某个关键词无法编译为正则时抛出。
+   */
   function formatProxyName(proxy, countryCode, sequence, options) {
     const parsedName = parseVikingName(proxy.name);
     const vikingName = parsedName?.countryCode === countryCode ? parsedName : null;
     const subName = proxy._subName || "";
     const countryLabel = formatCountryLabel(countryCode, vikingName, options.outputFields);
     const baseName = [countryLabel, String(sequence).padStart(2, "0")].filter(Boolean).join(" ");
+    /**
+     * 在名称后追加当前节点的订阅名，忽略空片段。
+     *
+     * @preserve
+     * @param {string} name 需要保留的名称或关键词片段。
+     * @returns {string} 用空格连接的片段与订阅名。
+     */
     const appendSubName = (name) => [name, subName].filter(Boolean).join(" ");
+    /**
+     * 用管道分隔非空命名片段。
+     *
+     * @preserve
+     * @param {...string} parts 按输出顺序传入的地区序号和名称后缀。
+     * @returns {string} 用“ | ”连接且不含空片段的名称。
+     */
     const joinNameParts = (...parts) => parts.filter(Boolean).join(" | ");
     if (!options.removeOriginalName) return joinNameParts(baseName, appendSubName(proxy.name));
     if (!options.retainKeywords) return joinNameParts(baseName, subName);
@@ -705,7 +880,22 @@ var __proxyConfigScript = (() => {
     const retained = extractRetainKeywords(proxy.name, options.retainKeywords);
     return joinNameParts(baseName, appendSubName(retained.join(" ")));
   }
+  /**
+   * 按去掉两位序号后的完整名称计数，只为计数为一的名称移除 01 序号。
+   * 后缀不同视为不同名称；直接修改传入节点对象的 name，其他序号保持原样。
+   *
+   * @preserve
+   * @param {Array<{name: string}>} proxies 已完成命名和筛选的节点，亦可包含保留原名的未知地区节点。
+   * @returns {void} 无返回值，修改结果保存在原节点对象中。
+   */
   function removeUniqueSequence(proxies) {
+    /**
+     * 移除位于名称末尾或管道后缀之前的两位序号，用于归并完整名称。
+     *
+     * @preserve
+     * @param {string} name 待计算归并键的完整名称。
+     * @returns {string} 移除两位序号但保留原管道后缀的名称；不匹配时返回原文。
+     */
     const withoutSequence = (name) => name.replace(/\s+\d{2}(\s*\|.*)?$/, (_, suffix) => suffix || "");
     const nameCounts = /* @__PURE__ */ new Map();
     for (const proxy of proxies) {
@@ -720,6 +910,16 @@ var __proxyConfigScript = (() => {
   }
 
   // src/rename/index.js
+  /**
+   * 按热门地区、其他已识别地区、未知地区排序，已识别节点再按地区代码和最终名称排序。
+   * 两个未知节点视为相等，以便稳定排序保留它们的输入顺序。
+   *
+   * @preserve
+   * @param {{name: string}} a 待比较的前一个节点。
+   * @param {{name: string}} b 待比较的后一个节点。
+   * @param {Map<Object, string>} countries 按节点对象引用保存的已识别地区代码。
+   * @returns {number} 负数表示 a 在前，正数表示 b 在前，0 表示排序等价。
+   */
   function compareProxiesByRegion(a, b, countries) {
     const countryA = countries.get(a);
     const countryB = countries.get(b);
@@ -732,6 +932,19 @@ var __proxyConfigScript = (() => {
     if (!hotA && hotB) return 1;
     return countryA.localeCompare(countryB) || a.name.localeCompare(b.name);
   }
+  /**
+   * 过滤信息节点、识别地区，按订阅和地区编号命名，再进行 hot 筛选、排序和可选去序号。
+   * 仅使用传入数据并通过 logger.log 输出处理日志，不读取 Sub-Store 全局变量或访问网络。
+   * 已识别节点浅拷贝后改名，未知节点保留对象引用；启用 one 时可能修改未知节点的原对象名称。
+   *
+   * @preserve
+   * @param {Object[]} proxies 输入节点数组，节点应包含 name，并可包含 server、_subName 及其他协议字段。
+   * @param {Object|null} [args={}] 原始脚本参数，字段和默认值由 parseRenameOptions 定义。
+   * @param {{log: function(...*): void}} [logger=console] 接收处理进度和重命名信息的日志对象。
+   * @returns {Object[]} 筛选和排序后的新数组，保留节点的非名称字段。
+   * @throws {URIError} filter 或 block 参数包含无效 URL 编码时抛出。
+   * @throws {SyntaxError} block 或保留关键词无法编译为正则时抛出。
+   */
   function renameProxies(proxies, args = {}, logger = console) {
     const options = parseRenameOptions(args);
     const hotOnly = options.hotRegions !== null;
@@ -781,11 +994,29 @@ var __proxyConfigScript = (() => {
   }
 
   // src/entries/rename.js
+  /**
+   * 使用 Sub-Store 的 $arguments 和控制台日志，按节点名称识别地区并整理名称。
+   * @preserve
+   * @param {Array<Object>} proxies 待重命名的订阅节点；已识别节点浅拷贝，未知节点保留引用。
+   * @param {string} targetPlatform Sub-Store 传入的目标平台，本脚本不使用。
+   * @param {Object} context Sub-Store 传入的处理上下文，本脚本不使用。
+   * @returns {Promise<Array<Object>>} 按地区排序、完成命名的节点数组；hot 可过滤地区，one 可能改写未知节点的原对象名称。
+   * @throws {Error} 参数解码、正则构造或重命名处理失败时，返回的 Promise 拒绝。
+   */
   async function operator(proxies, targetPlatform, context) {
     return renameProxies(proxies, $arguments, console);
   }
   return __toCommonJS(rename_exports);
 })();
+/**
+ * 使用 Sub-Store 的 $arguments 和控制台日志，按节点名称识别地区并整理名称。
+ * @preserve
+ * @param {Array<Object>} proxies 待重命名的订阅节点；已识别节点浅拷贝，未知节点保留引用。
+ * @param {string} targetPlatform Sub-Store 传入的目标平台，本脚本不使用。
+ * @param {Object} context Sub-Store 传入的处理上下文，本脚本不使用。
+ * @returns {Promise<Array<Object>>} 按地区排序、完成命名的节点数组；hot 可过滤地区，one 可能改写未知节点的原对象名称。
+ * @throws {Error} 参数解码、正则构造或重命名处理失败时，返回的 Promise 拒绝。
+ */
 async function operator(proxies, targetPlatform, context) {
   return __proxyConfigScript.operator(proxies, targetPlatform, context);
 }

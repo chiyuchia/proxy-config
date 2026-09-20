@@ -7,6 +7,17 @@ import { configError, copyConfigValue, isConfigMap, requireArray } from './value
 import { mergeConfigValue } from './patch.js';
 import { validateMergedConfig } from './validation.js';
 
+/**
+ * 校验来源标记，合并公共模板与客户端差异，再复制注入节点并校验当前配置引用。
+ * 不修改输入；移除来源标记，保留供后续覆写使用的成员生成声明。
+ *
+ * @preserve
+ * @param {Object<string, *>} base 包含 `$base: true` 且不含顶层 proxies 的公共配置。
+ * @param {Object<string, *>} profile 包含合法 `$profile` 且不含顶层 proxies 的客户端差异。
+ * @param {Array<Object<string, *>>} [proxies] 已注入的节点；省略时结果不添加顶层 proxies。
+ * @returns {Object<string, *>} 完成合并及当前引用校验的新配置，不与输入共享容器。
+ * @throws {Error} 来源标记、配置值、补丁、节点或当前配置引用不符合要求时抛出错误。
+ */
 export function mergeConfigDocuments(base, profile, proxies) {
   if (!isConfigMap(base) || base.$base !== true) configError('base.yaml 必须包含 $base: true');
   if (!isConfigMap(profile) || !['mihomo', 'stash'].includes(profile.$profile)) {
