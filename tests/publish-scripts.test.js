@@ -17,6 +17,7 @@ const workflow = parse(
 const publishStep = workflow.jobs.publish.steps.find((step) => step.id === 'publish-scripts');
 const publishedFiles = [
   'scripts/config-overwrite.js',
+  'scripts/dialer-proxy.js',
   'scripts/merge-config.js',
   'scripts/rename.js',
 ];
@@ -123,6 +124,10 @@ test('publishing requires successful checks and a push to master', () => {
   );
   assert.equal(workflow.jobs.publish.permissions.contents, 'write');
   assert.equal(publishStep.env.SOURCE_COMMIT, '${{ github.sha }}');
+  const upload = workflow.jobs.check.steps.find((step) =>
+    step.uses?.startsWith('actions/upload-artifact@'),
+  );
+  assert.deepEqual(upload.with.path.trim().split('\n').sort(), publishedFiles);
 });
 
 test('unchanged scripts do not create a publication commit', (t) => {
@@ -133,7 +138,7 @@ test('unchanged scripts do not create a publication commit', (t) => {
   assert.equal(repo.git(['status', '--porcelain']), '');
 });
 
-test('publication commits only the three generated scripts', (t) => {
+test('publication commits only the generated scripts', (t) => {
   const repo = fixture(t);
   repo.build();
   repo.write('src/index.js', 'uncommitted source\n');

@@ -638,3 +638,114 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
     }
   }
 });
+
+test('self-hosted dialers and renamed airport nodes preserve final grouping in both clients', async () => {
+  const sources = [
+    {
+      mode: 'self-hosted',
+      proxies: [
+        { name: '自建 SG 落地', type: 'vless', _subName: '自建', server: 'sg.example.com' },
+        { name: '自建 US 落地', type: 'vless', _subName: '自建', server: 'us.example.com' },
+        { name: '自建 SG 直连', type: 'vless', _subName: '自建', server: 'direct.example.com' },
+      ],
+    },
+    {
+      mode: 'edge',
+      proxies: [
+        { name: 'HK', type: 'vless', _subName: 'oixCloud Edge', server: 'oix.example.com' },
+      ],
+    },
+    {
+      mode: 'edge',
+      proxies: [{ name: 'JP', type: 'ss', _subName: '一元机场', server: 'yiyuan.example.com' }],
+    },
+  ];
+  const directProxies = [
+    { name: 'HK-Go-01-GCP', type: 'ss', _subName: 'VikingLinks', server: 'viking.example.com' },
+    { name: 'HK CT', type: 'vless', _subName: '良心云', server: 'liangxin.example.com' },
+    { name: 'SG CT', type: 'hysteria2', _subName: '良心云', server: 'hy2.example.com' },
+    { name: 'JP 电信', type: 'ss', _subName: '吹雪云', server: 'chuixue.example.com' },
+  ];
+  const selfHosted = [];
+  const airports = [...directProxies];
+  for (const { mode, proxies } of sources) {
+    const { operator } = loadScript('scripts/dialer-proxy.js', { $arguments: { mode } });
+    const destination = mode === 'self-hosted' ? selfHosted : airports;
+    destination.push(...(await operator(proxies, 'ClashMeta', {})));
+  }
+  const prepared = [...selfHosted, ...airports];
+  const originalNames = new Map(prepared.map(({ server, name }) => [server, name]));
+  const expectedDialers = new Map([
+    ['sg.example.com', '🛡️ 亚太中转'],
+    ['us.example.com', '🛡️ 美西中转'],
+    ['oix.example.com', '🛡️ Edge 中转'],
+    ['yiyuan.example.com', '🛡️ Edge 中转'],
+  ]);
+  const { operator: rename } = loadScript('scripts/rename.js', {
+    $arguments: {},
+    console: { log() {} },
+  });
+  const proxies = plain([...selfHosted, ...(await rename(airports, 'ClashMeta', {}))]);
+  assert.equal(proxies.length, prepared.length);
+  for (const proxy of proxies) {
+    if (proxy._subName === '自建') {
+      assert.equal(proxy.name, originalNames.get(proxy.server), 'self-hosted names stay unchanged');
+    } else {
+      assert.notEqual(proxy.name, originalNames.get(proxy.server), 'airport nodes are renamed');
+    }
+    assert.equal(proxy['dialer-proxy'], expectedDialers.get(proxy.server), proxy.server);
+  }
+
+  const namesFor = (...servers) =>
+    proxies.filter(({ server }) => servers.includes(server)).map(({ name }) => name);
+  const relayGroups = ['🛡️ Edge 中转', '🛡️ 亚太中转', '🛡️ 美西中转'];
+  const dedicatedGroups = [
+    '✈️ VikingLinks 亚太',
+    '✈️ 良心云 亚太',
+    '✈️ 吹雪云 亚太',
+    '✈️ 良心云 Hy2',
+  ];
+  const configs = liveConfigs(proxies);
+  const overwrite = loadScript('scripts/config-overwrite.js', { $arguments: {} }).main;
+  for (const [client, config] of Object.entries(configs)) {
+    const originalRules = plain(config.rules);
+    const originalGroups = new Map(
+      config['proxy-groups'].map(({ name, proxies = [] }) => [name, plain(proxies)]),
+    );
+    overwrite(config);
+    const groups = new Map(config['proxy-groups'].map((group) => [group.name, group]));
+    assert.deepEqual(config.proxies, proxies, `${client}: injected nodes remain intact`);
+    assert.deepEqual(config.rules, originalRules, `${client}: rule priority remains intact`);
+    for (const [name, originalMembers] of originalGroups) {
+      assert.deepEqual(
+        plain(groups.get(name).proxies.slice(0, originalMembers.length)),
+        originalMembers,
+        `${client}: ${name} retains its configured candidate order`,
+      );
+    }
+    for (const proxy of proxies) {
+      if (proxy['dialer-proxy']) {
+        assert.ok(groups.has(proxy['dialer-proxy']), `${client}: ${proxy.name} has a valid relay`);
+        for (const name of [...relayGroups, ...dedicatedGroups]) {
+          assert.ok(!groups.get(name).proxies.includes(proxy.name), `${client}: ${name}`);
+        }
+      } else {
+        for (const name of relayGroups) {
+          assert.ok(groups.get(name).proxies.includes(proxy.name), `${client}: ${name}`);
+        }
+      }
+    }
+    for (const [name, servers] of [
+      ['🏝️ 精品节点', ['sg.example.com', 'us.example.com', 'direct.example.com']],
+      ['✈️ oixCloud Edge', ['oix.example.com']],
+      ['✈️ 一元机场', ['yiyuan.example.com']],
+      ['✈️ VikingLinks 亚太', ['viking.example.com']],
+      ['✈️ 良心云 亚太', ['liangxin.example.com']],
+      ['✈️ 吹雪云 亚太', ['chuixue.example.com']],
+      ['✈️ 良心云 Hy2', ['hy2.example.com']],
+    ]) {
+      assert.deepEqual(plain(groups.get(name).proxies), namesFor(...servers), `${client}: ${name}`);
+    }
+  }
+  assert.deepEqual(sharedGroups(configs.stash), sharedGroups(configs.mihomo));
+});

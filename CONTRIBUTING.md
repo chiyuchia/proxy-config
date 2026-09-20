@@ -13,6 +13,7 @@
 | Stash 的 DNS 差异 | `configs/stash.yaml` |
 | 服务端下载、配置合并及引用检查 | `src/merge-config/` |
 | 节点协议筛选、代理组成员生成和 provider URL 注入 | `src/config-overwrite/` |
+| 自建落地及机场节点的 `dialer-proxy` 设置 | `src/dialer-proxy/` |
 | 节点地区识别、名称格式和关键词提取 | `src/rename/` |
 | Sub-Store 入口与全局对象适配 | `src/entries/` |
 | 单文件脚本构建 | `tools/build.js` |
@@ -31,14 +32,15 @@ src/
   entries/           Sub-Store 的 main / operator 入口，读取运行时全局对象
   merge-config/      配置值、补丁合并、引用校验、远程来源读取
   config-overwrite/  组成员筛选与重建、provider URL 注入
+  dialer-proxy/      中转模式参数、原节点名匹配与 dialer-proxy 设置
   rename/            地区数据、别名、关键词、参数、识别与名称格式
-tools/build.js       将三个入口分别打包为 scripts/*.js
+tools/build.js       将四个入口分别打包为 scripts/*.js
 tests/              核心逻辑测试与发布脚本的 Sub-Store 运行环境模拟
 ```
 
 核心逻辑通过参数接收配置、脚本参数、HTTP/YAML 等依赖；`$arguments`、`$substore`、`ProxyUtils` 只在入口适配。新增规则先确定所属模块，地区信息按一条记录维护代码、中文名、英文名和旗帜，保留记录及匹配顺序。
 
-三个发布文件各自包含完整依赖，不需要运行时 `import`、`require` 或本地 Node.js。构建保留顶层 `main(config)` / `operator(proxies, targetPlatform, context)`，两个配置脚本仍作为独立操作执行。产物不压缩，保留中文和来源模块注释，便于排查问题。
+四个发布文件各自包含完整依赖，不需要运行时 `import`、`require` 或本地 Node.js。构建保留顶层 `main(config)` / `operator(proxies, targetPlatform, context)`，两个配置脚本和两个订阅节点脚本各自作为独立操作执行。产物不压缩，保留中文和来源模块注释，便于排查问题。
 
 ## 配置与合并
 
@@ -48,6 +50,7 @@ tests/              核心逻辑测试与发布脚本的 Sub-Store 运行环境�
 - 三份 YAML 分别解析，锚点只能引用同一文件中的定义。实际节点由 Sub-Store 注入，三份配置源不要定义顶层 `proxies`。
 - `scripts/merge-config.js` 通过 `async main(config)` 读取公共配置和指定客户端差异；保留已有 `config.proxies`，其余输入配置由合并结果替换。
 - 合并与 `scripts/config-overwrite.js` 覆写必须作为两个独立的脚本操作执行，不能拼接；覆写在合并之后执行。额外的配置修改也应放在合并之后。
+- `scripts/dialer-proxy.js` 在各自来源订阅中通过 `operator(proxies, targetPlatform, context)` 设置节点中转。自建节点设置中转后保留原名，直接供文件注入和覆写使用；oixCloud Edge 和一元机场设置中转后可按需重命名。接入及参数见 [README.md 的节点中转说明](README.md#节点中转)。
 - `scripts/rename.js` 在订阅或组合订阅中通过 `async operator(proxies, targetPlatform, context)` 处理节点数组，再供文件注入和覆写使用；接入及参数见 [README.md 的节点重命名说明](README.md#节点重命名)。
 
 ### 测速参数复用
@@ -169,6 +172,7 @@ npm run check
 - 数组与代理组补丁、来源标记、节点保留、重复组名和无效引用等检查。
 - 远程读取、URL 与超时参数、请求和 YAML 错误处理，以及 Sub-Store 独立脚本的异步执行与序列化流程。
 - 实际机场与中转节点筛选、协议限制、节点注入和覆写结果。
+- 中转模式参数、自建原节点名的大小写敏感匹配、机场全部节点设置、已有字段覆盖与保留，以及自建保留原名和机场可选重命名后注入、覆写的完整流程。
 - 重命名仅按节点名称识别地区、未知地区保留原名，以及启用 `hot` 后过滤未知地区节点的行为。
 - 参数边界、关键词与旗帜保留、单节点序号处理，以及覆写的无效筛选、正则状态、重复执行和 provider 更新。
 - 自动发布的触发限制、无变化跳过、提交范围，以及旧构建和并发推送保护。
@@ -191,9 +195,9 @@ npm run check
 
 ### 自动构建与发布
 
-[GitHub Actions 工作流](.github/workflows/check.yml) 在所有分支的 push 和 PR 上安装锁定的依赖、构建三个脚本并执行完整检查。仅 `master` 的 push 在检查成功后自动发布产物；其他分支和 PR 只构建与检查，不回写文件。
+[GitHub Actions 工作流](.github/workflows/check.yml) 在所有分支的 push 和 PR 上安装锁定的依赖、构建四个脚本并执行完整检查。仅 `master` 的 push 在检查成功后自动发布产物；其他分支和 PR 只构建与检查，不回写文件。
 
-发布使用本次已验证的 `scripts/merge-config.js`、`scripts/config-overwrite.js` 和 `scripts/rename.js`。这些文件仍纳入版本控制，只有产物存在差异时，机器人才会创建提交并普通推送到 `master`。发布前会检查远端分支：若 `master` 已前进，旧运行跳过发布，由最新 push 的运行负责构建；不会强制推送或覆盖后续提交。现有 `master/scripts/` 地址及 `configs/` 读取方式保持不变。
+发布使用本次已验证的 `scripts/merge-config.js`、`scripts/config-overwrite.js`、`scripts/dialer-proxy.js` 和 `scripts/rename.js`。这些文件仍纳入版本控制，只有产物存在差异时，机器人才会创建提交并普通推送到 `master`。发布前会检查远端分支：若 `master` 已前进，旧运行跳过发布，由最新 push 的运行负责构建；不会强制推送或覆盖后续提交。现有 `master/scripts/` 地址及 `configs/` 读取方式保持不变。
 
 发布任务使用 `GITHUB_TOKEN`，并声明 `contents: write` 权限，无需另配个人访问令牌。仓库及组织的 Actions 权限策略须允许该写权限，`master` 的分支保护或规则集也须允许机器人写入；不满足时，发布会失败。使用 `GITHUB_TOKEN` 推送的机器人提交不会再次触发 push 工作流，因此不会循环构建。
 

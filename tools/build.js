@@ -1,5 +1,5 @@
 /**
- * @file 将三个模块化入口构建为 Sub-Store 可直接执行的独立发布脚本。
+ * @file 将模块化入口构建为 Sub-Store 可直接执行的独立发布脚本。
  * 默认写入 scripts/；传入 --check 时仅检查源码与产物是否同步。
  */
 
@@ -31,6 +31,13 @@ const scripts = [
     description: 'Sub-Store 节点重命名脚本：仅按名称识别地区，整理序号、关键词和订阅名。',
     usage: '用于订阅或组合订阅的节点处理，在配置文件注入节点前执行。',
     signature: 'async function operator(proxies, targetPlatform, context)',
+    call: 'operator(proxies, targetPlatform, context)',
+  },
+  {
+    name: 'dialer-proxy',
+    description: 'Sub-Store 节点中转脚本：为自建落地节点或 Edge 订阅设置 dialer-proxy。',
+    usage: '通过 mode 选择 self-hosted 或 edge，在来源订阅中设置中转，再供配置文件注入使用。',
+    signature: 'function operator(proxies, targetPlatform, context)',
     call: 'operator(proxies, targetPlatform, context)',
   },
 ];

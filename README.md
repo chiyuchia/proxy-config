@@ -9,9 +9,10 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 | [configs/stash.yaml](configs/stash.yaml) | Stash 的 DNS 差异 |
 | [scripts/merge-config.js](scripts/merge-config.js) | 服务端拉取、合并与配置检查的发布脚本；源码在 [src/merge-config/](src/merge-config/) |
 | [scripts/config-overwrite.js](scripts/config-overwrite.js) | 组成员筛选、去重和 provider URL 注入的发布脚本；源码在 [src/config-overwrite/](src/config-overwrite/) |
+| [scripts/dialer-proxy.js](scripts/dialer-proxy.js) | 为自建落地、oixCloud Edge 和一元机场节点设置中转的发布脚本；源码在 [src/dialer-proxy/](src/dialer-proxy/) |
 | [scripts/rename.js](scripts/rename.js) | 地区识别、名称整理和关键词过滤的发布脚本；源码在 [src/rename/](src/rename/) |
 
-维护脚本时修改 `src/`，在本地构建并验证；推送到 `master` 后由 GitHub Actions 自动构建并发布 `scripts/`，详见[贡献指南的自动构建与发布](CONTRIBUTING.md#自动构建与发布)。Sub-Store 继续使用下方三个单文件地址，无需安装开发依赖。
+维护脚本时修改 `src/`，在本地构建并验证；推送到 `master` 后由 GitHub Actions 自动构建并发布 `scripts/`，详见[贡献指南的自动构建与发布](CONTRIBUTING.md#自动构建与发布)。Sub-Store 使用下方四个单文件地址，无需安装开发依赖。
 
 ## 接入 Sub-Store
 
@@ -24,13 +25,13 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 然后按以下顺序配置处理操作：
 
 1. 添加远程脚本 `scripts/merge-config.js`，通过下方的 URL 参数选择客户端。
-2. 配置节点注入操作（例如“从订阅添加节点”）；需要整理节点名称时，先在来源订阅中配置[节点重命名](#节点重命名)。
+2. 配置节点注入操作（例如“从订阅添加节点”）；先在各自来源订阅中完成[节点中转](#节点中转)等处理。自建节点保留原名；oixCloud Edge 和一元机场设置中转后可按需[重命名](#节点重命名)。
 3. 最后运行原有 `scripts/config-overwrite.js`，保留其已有参数。
 
 ```text
 本地初始内容：{}
 → scripts/merge-config.js：读取 base.yaml + 客户端差异
-→ 注入原有订阅节点
+→ 注入已在来源订阅中处理的节点
 → scripts/config-overwrite.js：重建代理组成员
 → Sub-Store 输出完整 YAML
 ```
@@ -77,9 +78,53 @@ Stash 输出不需要添加 `oixCloudEdgePath`；该参数会额外生成 oixClo
 https://example.com/scripts/merge-config.js#client=stash&configBaseUrl=https%3A%2F%2Fexample.com%2Fproxy-config%2Fconfigs
 ```
 
-需要固定版本时，选择已包含对应构建产物的 Git 提交，将三个脚本 URL 和 `configBaseUrl` 一起固定到该提交，例如配置目录使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/<commit>/configs`。若源码提交由机器人补充发布产物，应选择机器人的发布提交；仅固定脚本地址不会自动固定 YAML 版本。
+需要固定版本时，选择已包含对应构建产物的 Git 提交，将所用脚本 URL 和 `configBaseUrl` 一起固定到该提交，例如配置目录使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/<commit>/configs`。若源码提交由机器人补充发布产物，应选择机器人的发布提交；仅固定脚本地址不会自动固定 YAML 版本。
 
 合并脚本在远程请求失败、来源为空、客户端不匹配、补丁无效或配置引用错误时会报错并停止生成配置。
+
+## 节点中转
+
+在 Sub-Store 的**各自来源订阅**中添加远程脚本操作，替换原有设置 `dialer-proxy` 的内联脚本。该脚本通过 `operator(proxies, targetPlatform, context)` 处理当前输入节点，必须用 `mode` 参数明确选择行为，不根据订阅名推断模式。
+
+自建节点使用：
+
+```text
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/dialer-proxy.js#mode=self-hosted
+```
+
+oixCloud Edge 和一元机场在各自订阅中使用同一个地址：
+
+```text
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/dialer-proxy.js#mode=edge
+```
+
+| `mode` | 行为 |
+| --- | --- |
+| `self-hosted` | 名称同时包含“落地”和 `SG` 时设置 `dialer-proxy: 🛡️ 亚太中转`；其他包含“落地”的节点设置 `dialer-proxy: 🛡️ 美西中转`；不含“落地”的节点保持不变 |
+| `edge` | 为当前输入订阅的全部节点设置 `dialer-proxy: 🛡️ Edge 中转` |
+
+`mode` 必填，只接受上述两个值。自建模式按原节点名进行区分大小写的字面子串匹配，`sg` 不等于 `SG`。命中时覆盖已有 `dialer-proxy`；未命中时保留已有值及其他节点字段。`edge` 模式应用于全部输入节点，因此应分别放在 oixCloud Edge、一元机场来源订阅中。
+
+自建节点保留原名，不经过重命名脚本：
+
+```text
+自建原始节点
+→ scripts/dialer-proxy.js#mode=self-hosted：设置中转，保留原名
+→ 供“Mihomo 配置”文件注入并执行覆写
+```
+
+oixCloud Edge 和一元机场分别在各自来源订阅中设置中转，可按需整理名称：
+
+```text
+机场原始节点
+→ scripts/dialer-proxy.js#mode=edge：设置中转
+→ scripts/rename.js：按需整理名称
+→ 供“Mihomo 配置”文件注入并执行覆写
+```
+
+机场分组依赖最终节点名中的 `oixCloud Edge` 或“一元机场”，使用重命名脚本时可通过对应的 `_subName` 保留机场名。
+
+重命名脚本的默认过滤词包含“一元机场”。若该机场的原始节点名包含这几个字且需要保留，可按[重命名脚本参数](#重命名脚本参数)使用 JSON 参数 `{"filter":""}` 禁用该来源订阅的过滤；仅 `_subName` 含“一元机场”无需因此禁用过滤。完成注入和覆写后，在两种客户端的最终配置中检查 `dialer-proxy`、中转组和机场组成员。
 
 ## 节点重命名
 
@@ -89,7 +134,7 @@ https://example.com/scripts/merge-config.js#client=stash&configBaseUrl=https%3A%
 https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.js
 ```
 
-该脚本通过 `async operator(proxies, targetPlatform, context)` 处理节点数组。先在来源订阅中完成重命名，再由“Mihomo 配置”文件注入处理后的节点，并运行 `scripts/config-overwrite.js`。文件中的合并与覆写脚本使用 `main(config)`，`rename.js` 应配置在订阅的节点处理流程中。
+该脚本通过 `async operator(proxies, targetPlatform, context)` 处理节点数组。自建节点不使用此脚本；oixCloud Edge 和一元机场如需重命名，在各自来源订阅中先完成[节点中转](#节点中转)，再执行此脚本。之后由“Mihomo 配置”文件注入处理后的节点，并运行 `scripts/config-overwrite.js`。文件中的合并与覆写脚本使用 `main(config)`，`dialer-proxy.js` 和 `rename.js` 应分别配置为订阅中的独立节点处理操作。
 
 脚本先过滤信息节点，再仅从节点名称识别地区，无需联网解析或查询。名称无法识别时保留原名，`one` 参数的序号处理仍会独立生效。
 

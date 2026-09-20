@@ -29,6 +29,7 @@ jobs:
             scripts/merge-config.js
             scripts/config-overwrite.js
             scripts/rename.js
+            scripts/dialer-proxy.js
           if-no-files-found: error
           overwrite: true
           retention-days: 7
@@ -60,7 +61,7 @@ jobs:
             exit 0
           fi
 
-          git add -- scripts/merge-config.js scripts/config-overwrite.js scripts/rename.js
+          git add -- scripts/merge-config.js scripts/config-overwrite.js scripts/rename.js scripts/dialer-proxy.js
           if git diff --cached --quiet; then
             echo "发布脚本无变化，无需提交。"
             exit 0
