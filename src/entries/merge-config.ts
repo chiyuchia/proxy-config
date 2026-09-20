@@ -19,7 +19,7 @@ export async function main(config: ProxyConfig | null | undefined): Promise<Merg
     /**
      * 转发配置文件的 HTTP GET 请求到 Sub-Store。
      * @preserve
-     * @param {{url: string, timeout: number}} request 请求地址与超时毫秒数。
+     * @param {{url: string, timeout: number, headers?: Object<string, string>}} request 请求地址、超时毫秒数及可选缓存控制请求头。
      * @returns {Promise<Object>} 包含响应体和状态信息的 HTTP 响应；请求错误向上传播。
      */
     get: (request) => $substore.http.get(request),

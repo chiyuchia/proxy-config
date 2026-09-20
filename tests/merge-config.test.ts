@@ -110,9 +110,13 @@ function runWrapped(file: string, context: vm.Context): Promise<void> {
  * 创建文件脚本运行环境，读取真实模板并记录 YAML 输出及配置下载请求。
  * 不注入 Node.js 或 URL 全局对象，以检查发布脚本不依赖本地运行时能力。
  * @param {string} client 待合并的客户端名称。
+ * @param {Object} [args={}] 额外的合并脚本参数，client 始终以第一个参数为准。
  * @returns {Object} 独立 VM、已序列化的配置列表及已请求的模板地址。
  */
-function fileRuntime(client: string): {
+function fileRuntime(
+  client: string,
+  args: ScriptArguments = {},
+): {
   context: FileRuntime;
   outputs: unknown[];
   requests: string[];
@@ -122,7 +126,7 @@ function fileRuntime(client: string): {
   const context = vm.createContext({
     console,
     $content: '{}',
-    $arguments: { client },
+    $arguments: { ...args, client },
     ProxyUtils: {
       yaml: {
         safeLoad: parseYaml,
@@ -245,7 +249,7 @@ function respondWith(base: unknown, profile: unknown): (request: HttpRequest) =>
    */
   return ({ url }: HttpRequest): HttpResponse => ({
     statusCode: 200,
-    body: JSON.stringify(url.endsWith('/base.yaml') ? base : profile),
+    body: JSON.stringify(new URL(url).pathname.endsWith('/base.yaml') ? base : profile),
   });
 }
 
@@ -492,9 +496,13 @@ test('main selects the requested profile and preserves only injected proxies fro
     const { main, calls } = runtime({ client }, respondWith(fixture(), { $profile: client }));
     const result = await main(input);
     assert.deepEqual(
-      calls.map(({ url }) => url).sort(),
+      calls.map(({ url }) => url.split('?')[0]).sort(),
       [`${defaultConfigUrl}/base.yaml`, `${defaultConfigUrl}/${client}.yaml`].sort(),
     );
+    for (const { url, headers } of calls) {
+      assert.ok(new URL(url).searchParams.get('_substore_refresh'));
+      assert.deepEqual(plain(headers), { 'Cache-Control': 'no-cache' });
+    }
     assert.deepEqual(plain(result.proxies), input.proxies);
     assert.equal((result.dns as FixtureConfig['dns']).enable, true);
     assert.equal('stale-key' in result, false);
@@ -520,6 +528,9 @@ test('main supports source URL overrides and passes the configured timeout to HT
     'https://override.example/stash.yaml',
   ]);
   assert.ok(calls.every(({ timeout }) => timeout === 12345));
+  for (const { headers } of calls) {
+    assert.deepEqual(plain(headers), { 'Cache-Control': 'no-cache' });
+  }
 
   const custom = runtime(
     { client: 'mihomo', configBaseUrl: 'https://config.example/configs/' },
@@ -530,6 +541,126 @@ test('main supports source URL overrides and passes the configured timeout to HT
     'https://config.example/configs/base.yaml',
     'https://config.example/configs/mihomo.yaml',
   ]);
+  for (const { headers } of custom.calls) {
+    assert.deepEqual(plain(headers), { 'Cache-Control': 'no-cache' });
+  }
+});
+
+test('explicit false cache flags preserve source URLs and omit cache request headers', async () => {
+  const baseUrl = `${defaultConfigUrl}/base.yaml?token=a%2Fb+z&_substore_refresh=existing#part`;
+  const profileUrl = `${defaultConfigUrl}/mihomo.yaml?flag&empty=#profile`;
+  for (const noCache of [false, 'false']) {
+    const { main, calls } = runtime(
+      { client: 'mihomo', noCache, baseUrl, profileUrl },
+      respondWith(fixture(), { $profile: 'mihomo' }),
+    );
+    await main({});
+    assert.deepEqual(calls.map(({ url }) => url).sort(), [baseUrl, profileUrl].sort());
+    assert.ok(calls.every((request) => !Object.hasOwn(request, 'headers')));
+  }
+});
+
+test('default and explicit cache refresh apply to both GitHub templates and change on each merge', async () => {
+  for (const args of [{}, { noCache: undefined }, { noCache: true }, { noCache: 'true' }]) {
+    const { main, calls } = runtime(
+      { client: 'mihomo', ...args },
+      respondWith(fixture(), { $profile: 'mihomo' }),
+    );
+    const tokens: string[] = [];
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await main({});
+      const currentCalls = calls.slice(attempt * 2);
+      assert.equal(currentCalls.length, 2);
+      assert.deepEqual(
+        currentCalls.map(({ url }) => url.split('?')[0]).sort(),
+        [`${defaultConfigUrl}/base.yaml`, `${defaultConfigUrl}/mihomo.yaml`].sort(),
+      );
+      const currentTokens = currentCalls.map(({ url, headers }) => {
+        assert.deepEqual(plain(headers), { 'Cache-Control': 'no-cache' });
+        const values = new URL(url).searchParams.getAll('_substore_refresh');
+        assert.equal(values.length, 1);
+        assert.ok(values[0]);
+        return values[0];
+      });
+      assert.equal(currentTokens[0], currentTokens[1]);
+      tokens.push(currentTokens[0]);
+    }
+    assert.notEqual(tokens[0], tokens[1], 'each merge must use a fresh cache key');
+  }
+});
+
+test('GitHub source overrides retain query bytes and fragments while replacing refresh parameters', async () => {
+  const sources = [
+    'http://raw.githubusercontent.com/example/config/main/base.yaml',
+    'https://raw.githubusercontent.com/example/config/main/mihomo.yaml',
+  ];
+  const query = 'signature=a%2Fb+z&empty=&flag&_substore_refresh=old&x=%2f&_substore_refresh=older';
+  const { main, calls } = runtime(
+    {
+      client: 'mihomo',
+      noCache: true,
+      baseUrl: `${sources[0]}?${query}#base-fragment`,
+      profileUrl: `${sources[1]}?${query}#profile-fragment`,
+    },
+    respondWith(fixture(), { $profile: 'mihomo' }),
+  );
+  await main({});
+  assert.equal(calls.length, 2);
+  const tokens: string[] = [];
+  for (const { url, headers } of calls) {
+    const parsed = new URL(url);
+    assert.ok(sources.includes(url.split('?')[0]));
+    assert.equal(
+      parsed.hash,
+      parsed.pathname.endsWith('/base.yaml') ? '#base-fragment' : '#profile-fragment',
+    );
+    assert.deepEqual(
+      url
+        .slice(url.indexOf('?') + 1, url.indexOf('#'))
+        .split('&')
+        .filter((part) => !part.startsWith('_substore_refresh=')),
+      ['signature=a%2Fb+z', 'empty=', 'flag', 'x=%2f'],
+    );
+    const values = parsed.searchParams.getAll('_substore_refresh');
+    assert.equal(values.length, 1);
+    assert.ok(values[0]);
+    assert.notEqual(values[0], 'old');
+    assert.notEqual(values[0], 'older');
+    tokens.push(values[0]);
+    assert.deepEqual(plain(headers), { 'Cache-Control': 'no-cache' });
+  }
+  assert.equal(tokens[0], tokens[1]);
+});
+
+test('custom source URLs preserve signed queries and only receive cache headers', async () => {
+  for (const origin of [
+    'https://signed.example',
+    'https://raw.githubusercontent.com.example',
+    'https://raw.githubusercontent.com@custom.example',
+  ]) {
+    const suffix = '?signature=a%2Fb+z&_substore_refresh=signed&empty=&flag#signed-fragment';
+    const baseUrl = `${origin}/base.yaml${suffix}`;
+    const profileUrl = `${origin}/mihomo.yaml${suffix}`;
+    const { main, calls } = runtime(
+      { client: 'mihomo', noCache: true, baseUrl, profileUrl },
+      respondWith(fixture(), { $profile: 'mihomo' }),
+    );
+    await main({});
+    assert.deepEqual(calls.map(({ url }) => url).sort(), [baseUrl, profileUrl].sort());
+    for (const request of calls) {
+      assert.deepEqual(plain(request.headers), { 'Cache-Control': 'no-cache' });
+    }
+  }
+});
+
+test('invalid cache flags are rejected before either template is downloaded', async () => {
+  for (const noCache of [null, 0, 1, '', 'yes', 'TRUE', ' true ', [], {}]) {
+    const { main, calls } = runtime({ client: 'mihomo', noCache }, () => {
+      throw new Error('must not request');
+    });
+    await assert.rejects(() => main({}), /\[merge-config\].*noCache/);
+    assert.equal(calls.length, 0);
+  }
 });
 
 test('main resolves explicit group members against the nodes injected by Sub-Store', async () => {
@@ -580,7 +711,7 @@ test('failed downloads and invalid YAML are rejected without returning fallback 
   ]) {
     const good = respondWith(fixture(), { $profile: 'mihomo' });
     const { main } = runtime({ client: 'mihomo' }, (request) =>
-      request.url.endsWith('/base.yaml') ? badResponse : good(request),
+      new URL(request.url).pathname.endsWith('/base.yaml') ? badResponse : good(request),
     );
     await assert.rejects(() => main({ proxies: [] }));
   }
@@ -1048,6 +1179,41 @@ test('final validation checks locally declared HTTP provider URLs in both file r
         assert.equal(outputs.length, 1);
         assert.equal(context.$content, before);
       }
+    }
+  }
+});
+
+test('cache refresh preserves final providers and injected group members in both file runtimes', async () => {
+  const node = { name: '良心云 HK CT', type: 'vless', server: 'example.com', port: 443 };
+  for (const client of ['mihomo', 'stash']) {
+    const results: MergedConfig[] = [];
+    for (const args of [{}, { noCache: false }, { noCache: true }]) {
+      const { context, outputs, requests } = fileRuntime(client, args);
+      context.$content = stringify({ proxies: [node] });
+      await runWrapped('scripts/merge-config.js', context);
+      context.$arguments = {};
+      await runWrapped('scripts/config-overwrite.js', context);
+      const result = parseYaml(context.$content) as MergedConfig;
+      results.push(result);
+      assert.deepEqual(
+        result['proxy-providers'],
+        client === 'mihomo'
+          ? { oixCloud: { type: 'file', path: './proxy_provider/oixCloud' } }
+          : undefined,
+      );
+      assert.equal(
+        result['proxy-groups'].some((group) => group.use?.includes('oixCloud')),
+        client === 'mihomo',
+      );
+      assert.deepEqual(
+        result['proxy-groups'].find(({ name }) => name === '✈️ 良心云 亚太')!.proxies,
+        [node.name],
+      );
+      assert.equal(outputs.length, 2);
+      assert.equal(requests.length, 2);
+    }
+    for (const result of results.slice(1)) {
+      assert.deepEqual(result, results[0], `${client}: refresh must only change download requests`);
     }
   }
 });

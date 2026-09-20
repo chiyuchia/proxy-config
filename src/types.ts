@@ -65,6 +65,7 @@ export type OverwrittenConfig<T extends ProxyConfig = ProxyConfig> = Omit<
 export interface HttpRequest {
   url: string;
   timeout: number;
+  headers?: Record<string, string>;
 }
 
 /** 外部响应字段在读取来源时检查状态、类型和内容。 */

@@ -86,12 +86,23 @@ proxy-providers:
 | `baseUrl` | 单独指定公共配置地址，优先于 `configBaseUrl` |
 | `profileUrl` | 单独指定客户端差异地址，优先于 `configBaseUrl` |
 | `timeout` | 每次请求的超时毫秒数，默认 `10000` |
+| `noCache` | 默认 `true`；仅接受布尔值或字符串 `true` / `false`。请求 YAML 时要求缓存重新验证，GitHub Raw 地址还会附加动态刷新参数；设为 `false` 可关闭 |
 
 参数放在脚本 URL 的 `#` 后，用 `&` 分隔。URL 参数值需要进行 URL 编码，例如使用自己的目录：
 
 ```text
 https://example.com/scripts/merge-config.js#client=stash&configBaseUrl=https%3A%2F%2Fexample.com%2Fproxy-config%2Fconfigs
 ```
+
+YAML 请求刷新默认开启，无需额外参数。若还需跳过 Sub-Store 的脚本下载缓存，使用：
+
+```text
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-config.js#client=mihomo#noCache
+```
+
+合并脚本的 `noCache` 参数控制内部 YAML 请求，可显式添加 `&noCache=false` 关闭；末尾 `#noCache` 是 Sub-Store 的脚本资源下载选项，两者互不替代。需要使用已发布且支持该默认行为的脚本版本；仍固定到旧版本时，仅追加参数不会生效。
+
+启用后，公共配置和客户端差异的请求都会携带 `Cache-Control: no-cache`。主机名为 `raw.githubusercontent.com` 的地址额外附加动态 `_substore_refresh` 查询参数，同一次合并共用一个值，后续合并使用新值；通过 `baseUrl`、`profileUrl` 显式指定的 GitHub Raw 地址也适用。其他自定义域名只添加请求头，保留 URL 原样以兼容签名地址。该选项降低旧缓存命中的可能性，不保证所有 CDN 即时更新，也不保证跟随分支的两份 YAML 来自同一提交。
 
 需要固定版本时，选择已包含对应构建产物的 Git 提交，将所用脚本 URL 和 `configBaseUrl` 一起固定到该提交，例如配置目录使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/<commit>/configs`。若源码提交由机器人补充发布产物，应选择机器人的发布提交；仅固定脚本地址不会自动固定 YAML 版本。
 
