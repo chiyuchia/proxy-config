@@ -8,7 +8,7 @@ import type { ProxyNode } from '../types.ts';
 
 /**
  * 按节点名称识别地区，就地设置符合条件节点的 dialer-proxy，保留原名称和输入顺序。
- * 订阅名 _subName 为“精品节点”时视为自建，仅处理实际 type 为 ss 的节点（不区分大小写）。
+ * 订阅名 _subName 为“自建节点”时视为自建，仅处理实际 type 为 ss 的节点（不区分大小写）。
  * 其他协议的自建节点保持原样，包括已有中转字段；其他来源节点不限协议。
  * 美国节点使用美西中转，其他地区及无法识别地区的节点使用亚太中转。
  * @preserve
@@ -17,7 +17,7 @@ import type { ProxyNode } from '../types.ts';
  */
 export function assignDialerProxy<T extends ProxyNode>(proxies: T[]): T[] {
   return proxies.map((proxy) => {
-    const isSelfHosted = proxy._subName === '精品节点';
+    const isSelfHosted = proxy._subName === '自建节点';
     if (isSelfHosted && proxy.type?.toLowerCase() !== 'ss') return proxy;
 
     proxy['dialer-proxy'] =

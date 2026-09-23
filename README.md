@@ -116,7 +116,7 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-co
 https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/dialer-proxy.js
 ```
 
-脚本通过 `operator(proxies, targetPlatform, context)` 设置中转，无需选择模式，也不要求名称包含“落地”。订阅名 `_subName` 为“精品节点”时视为自建，仅处理实际 `type` 为 `ss` 的节点（不区分大小写）；其他协议或缺少 `type` 的自建节点保持原样，包括已有 `dialer-proxy`。其他来源节点不限协议，不根据节点名称判断是否自建。
+脚本通过 `operator(proxies, targetPlatform, context)` 设置中转，无需选择模式，也不要求名称包含“落地”。订阅名 `_subName` 为“自建节点”时视为自建，仅处理实际 `type` 为 `ss` 的节点（不区分大小写）；其他协议或缺少 `type` 的自建节点保持原样，包括已有 `dialer-proxy`。其他来源节点不限协议，不根据节点名称判断是否自建。
 
 符合条件的节点按地区分配中转：
 

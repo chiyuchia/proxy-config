@@ -31,8 +31,8 @@ function loadOperator(globals: Record<string, unknown> = {}): DialerOperator {
 
 test('eligible nodes use regional dialers while retaining names, fields and order', () => {
   const proxies = [
-    { name: '自建 SG 落地', 'dialer-proxy': '旧中转', type: 'ss', _subName: '精品节点', port: 443 },
-    { name: '自建 US 落地', type: 'SS', _subName: '精品节点' },
+    { name: '自建 SG 落地', 'dialer-proxy': '旧中转', type: 'ss', _subName: '自建节点', port: 443 },
+    { name: '自建 US 落地', type: 'SS', _subName: '自建节点' },
     { name: '自建 sg 落地' },
     { name: '自建 新加坡 落地' },
     { name: '自建 SG 直连' },
@@ -72,12 +72,12 @@ test('eligible nodes use regional dialers while retaining names, fields and orde
   assert.deepEqual(assignDialerProxy(proxies), result);
 });
 
-test('premium subscription non-SS nodes preserve their fields including existing dialers', () => {
+test('self-hosted subscription non-SS nodes preserve their fields including existing dialers', () => {
   const proxies: ProxyNode[] = [
-    { name: 'US 01', type: 'sS', _subName: '精品节点', 'dialer-proxy': '旧中转' },
+    { name: 'US 01', type: 'sS', _subName: '自建节点', 'dialer-proxy': '旧中转' },
     ...['vless', 'hysteria2', 'hy2', 'ssr', '', undefined].flatMap((type) => [
-      { name: '自建 US SS 落地', type, _subName: '精品节点' },
-      { name: '自建 SG SS 落地', type, _subName: '精品节点', 'dialer-proxy': '手动中转' },
+      { name: '自建 US SS 落地', type, _subName: '自建节点' },
+      { name: '自建 SG SS 落地', type, _subName: '自建节点', 'dialer-proxy': '手动中转' },
     ]),
   ];
   const before = structuredClone(proxies);
@@ -92,7 +92,8 @@ test('self-hosted protocol restrictions use the exact subscription name, not nod
   for (const subName of [
     undefined,
     '自建',
-    '精品节点备用',
+    '自建节点备用',
+    '精品节点',
     '🏝️ 精品节点',
     'oixCloud Edge',
     '一元机场',
@@ -102,7 +103,7 @@ test('self-hosted protocol restrictions use the exact subscription name, not nod
     assert.equal(result['dialer-proxy'], '🛡️ 美西中转', subName);
   }
 
-  const proxy = { name: 'US 01', type: 'vless', _subName: '精品节点' };
+  const proxy = { name: 'US 01', type: 'vless', _subName: '自建节点' };
   assert.deepEqual(assignDialerProxy([proxy]), [proxy]);
   assert.equal(Object.hasOwn(proxy, 'dialer-proxy'), false);
 });
@@ -152,9 +153,9 @@ test('published operator runs standalone without arguments and ignores legacy mo
       { name: '🇺🇸 02' },
       { name: '德国 01' },
       { name: '未知节点' },
-      { name: 'US SS', type: 'ss', _subName: '精品节点' },
-      { name: 'US VLESS', type: 'vless', _subName: '精品节点' },
-      { name: 'SG Hy2', type: 'hy2', _subName: '精品节点', 'dialer-proxy': 'DIRECT' },
+      { name: 'US SS', type: 'ss', _subName: '自建节点' },
+      { name: 'US VLESS', type: 'vless', _subName: '自建节点' },
+      { name: 'SG Hy2', type: 'hy2', _subName: '自建节点', 'dialer-proxy': 'DIRECT' },
     ];
     const expected = [
       '🛡️ 亚太中转',

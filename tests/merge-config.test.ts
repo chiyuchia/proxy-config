@@ -1302,13 +1302,13 @@ test('final validation rejects missing managed providers and invalid late provid
 
 test('self-hosted SS dialers and renamed airport nodes preserve final grouping in both clients', async () => {
   const selfHostedSource = [
-    { name: '自建 SG 落地', type: 'ss', _subName: '精品节点', server: 'sg.example.com' },
-    { name: '自建 US 落地', type: 'SS', _subName: '精品节点', server: 'us.example.com' },
-    { name: '自建 SG SS 直连', type: 'vless', _subName: '精品节点', server: 'direct.example.com' },
+    { name: '自建 SG 落地', type: 'ss', _subName: '自建节点', server: 'sg.example.com' },
+    { name: '自建 US 落地', type: 'SS', _subName: '自建节点', server: 'us.example.com' },
+    { name: '自建 SG SS 直连', type: 'vless', _subName: '自建节点', server: 'direct.example.com' },
     {
       name: '自建 US 手动',
       type: 'hy2',
-      _subName: '精品节点',
+      _subName: '自建节点',
       server: 'manual.example.com',
       'dialer-proxy': 'DIRECT',
     },
@@ -1361,7 +1361,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   const proxies = plain([...selfHosted, ...(await rename(airports, 'ClashMeta', {}))]);
   assert.equal(proxies.length, prepared.length);
   for (const proxy of proxies) {
-    if (proxy._subName === '精品节点') {
+    if (proxy._subName === '自建节点') {
       assert.equal(proxy.name, originalNames.get(proxy.server), 'self-hosted names stay unchanged');
     } else {
       assert.notEqual(proxy.name, originalNames.get(proxy.server), 'airport nodes are renamed');
