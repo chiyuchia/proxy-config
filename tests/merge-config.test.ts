@@ -777,12 +777,7 @@ test('live profiles share group definitions and menu order except for the Mihomo
   ];
   assert.ok(!groups.has('🛡️ Edge 中转'));
   assert.deepEqual(groups.get('🛡️ 亚太中转')!.proxies, asiaRelays);
-  assert.deepEqual(groups.get('🛡️ 美西中转')!.proxies, [
-    '✈️ VikingLinks',
-    '✈️ 吹雪云',
-    '✈️ 良心云',
-    '✈️ 良心云 Hy2',
-  ]);
+  assert.deepEqual(groups.get('🛡️ 美西中转')!.proxies, asiaRelays);
   assert.deepEqual(groups.get('🚀 节点选择')!.proxies, [
     '🏝️ 精品节点',
     '🇭🇰 香港节点',
