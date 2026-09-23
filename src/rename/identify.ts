@@ -102,6 +102,21 @@ export function parseVikingName(name: unknown): VikingName | null {
 }
 
 /**
+ * 从节点名称识别地区：先尝试 Viking 格式，再剥离域名并匹配地区。
+ * 与服务器地址和订阅来源无关，不访问网络。
+ *
+ * @preserve
+ * @param {string} name 待识别的节点名称。
+ * @returns {string|null} 命中的标准地区代码；无法识别时返回 null。
+ */
+export function identifyCountryFromName(name: string): string | null {
+  // Viking 格式先于域名剥离解析，避免改变线路或提供商名称的分段。
+  const vikingName = parseVikingName(name);
+  const withoutDomains = name.replace(/[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]+/g, '');
+  return vikingName?.countryCode || matchNameToCode(withoutDomains);
+}
+
+/**
  * 仅从节点名称识别地区：先移除屏蔽内容并尝试 Viking 格式，再剥离域名并匹配地区。
  * 不修改节点；server 为假值时直接返回 null，不执行名称识别。
  *
@@ -115,8 +130,5 @@ export function parseVikingName(name: unknown): VikingName | null {
 export function identifyCountry(proxy: ProxyNode, blockPattern?: RegExp | null): string | null {
   if (!proxy.server) return null;
   const cleanName = blockPattern ? proxy.name.replace(blockPattern, '') : proxy.name;
-  // Viking 格式先于域名剥离解析，避免改变线路或提供商名称的分段。
-  const vikingName = parseVikingName(cleanName);
-  const withoutDomains = cleanName.replace(/[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]+/g, '');
-  return vikingName?.countryCode || matchNameToCode(withoutDomains);
+  return identifyCountryFromName(cleanName);
 }

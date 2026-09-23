@@ -458,6 +458,19 @@ var __proxyConfigScript = (() => {
     };
   }
   /**
+   * 从节点名称识别地区：先尝试 Viking 格式，再剥离域名并匹配地区。
+   * 与服务器地址和订阅来源无关，不访问网络。
+   *
+   * @preserve
+   * @param {string} name 待识别的节点名称。
+   * @returns {string|null} 命中的标准地区代码；无法识别时返回 null。
+   */
+  function identifyCountryFromName(name) {
+    const vikingName = parseVikingName(name);
+    const withoutDomains = name.replace(/[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]+/g, "");
+    return vikingName?.countryCode || matchNameToCode(withoutDomains);
+  }
+  /**
    * 仅从节点名称识别地区：先移除屏蔽内容并尝试 Viking 格式，再剥离域名并匹配地区。
    * 不修改节点；server 为假值时直接返回 null，不执行名称识别。
    *
@@ -471,9 +484,7 @@ var __proxyConfigScript = (() => {
   function identifyCountry(proxy, blockPattern) {
     if (!proxy.server) return null;
     const cleanName = blockPattern ? proxy.name.replace(blockPattern, "") : proxy.name;
-    const vikingName = parseVikingName(cleanName);
-    const withoutDomains = cleanName.replace(/[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]+/g, "");
-    return vikingName?.countryCode || matchNameToCode(withoutDomains);
+    return identifyCountryFromName(cleanName);
   }
 
   // src/rename/keywords.ts

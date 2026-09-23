@@ -74,21 +74,6 @@ proxy-groups:
       - "✈️ 良心云 Hy2"
       - "✈️ 一元机场"
 
-  - name: "🛡️ Edge 中转"
-    x-substore:
-      members:
-        mode: append
-        exclude-dialer: true
-    type: select
-    proxies:
-      - "✈️ VikingLinks 亚太"
-      - "✈️ 吹雪云 亚太"
-      - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
-      - "✈️ 吹雪云"
-      - "✈️ 良心云"
-      - "✈️ 良心云 Hy2"
-
   - name: "🛡️ 亚太中转"
     x-substore:
       members:

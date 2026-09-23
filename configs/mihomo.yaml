@@ -48,12 +48,6 @@ proxy-groups:
       $insert-before:
         "✈️ oixCloud Edge": &oix_optimized ["✈️ oixCloud Optimized"]
 
-  - name: "🛡️ Edge 中转"
-    use: *oix_provider
-    proxies:
-      $insert-before:
-        "✈️ 吹雪云 亚太": *oix_optimized
-
   - name: "🛡️ 亚太中转"
     use: *oix_provider
     proxies:

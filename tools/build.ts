@@ -49,8 +49,8 @@ const scripts = [
   },
   {
     name: 'dialer-proxy',
-    description: 'Sub-Store 节点中转脚本：为自建落地节点或 Edge 订阅设置 dialer-proxy。',
-    usage: '通过 mode 选择 self-hosted 或 edge，在来源订阅中设置中转，再供配置文件注入使用。',
+    description: 'Sub-Store 节点中转脚本：美国节点使用美西中转，其他节点使用亚太中转。',
+    usage: '无需参数，在来源订阅中按节点名称识别地区并设置中转，再供配置文件注入使用。',
     signature: 'function operator(proxies, targetPlatform, context)',
     call: 'operator(proxies, targetPlatform, context)',
   },

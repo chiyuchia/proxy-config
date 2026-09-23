@@ -9,7 +9,7 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 | [configs/stash.yaml](configs/stash.yaml) | Stash 的 DNS 差异 |
 | [scripts/merge-config.js](scripts/merge-config.js) | 服务端拉取、合并与配置检查的发布脚本；源码在 [src/merge-config/](src/merge-config/) |
 | [scripts/config-overwrite.js](scripts/config-overwrite.js) | 组成员筛选、去重和最终配置校验的发布脚本；源码在 [src/config-overwrite/](src/config-overwrite/) |
-| [scripts/dialer-proxy.js](scripts/dialer-proxy.js) | 为自建落地、oixCloud Edge 和一元机场节点设置中转的发布脚本；源码在 [src/dialer-proxy/](src/dialer-proxy/) |
+| [scripts/dialer-proxy.js](scripts/dialer-proxy.js) | 为自建、oixCloud Edge 和一元机场节点按地区设置中转的发布脚本；源码在 [src/dialer-proxy/](src/dialer-proxy/) |
 | [scripts/rename.js](scripts/rename.js) | 地区识别、名称整理和关键词过滤的发布脚本；源码在 [src/rename/](src/rename/) |
 
 维护脚本时修改 `src/` 中的 TypeScript 源码，在本地构建并验证；类型检查、工具和测试用法见[贡献指南的脚本开发](CONTRIBUTING.md#脚本开发)。推送到 `master` 后由 GitHub Actions 自动构建并发布 `scripts/`，详见[自动构建与发布](CONTRIBUTING.md#自动构建与发布)。Sub-Store 继续使用下方四个 JavaScript 单文件地址，无需安装开发依赖。
@@ -110,32 +110,26 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-co
 
 ## 节点中转
 
-在 Sub-Store 的**各自来源订阅**中添加远程脚本操作，替换原有设置 `dialer-proxy` 的内联脚本。该脚本通过 `operator(proxies, targetPlatform, context)` 处理当前输入节点，必须用 `mode` 参数明确选择行为，不根据订阅名推断模式。
-
-自建节点使用：
+在 Sub-Store 的**各自来源订阅**中添加远程脚本操作，替换原有设置 `dialer-proxy` 的内联脚本。自建节点、oixCloud Edge 和一元机场使用同一个地址，无需参数：
 
 ```text
-https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/dialer-proxy.js#mode=self-hosted
+https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/dialer-proxy.js
 ```
 
-oixCloud Edge 和一元机场在各自订阅中使用同一个地址：
+脚本通过 `operator(proxies, targetPlatform, context)` 为当前输入的全部节点设置中转，不区分来源模式，也不要求名称包含“落地”：
 
-```text
-https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/dialer-proxy.js#mode=edge
-```
-
-| `mode` | 行为 |
+| 节点地区 | `dialer-proxy` |
 | --- | --- |
-| `self-hosted` | 名称同时包含“落地”和 `SG` 时设置 `dialer-proxy: 🛡️ 亚太中转`；其他包含“落地”的节点设置 `dialer-proxy: 🛡️ 美西中转`；不含“落地”的节点保持不变 |
-| `edge` | 为当前输入订阅的全部节点设置 `dialer-proxy: 🛡️ Edge 中转` |
+| 美国 | `🛡️ 美西中转` |
+| 其他地区或无法识别 | `🛡️ 亚太中转` |
 
-`mode` 必填，只接受上述两个值。自建模式按原节点名进行区分大小写的字面子串匹配，`sg` 不等于 `SG`。命中时覆盖已有 `dialer-proxy`；未命中时保留已有值及其他节点字段。`edge` 模式应用于全部输入节点，因此应分别放在 oixCloud Edge、一元机场来源订阅中。
+地区识别复用重命名脚本的名称识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。全部输入节点的已有 `dialer-proxy` 都会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除；配置中仅保留亚太和美西两个中转组。
 
 自建节点保留原名，不经过重命名脚本：
 
 ```text
 自建原始节点
-→ scripts/dialer-proxy.js#mode=self-hosted：设置中转，保留原名
+→ scripts/dialer-proxy.js：按地区设置中转，保留原名
 → 供“Mihomo 配置”文件注入并执行覆写
 ```
 
@@ -143,7 +137,7 @@ oixCloud Edge 和一元机场分别在各自来源订阅中设置中转，可按
 
 ```text
 机场原始节点
-→ scripts/dialer-proxy.js#mode=edge：设置中转
+→ scripts/dialer-proxy.js：按地区设置中转
 → scripts/rename.js：按需整理名称
 → 供“Mihomo 配置”文件注入并执行覆写
 ```

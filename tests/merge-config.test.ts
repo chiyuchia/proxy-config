@@ -775,7 +775,7 @@ test('live profiles share group definitions and menu order except for the Mihomo
     '✈️ 良心云',
     '✈️ 良心云 Hy2',
   ];
-  assert.deepEqual(groups.get('🛡️ Edge 中转')!.proxies, asiaRelays);
+  assert.ok(!groups.has('🛡️ Edge 中转'));
   assert.deepEqual(groups.get('🛡️ 亚太中转')!.proxies, asiaRelays);
   assert.deepEqual(groups.get('🛡️ 美西中转')!.proxies, [
     '✈️ VikingLinks',
@@ -1305,26 +1305,18 @@ test('final validation rejects missing managed providers and invalid late provid
   }
 });
 
-test('self-hosted dialers and renamed airport nodes preserve final grouping in both clients', async () => {
-  const sources = [
-    {
-      mode: 'self-hosted',
-      proxies: [
-        { name: '自建 SG 落地', type: 'vless', _subName: '自建', server: 'sg.example.com' },
-        { name: '自建 US 落地', type: 'vless', _subName: '自建', server: 'us.example.com' },
-        { name: '自建 SG 直连', type: 'vless', _subName: '自建', server: 'direct.example.com' },
-      ],
-    },
-    {
-      mode: 'edge',
-      proxies: [
-        { name: 'HK', type: 'vless', _subName: 'oixCloud Edge', server: 'oix.example.com' },
-      ],
-    },
-    {
-      mode: 'edge',
-      proxies: [{ name: 'JP', type: 'ss', _subName: '一元机场', server: 'yiyuan.example.com' }],
-    },
+test('regional dialers and renamed airport nodes preserve final grouping in both clients', async () => {
+  const selfHostedSource = [
+    { name: '自建 SG 落地', type: 'vless', _subName: '自建', server: 'sg.example.com' },
+    { name: '自建 US 落地', type: 'vless', _subName: '自建', server: 'us.example.com' },
+    { name: '自建 SG 直连', type: 'vless', _subName: '自建', server: 'direct.example.com' },
+  ];
+  const airportSources = [
+    [
+      { name: 'HK', type: 'vless', _subName: 'oixCloud Edge', server: 'oix.example.com' },
+      { name: '美国 US', type: 'vless', _subName: 'oixCloud Edge', server: 'oix-us.example.com' },
+    ],
+    [{ name: 'JP', type: 'ss', _subName: '一元机场', server: 'yiyuan.example.com' }],
   ];
   const directProxies = [
     { name: 'HK-Go-01-GCP', type: 'ss', _subName: 'VikingLinks', server: 'viking.example.com' },
@@ -1332,20 +1324,21 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
     { name: 'SG CT', type: 'hysteria2', _subName: '良心云', server: 'hy2.example.com' },
     { name: 'JP 电信', type: 'ss', _subName: '吹雪云', server: 'chuixue.example.com' },
   ];
-  const selfHosted: ProxyNode[] = [];
+  const { operator: assignDialer } = loadScript('scripts/dialer-proxy.js');
+  const selfHosted = await assignDialer(selfHostedSource, 'ClashMeta', {});
   const airports: ProxyNode[] = [...directProxies];
-  for (const { mode, proxies } of sources) {
-    const { operator } = loadScript('scripts/dialer-proxy.js', { $arguments: { mode } });
-    const destination = mode === 'self-hosted' ? selfHosted : airports;
-    destination.push(...(await operator(proxies, 'ClashMeta', {})));
+  for (const proxies of airportSources) {
+    airports.push(...(await assignDialer(proxies, 'ClashMeta', {})));
   }
   const prepared = [...selfHosted, ...airports];
   const originalNames = new Map(prepared.map(({ server, name }) => [server, name]));
   const expectedDialers = new Map([
     ['sg.example.com', '🛡️ 亚太中转'],
     ['us.example.com', '🛡️ 美西中转'],
-    ['oix.example.com', '🛡️ Edge 中转'],
-    ['yiyuan.example.com', '🛡️ Edge 中转'],
+    ['direct.example.com', '🛡️ 亚太中转'],
+    ['oix.example.com', '🛡️ 亚太中转'],
+    ['oix-us.example.com', '🛡️ 美西中转'],
+    ['yiyuan.example.com', '🛡️ 亚太中转'],
   ]);
   const { operator: rename } = loadScript('scripts/rename.js', {
     $arguments: {},
@@ -1375,7 +1368,7 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
    */
   const namesFor = (...servers: string[]): string[] =>
     proxies.filter(({ server }) => servers.includes(server!)).map(({ name }) => name);
-  const relayGroups = ['🛡️ Edge 中转', '🛡️ 亚太中转', '🛡️ 美西中转'];
+  const relayGroups = ['🛡️ 亚太中转', '🛡️ 美西中转'];
   const dedicatedGroups = [
     '✈️ VikingLinks 亚太',
     '✈️ 良心云 亚太',
@@ -1416,7 +1409,7 @@ test('self-hosted dialers and renamed airport nodes preserve final grouping in b
     }
     for (const [name, servers] of [
       ['🏝️ 精品节点', ['sg.example.com', 'us.example.com', 'direct.example.com']],
-      ['✈️ oixCloud Edge', ['oix.example.com']],
+      ['✈️ oixCloud Edge', ['oix.example.com', 'oix-us.example.com']],
       ['✈️ 一元机场', ['yiyuan.example.com']],
       ['✈️ VikingLinks 亚太', ['viking.example.com']],
       ['✈️ 良心云 亚太', ['liangxin.example.com']],

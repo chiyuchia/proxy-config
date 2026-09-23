@@ -13,7 +13,7 @@
 | Stash 的 DNS 差异 | `configs/stash.yaml` |
 | 服务端下载、配置合并及引用检查 | `src/merge-config/` |
 | 节点协议筛选、代理组成员生成和最终配置校验 | `src/config-overwrite/` |
-| 自建落地及机场节点的 `dialer-proxy` 设置 | `src/dialer-proxy/` |
+| 按节点地区设置 `dialer-proxy` | `src/dialer-proxy/` |
 | 节点地区识别、名称格式和关键词提取 | `src/rename/` |
 | Sub-Store 入口与全局对象适配 | `src/entries/` |
 | 运行时 provider 声明的读取与校验 | `src/runtime-providers.ts` |
@@ -34,7 +34,7 @@ src/
   entries/           Sub-Store 的 main / operator 入口，读取运行时全局对象
   merge-config/      配置值、补丁合并、引用校验、远程来源读取
   config-overwrite/  组成员筛选与重建、最终配置校验
-  dialer-proxy/      中转模式参数、原节点名匹配与 dialer-proxy 设置
+  dialer-proxy/      节点地区识别与 dialer-proxy 设置
   rename/            地区数据、别名、关键词、参数、识别与名称格式
   runtime-providers.ts  运行时 provider 声明读取与校验
   types.ts           共享节点、代理组、配置和运行时接口
@@ -61,7 +61,7 @@ tsconfig.json        源码、构建工具和测试的严格类型检查配置
 - 三份 YAML 分别解析，锚点只能引用同一文件中的定义。实际节点由 Sub-Store 注入，三份配置源不要定义顶层 `proxies`。
 - `scripts/merge-config.js` 通过 `async main(config)` 读取公共配置和指定客户端差异；保留已有 `config.proxies`，其余输入配置由合并结果替换。
 - 合并与 `scripts/config-overwrite.js` 覆写必须作为两个独立的脚本操作执行，不能拼接；覆写在合并和节点注入之后执行。额外的配置修改也应放在合并之后、最终覆写之前，以便进入最终校验。
-- `scripts/dialer-proxy.js` 在各自来源订阅中通过 `operator(proxies, targetPlatform, context)` 设置节点中转。自建节点设置中转后保留原名，直接供文件注入和覆写使用；oixCloud Edge 和一元机场设置中转后可按需重命名。接入及参数见 [README.md 的节点中转说明](README.md#节点中转)。
+- `scripts/dialer-proxy.js` 在需要中转的来源订阅中通过 `operator(proxies, targetPlatform, context)` 为全部输入节点按地区设置中转，不区分来源模式。自建节点设置中转后保留原名，直接供文件注入和覆写使用；oixCloud Edge 和一元机场设置中转后可按需重命名。接入及地区分配规则见 [README.md 的节点中转说明](README.md#节点中转)。
 - `scripts/rename.js` 在订阅或组合订阅中通过 `async operator(proxies, targetPlatform, context)` 处理节点数组，再供文件注入和覆写使用；接入及参数见 [README.md 的节点重命名说明](README.md#节点重命名)。
 
 ### 测速参数复用
@@ -174,7 +174,7 @@ rules:
 
 各组的成员生成方式由模板中的 `x-substore.members` 声明，覆写脚本不根据组名或其中的关键词推断行为。共同组的声明只在 `configs/base.yaml` 维护；Mihomo 的共同组补丁继承声明，仅新增的 oixCloud Optimized 组在差异文件中声明。字段和处理边界见[成员生成声明](#成员生成声明)。
 
-当前普通组使用 `append`，全球直连组使用 `manual` 保留手工配置。三个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；三个机场亚太组和良心云 Hy2 组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
+当前普通组使用 `append`，全球直连组使用 `manual` 保留手工配置。亚太和美西两个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；三个机场亚太组和良心云 Hy2 组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
 
 | 代理组 | 额外限制 |
 | --- | --- |
@@ -267,7 +267,7 @@ MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
 - 远程读取、URL、超时与缓存刷新参数的边界和请求行为、自定义地址保留、请求和 YAML 错误处理，以及 Sub-Store 独立脚本的异步执行与序列化流程。
 - 成员声明的字段校验、模式和默认值、组名变化不改变行为、声明在中间配置中的保留及最终移除，以及实际机场与中转节点筛选、协议限制、节点注入和覆写结果。
 - 运行时 provider 声明的字段与名称校验、与本地定义的冲突、`use` 引用边界、声明在中间配置中的保留及最终移除，以及 Mihomo 文件 provider 与 Stash 无依赖的输出。
-- 中转模式参数、自建原节点名的大小写敏感匹配、机场全部节点设置、已有字段覆盖与保留，以及自建保留原名和机场可选重命名后注入、覆写的完整流程。
+- 中转节点的地区识别、全部输入节点的中转设置及已有中转字段覆盖，以及自建保留原名和机场可选重命名后注入、覆写的完整流程。
 - 重命名仅按节点名称识别地区、未知地区保留原名，以及启用 `hot` 后过滤未知地区节点的行为。
 - 参数边界、关键词与旗帜保留、单节点序号处理，以及覆写的无效筛选、正则状态、从合并结果重复生成和拒绝直接覆写最终输出。
 - 自动发布的触发限制、无变化跳过、提交范围，以及旧构建和并发推送保护。
