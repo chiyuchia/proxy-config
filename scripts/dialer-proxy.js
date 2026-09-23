@@ -1,6 +1,6 @@
 /**
  * @file Sub-Store 节点中转脚本：美国节点使用美西中转，其他节点使用亚太中转。
- * 无需参数，在来源订阅中按节点名称识别地区并设置中转，再供配置文件注入使用。
+ * 无需参数，自建仅处理 SS 节点，其他来源不限协议；设置中转后供配置文件注入使用。
  * 入口：function operator(proxies, targetPlatform, context)；接入与参数见 README.md。
  *
  * 此文件由 npm run build 自动生成，请修改 src/ 中的源码。
@@ -393,14 +393,18 @@ var __proxyConfigScript = (() => {
 
   // src/dialer-proxy/index.ts
   /**
-   * 按节点名称识别地区，就地设置全部节点的 dialer-proxy，保留原名称和输入顺序。
+   * 按节点名称识别地区，就地设置符合条件节点的 dialer-proxy，保留原名称和输入顺序。
+   * 订阅名 _subName 为“精品节点”时视为自建，仅处理实际 type 为 ss 的节点（不区分大小写）。
+   * 其他协议的自建节点保持原样，包括已有中转字段；其他来源节点不限协议。
    * 美国节点使用美西中转，其他地区及无法识别地区的节点使用亚太中转。
    * @preserve
    * @param {Array<Object>} proxies 来源订阅节点，name 为字符串。
-   * @returns {Array<Object>} 新数组，元素仍为原节点对象；全部节点的中转字段已被覆盖。
+   * @returns {Array<Object>} 新数组，元素仍为原节点对象；符合条件节点的中转字段已被覆盖。
    */
   function assignDialerProxy(proxies) {
     return proxies.map((proxy) => {
+      const isSelfHosted = proxy._subName === "精品节点";
+      if (isSelfHosted && proxy.type?.toLowerCase() !== "ss") return proxy;
       proxy["dialer-proxy"] = identifyCountryFromName(proxy.name) === "US" ? "🛡️ 美西中转" : "🛡️ 亚太中转";
       return proxy;
     });
@@ -408,9 +412,9 @@ var __proxyConfigScript = (() => {
 
   // src/entries/dialer-proxy.ts
   /**
-   * 按节点名称识别地区，为来源订阅全部节点设置中转，无需脚本参数。
+   * 按节点名称识别地区，为自建 SS 节点和其他来源节点设置中转，无需脚本参数。
    * @preserve
-   * @param {Array<Object>} proxies 来源订阅节点，全部节点会就地更新 dialer-proxy。
+   * @param {Array<Object>} proxies 来源订阅节点，自建非 SS 节点保持原样，其余就地更新 dialer-proxy。
    * @param {string} targetPlatform Sub-Store 传入的目标平台，本脚本不使用。
    * @param {Object} context Sub-Store 传入的处理上下文，本脚本不使用。
    * @returns {Array<Object>} 保持输入顺序的新数组，元素引用及节点名称保持不变。
@@ -421,9 +425,9 @@ var __proxyConfigScript = (() => {
   return __toCommonJS(dialer_proxy_exports);
 })();
 /**
- * 按节点名称识别地区，为来源订阅全部节点设置中转，无需脚本参数。
+ * 按节点名称识别地区，为自建 SS 节点和其他来源节点设置中转，无需脚本参数。
  * @preserve
- * @param {Array<Object>} proxies 来源订阅节点，全部节点会就地更新 dialer-proxy。
+ * @param {Array<Object>} proxies 来源订阅节点，自建非 SS 节点保持原样，其余就地更新 dialer-proxy。
  * @param {string} targetPlatform Sub-Store 传入的目标平台，本脚本不使用。
  * @param {Object} context Sub-Store 传入的处理上下文，本脚本不使用。
  * @returns {Array<Object>} 保持输入顺序的新数组，元素引用及节点名称保持不变。

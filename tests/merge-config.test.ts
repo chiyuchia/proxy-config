@@ -1300,11 +1300,18 @@ test('final validation rejects missing managed providers and invalid late provid
   }
 });
 
-test('regional dialers and renamed airport nodes preserve final grouping in both clients', async () => {
+test('self-hosted SS dialers and renamed airport nodes preserve final grouping in both clients', async () => {
   const selfHostedSource = [
-    { name: '自建 SG 落地', type: 'vless', _subName: '自建', server: 'sg.example.com' },
-    { name: '自建 US 落地', type: 'vless', _subName: '自建', server: 'us.example.com' },
-    { name: '自建 SG 直连', type: 'vless', _subName: '自建', server: 'direct.example.com' },
+    { name: '自建 SG 落地', type: 'ss', _subName: '精品节点', server: 'sg.example.com' },
+    { name: '自建 US 落地', type: 'SS', _subName: '精品节点', server: 'us.example.com' },
+    { name: '自建 SG SS 直连', type: 'vless', _subName: '精品节点', server: 'direct.example.com' },
+    {
+      name: '自建 US 手动',
+      type: 'hy2',
+      _subName: '精品节点',
+      server: 'manual.example.com',
+      'dialer-proxy': 'DIRECT',
+    },
   ];
   const airportSources = [
     [
@@ -1320,7 +1327,13 @@ test('regional dialers and renamed airport nodes preserve final grouping in both
     { name: 'JP 电信', type: 'ss', _subName: '吹雪云', server: 'chuixue.example.com' },
   ];
   const { operator: assignDialer } = loadScript('scripts/dialer-proxy.js');
+  const originalSelfHosted = structuredClone(selfHostedSource);
   const selfHosted = await assignDialer(selfHostedSource, 'ClashMeta', {});
+  assert.deepEqual(
+    plain(selfHosted.slice(2)),
+    originalSelfHosted.slice(2),
+    'non-SS self-hosted nodes retain all fields, including existing dialers',
+  );
   const airports: ProxyNode[] = [...directProxies];
   for (const proxies of airportSources) {
     airports.push(...(await assignDialer(proxies, 'ClashMeta', {})));
@@ -1330,7 +1343,7 @@ test('regional dialers and renamed airport nodes preserve final grouping in both
   const expectedDialers = new Map([
     ['sg.example.com', '🛡️ 亚太中转'],
     ['us.example.com', '🛡️ 美西中转'],
-    ['direct.example.com', '🛡️ 亚太中转'],
+    ['manual.example.com', 'DIRECT'],
     ['oix.example.com', '🛡️ 亚太中转'],
     ['oix-us.example.com', '🛡️ 美西中转'],
     ['yiyuan.example.com', '🛡️ 亚太中转'],
@@ -1348,7 +1361,7 @@ test('regional dialers and renamed airport nodes preserve final grouping in both
   const proxies = plain([...selfHosted, ...(await rename(airports, 'ClashMeta', {}))]);
   assert.equal(proxies.length, prepared.length);
   for (const proxy of proxies) {
-    if (proxy._subName === '自建') {
+    if (proxy._subName === '精品节点') {
       assert.equal(proxy.name, originalNames.get(proxy.server), 'self-hosted names stay unchanged');
     } else {
       assert.notEqual(proxy.name, originalNames.get(proxy.server), 'airport nodes are renamed');
@@ -1392,7 +1405,10 @@ test('regional dialers and renamed airport nodes preserve final grouping in both
     }
     for (const proxy of proxies) {
       if (proxy['dialer-proxy']) {
-        assert.ok(groups.has(proxy['dialer-proxy']), `${client}: ${proxy.name} has a valid relay`);
+        assert.ok(
+          proxy['dialer-proxy'] === 'DIRECT' || groups.has(proxy['dialer-proxy']),
+          `${client}: ${proxy.name} has a valid relay`,
+        );
         for (const name of [...relayGroups, ...dedicatedGroups]) {
           assert.ok(!groups.get(name)!.proxies!.includes(proxy.name), `${client}: ${name}`);
         }
@@ -1403,7 +1419,10 @@ test('regional dialers and renamed airport nodes preserve final grouping in both
       }
     }
     for (const [name, servers] of [
-      ['🏝️ 精品节点', ['sg.example.com', 'us.example.com', 'direct.example.com']],
+      [
+        '🏝️ 精品节点',
+        ['sg.example.com', 'us.example.com', 'direct.example.com', 'manual.example.com'],
+      ],
       ['✈️ oixCloud Edge', ['oix.example.com', 'oix-us.example.com']],
       ['✈️ 一元机场', ['yiyuan.example.com']],
       ['✈️ VikingLinks 亚太', ['viking.example.com']],

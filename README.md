@@ -116,20 +116,22 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-co
 https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/dialer-proxy.js
 ```
 
-脚本通过 `operator(proxies, targetPlatform, context)` 为当前输入的全部节点设置中转，不区分来源模式，也不要求名称包含“落地”：
+脚本通过 `operator(proxies, targetPlatform, context)` 设置中转，无需选择模式，也不要求名称包含“落地”。订阅名 `_subName` 为“精品节点”时视为自建，仅处理实际 `type` 为 `ss` 的节点（不区分大小写）；其他协议或缺少 `type` 的自建节点保持原样，包括已有 `dialer-proxy`。其他来源节点不限协议，不根据节点名称判断是否自建。
+
+符合条件的节点按地区分配中转：
 
 | 节点地区 | `dialer-proxy` |
 | --- | --- |
 | 美国 | `🛡️ 美西中转` |
 | 其他地区或无法识别 | `🛡️ 亚太中转` |
 
-地区识别复用重命名脚本的名称识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。全部输入节点的已有 `dialer-proxy` 都会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除；配置中仅保留亚太和美西两个中转组。
+地区识别复用重命名脚本的名称识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。符合条件节点的已有 `dialer-proxy` 会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除；配置中仅保留亚太和美西两个中转组。
 
 自建节点保留原名，不经过重命名脚本：
 
 ```text
 自建原始节点
-→ scripts/dialer-proxy.js：按地区设置中转，保留原名
+→ scripts/dialer-proxy.js：仅为 SS 节点按地区设置中转，保留原名
 → 供“Mihomo 配置”文件注入并执行覆写
 ```
 
