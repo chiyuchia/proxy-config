@@ -1,6 +1,6 @@
 /**
  * @file 节点名称中的内置关键词、运营商及倍率标签提取规则。
- * 合并自定义关键词，按原名中的位置排序、去重，并移除被完整词包含的片段。
+ * 按原名中的位置排序、去重，并移除被完整词包含的片段。
  */
 
 const RETAIN_KEYWORDS = [
@@ -273,17 +273,16 @@ function extractRetainPipeTags(name: unknown): string[] {
 }
 
 /**
- * 依次提取内置城市及线路关键词、尾部管道标签和自定义关键词。
+ * 依次提取内置城市及线路关键词和尾部管道标签。
  * 保留原文大小写，按首次出现位置排序并去重，再移除被其他完整命中词包含的片段。
  * 关键词按正则解释，纯字母数字词额外限制字母数字边界。
  *
  * @preserve
  * @param {string} name 原节点名。
- * @param {string[]} retainKeys 追加的自定义关键词；空数组仅使用内置关键词和管道标签。
  * @returns {string[]} 整理后的命中词；未命中时返回空数组。
- * @throws {SyntaxError} 内置或自定义关键词不能编译为正则时抛出。
+ * @throws {SyntaxError} 内置关键词不能编译为正则时抛出。
  */
-export function extractRetainKeywords(name: string, retainKeys: string[]): string[] {
+export function extractRetainKeywords(name: string): string[] {
   const hits: string[] = [];
   const nameLower = name.toLowerCase();
   /**
@@ -301,7 +300,7 @@ export function extractRetainKeywords(name: string, retainKeys: string[]): strin
    * 通过小写文本匹配；纯字母数字关键词增加边界，其余词保留原有正则语义。
    *
    * @preserve
-   * @param {string} kw 内置或自定义关键词。
+   * @param {string} kw 内置关键词。
    * @returns {void} 无返回值；命中时通过 pushOriginal 更新外层 hits 数组。
    * @throws {SyntaxError} 关键词不能编译为正则时抛出。
    */
@@ -319,7 +318,6 @@ export function extractRetainKeywords(name: string, retainKeys: string[]): strin
   };
   for (const kw of RETAIN_KEYWORDS) pushHit(kw);
   for (const tag of extractRetainPipeTags(name)) pushOriginal(tag);
-  for (const kw of retainKeys) pushHit(kw);
   // 按关键词在原节点名中的首次出现位置排序，保留源词序
   hits.sort((a, b) => nameLower.indexOf(a.toLowerCase()) - nameLower.indexOf(b.toLowerCase()));
   // 过滤掉被其他命中词包含的子串（如同时命中"高级专线"和"专线"，保留前者）

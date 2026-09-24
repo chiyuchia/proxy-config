@@ -1349,7 +1349,6 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
     ['yiyuan.example.com', '🛡️ 亚太中转'],
   ]);
   const { operator: rename } = loadScript('scripts/rename.js', {
-    $arguments: {},
     console: {
       /**
        * 丢弃重命名脚本的日志，保持节点中转集成测试的输出简洁。

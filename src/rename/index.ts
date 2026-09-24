@@ -1,13 +1,16 @@
 /**
  * @file 节点重命名主流程：过滤、地区识别、分组编号、命名与排序。
- * 参数和日志对象由调用者提供，未识别节点默认保留原名。
+ * 使用固定命名规则，日志对象由调用者提供，未识别节点保留原名。
  */
 
-import { parseRenameOptions } from './options.ts';
 import { identifyCountry } from './identify.ts';
-import { formatProxyName, removeUniqueSequence } from './format.ts';
+import { formatProxyName } from './format.ts';
 import { HOT_REGIONS } from './regions.ts';
-import type { Logger, ProxyNode, ScriptArguments } from '../types.ts';
+import type { Logger, ProxyNode } from '../types.ts';
+
+// 只匹配原始节点名中的信息词，不检查稍后追加到名称中的 _subName。
+const INFORMATION_NODE_PATTERN =
+  /过期|剩余|官网|套餐|重置|到期|Traffic|Expire|一元机场|客户端|网站/i;
 
 /**
  * 按热门地区、其他已识别地区、未知地区排序，已识别节点再按地区代码和最终名称排序。
@@ -37,42 +40,30 @@ function compareProxiesByRegion<T extends ProxyNode>(
 }
 
 /**
- * 过滤信息节点、识别地区，按订阅和地区编号命名，再进行 hot 筛选、排序和可选去序号。
+ * 按固定词表过滤信息节点、识别地区，按订阅和地区编号命名，再按地区排序。
  * 仅使用传入数据并通过 logger.log 输出处理日志，不读取 Sub-Store 全局变量或访问网络。
- * 已识别节点浅拷贝后改名，未知节点保留对象引用；启用 one 时可能修改未知节点的原对象名称。
+ * 已识别节点浅拷贝后改名，未知节点保留原名和对象引用；不修改输入节点。
  *
  * @preserve
  * @param {Object[]} proxies 输入节点数组，节点应包含 name，并可包含 server、_subName 及其他协议字段。
- * @param {Object|null} [args={}] 原始脚本参数，字段和默认值由 parseRenameOptions 定义。
  * @param {{log: function(...*): void}} [logger=console] 接收处理进度和重命名信息的日志对象。
  * @returns {Object[]} 筛选和排序后的新数组，保留节点的非名称字段。
- * @throws {URIError} filter 或 block 参数包含无效 URL 编码时抛出。
- * @throws {SyntaxError} block 或保留关键词无法编译为正则时抛出。
+ * @throws {SyntaxError} 内置保留关键词无法编译为正则时抛出。
  */
-export function renameProxies<T extends ProxyNode>(
-  proxies: T[],
-  args: ScriptArguments | null = {},
-  logger: Logger = console,
-): T[] {
-  const options = parseRenameOptions(args);
-  const hotOnly = options.hotRegions !== null;
-  logger.log(
-    `[geo-tag] 开始处理，共 ${proxies.length} 个节点，removeOriginalName=${options.removeOriginalName}，hotOnly=${hotOnly}`,
-  );
+export function renameProxies<T extends ProxyNode>(proxies: T[], logger: Logger = console): T[] {
+  logger.log(`[geo-tag] 开始处理，共 ${proxies.length} 个节点`);
 
-  if (options.filterPattern) {
-    const before = proxies.length;
-    proxies = proxies.filter((proxy) => !options.filterPattern!.test(proxy.name));
-    logger.log(
-      `[geo-tag] filter 过滤: ${before - proxies.length} 个节点被丢弃，剩余 ${proxies.length} 个`,
-    );
-  }
+  const before = proxies.length;
+  proxies = proxies.filter((proxy) => !INFORMATION_NODE_PATTERN.test(proxy.name));
+  logger.log(
+    `[geo-tag] 信息节点过滤: ${before - proxies.length} 个节点被丢弃，剩余 ${proxies.length} 个`,
+  );
 
   // 逐节点识别；即便 server 相同也不共享识别结果。
   const countries = new Map<T, string>();
   let nameHitCount = 0;
   for (const proxy of proxies) {
-    const countryCode = identifyCountry(proxy, options.blockPattern);
+    const countryCode = identifyCountry(proxy);
     if (countryCode) {
       countries.set(proxy, countryCode);
       nameHitCount++;
@@ -81,7 +72,7 @@ export function renameProxies<T extends ProxyNode>(
   }
   logger.log(`[geo-tag] 名称命中 ${nameHitCount}/${proxies.length} 个节点`);
 
-  // 序号按订阅和地区分别累计，先命名再过滤 hot，保留源节点的计数顺序。
+  // 序号按订阅和地区分别累计，保留源节点的计数顺序。
   const sequenceByGroup = new Map<string, number>();
   const renamedProxies = proxies.map((proxy) => {
     const countryCode = countries.get(proxy);
@@ -89,7 +80,7 @@ export function renameProxies<T extends ProxyNode>(
     const key = `${proxy._subName || ''}|${countryCode}`;
     const sequence = (sequenceByGroup.get(key) || 0) + 1;
     sequenceByGroup.set(key, sequence);
-    const name = formatProxyName(proxy, countryCode, sequence, options);
+    const name = formatProxyName(proxy, countryCode, sequence);
     logger.log(`[geo-tag] 重命名: ${proxy.name} → ${name}`);
     const renamed = { ...proxy, name };
     countries.set(renamed, countryCode);
@@ -97,15 +88,6 @@ export function renameProxies<T extends ProxyNode>(
   });
   logger.log(`[geo-tag] 完成。名称命中: ${nameHitCount}，未识别: ${proxies.length - nameHitCount}`);
 
-  const result = hotOnly
-    ? renamedProxies.filter((proxy) => {
-        const code = countries.get(proxy);
-        return code && options.hotRegions!.has(code);
-      })
-    : renamedProxies;
-  if (hotOnly) logger.log(`[geo-tag] hot 过滤后剩余: ${result.length} 个节点`);
-
-  result.sort((a, b) => compareProxiesByRegion(a, b, countries));
-  if (options.removeUniqueSequence) removeUniqueSequence(result);
-  return result;
+  renamedProxies.sort((a, b) => compareProxiesByRegion(a, b, countries));
+  return renamedProxies;
 }

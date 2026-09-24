@@ -146,11 +146,11 @@ oixCloud Edge 和一元机场分别在各自来源订阅中设置中转，可按
 
 机场分组依赖最终节点名中的 `oixCloud Edge` 或“一元机场”，使用重命名脚本时可通过对应的 `_subName` 保留机场名。
 
-重命名脚本的默认过滤词包含“一元机场”。若该机场的原始节点名包含这几个字且需要保留，可按[重命名脚本参数](#重命名脚本参数)使用 JSON 参数 `{"filter":""}` 禁用该来源订阅的过滤；仅 `_subName` 含“一元机场”无需因此禁用过滤。完成注入和覆写后，在两种客户端的最终配置中检查 `dialer-proxy`、中转组和机场组成员。
+重命名脚本只过滤原始节点名称，不检查 `_subName`，因此订阅名为“一元机场”不影响节点保留。完成注入和覆写后，在两种客户端的最终配置中检查 `dialer-proxy`、中转组和机场组成员。
 
 ## 节点重命名
 
-在 Sub-Store 的**订阅或组合订阅**中添加远程脚本操作，使用以下地址：
+在 Sub-Store 的**订阅或组合订阅**中添加远程脚本操作，使用以下地址，无需参数：
 
 ```text
 https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.js
@@ -158,53 +158,21 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.j
 
 该脚本通过 `async operator(proxies, targetPlatform, context)` 处理节点数组。自建节点不使用此脚本；oixCloud Edge 和一元机场如需重命名，在各自来源订阅中先完成[节点中转](#节点中转)，再执行此脚本。之后由“Mihomo 配置”文件注入处理后的节点，并运行 `scripts/config-overwrite.js`。文件中的合并与覆写脚本使用 `main(config)`，`dialer-proxy.js` 和 `rename.js` 应分别配置为订阅中的独立节点处理操作。
 
-脚本先过滤信息节点，再仅从节点名称识别地区，无需联网解析或查询。名称无法识别时保留原名，`one` 参数的序号处理仍会独立生效。
+脚本使用固定的重命名规则，不读取外部脚本参数，旧地址中的参数可直接移除。先按内置词表过滤信息节点，再仅从节点名称识别地区，无需联网解析或查询；不按地区删除节点，无法识别地区时保留原名。
 
-默认输出 `国旗 地区代码 序号 | 保留关键词 订阅名`，序号按 `_subName` 与地区分组，从 `01` 重新生成，空的后缀部分会省略。订阅名来自节点的 `_subName` 字段。以下例子各自作为所属分组的第一个节点：
+已识别节点固定输出 `国旗 地区代码 序号 | 保留关键词 订阅名`，序号按 `_subName` 与地区分组，从 `01` 重新生成，至少保留两位，即使只有一个节点也保留序号，空的后缀部分会省略。订阅名来自节点的 `_subName` 字段。以下例子各自作为所属分组的第一个节点：
 
-| 原节点名 | `_subName` | 默认输出 |
+| 原节点名 | `_subName` | 输出 |
 | --- | --- | --- |
 | `🇯🇵 JP-SH-12-GCP` | `VikingLinks` | `🇯🇵 JP 01 \| SH GCP VikingLinks` |
 | `🇯🇵日本高速01\|CTCU\|0.5x` | `良心云` | `🇯🇵 JP 01 \| 高速 CTCU 0.5x 良心云` |
 | `香港 03` | 无 | `🇭🇰 HK 01` |
 
-默认保留城市、线路、运营商等内置关键词；VikingLinks 格式会保留线路和服务商，良心云格式会保留运营商组合及倍率标签。结果按内置热门地区优先排序，各类内部按地区代码和名称排序，未识别地区的节点放到最后。
+保留城市、线路、运营商等内置关键词；VikingLinks 格式会保留线路和服务商，良心云格式会保留运营商组合及倍率标签。结果按内置热门地区优先排序，各类内部按地区代码和名称排序，未识别地区的节点放到最后。
 
-### 重命名脚本参数
+内置过滤词为：`过期、剩余、官网、套餐、重置、到期、Traffic、Expire、一元机场、客户端、网站`。它们只按原始节点名称中的字面子串匹配，不区分大小写，不检查 `_subName`。
 
-下表描述传入 `$arguments` 后的值。包含布尔值或空字符串时，请使用下方的 JSON 参数写法。
-
-| 参数 | 默认值 | 含义 |
-| --- | --- | --- |
-| `remove` | `true` | 替换原节点名；`false` 保留完整原名，追加在地区标签和序号后 |
-| `filter` | 内置词表 | 名称包含过滤词时丢弃节点，不区分大小写；自定义词用 `\|` 分隔并追加到内置词表；空字符串 `""` 禁用过滤 |
-| `block` | 不启用 | 识别地区前从名称中去除匹配内容，支持正则表达式，忽略大小写并全局替换；不修改输出中的原名或关键词 |
-| `one` | `false` | 去掉两位序号后的完整名称唯一时，移除其中的 `01`；判断包含关键词和订阅名，并非只按地区计数 |
-| `hot` | 不过滤 | `true` / `1` 仅保留 `HK/TW/CN/JP/SG/US`；字符串如 `HK\|SG\|JP` 仅保留指定地区；启用后未识别地区的节点也会丢弃 |
-| `retain` | 启用内置关键词 | `remove=true` 时生效；`false` / `0` 禁用保留；字符串如 `IPLC\|专线` 在内置规则上追加关键词 |
-| `out` | `FG\|EN` | 按顺序组合 `FG`（旗帜）、`ZH`（中文名）、`EN`（地区代码）、`QC`（英文全称）；忽略无效项，全无效时回退默认值 |
-
-内置过滤词为：`过期、剩余、官网、套餐、重置、到期、Traffic、Expire、一元机场、客户端、网站`。它们按名称中的字面子串匹配；`block` 则按正则表达式处理。`hot` 的自定义值若没有任何有效地区代码，会使用内置热门地区列表。
-
-仅保留香港、新加坡、日本，并显示旗帜与地区代码：
-
-```text
-https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.js#hot=HK%7CSG%7CJP&out=FG%7CEN
-```
-
-Sub-Store 的普通 `#key=value` 参数会将值传为字符串，且把 `filter=` 这样的空值转成 `true`；因此 `remove=false`、`one=false`、`hot=false` 不能按布尔值关闭对应行为，`filter=` 也不能禁用过滤。布尔值或空字符串应使用 `#` 加 URL 编码后的 JSON，参见[官方参数解析实现](https://github.com/sub-store-org/Sub-Store/blob/master/backend/src/core/proxy-utils/index.js)。例如，保留完整原名并禁用信息节点过滤，参数对象为：
-
-```json
-{"remove": false, "filter": ""}
-```
-
-对应的可直接使用地址：
-
-```text
-https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/rename.js#%7B%22remove%22%3Afalse%2C%22filter%22%3A%22%22%7D
-```
-
-其他组合也可用 `encodeURIComponent(JSON.stringify(参数对象))` 生成 URL 片段。默认参数无需填写。修改 `out`、`retain` 或订阅名后，检查最终名称是否仍满足 `configs/base.yaml` 中代理组对机场名、地区代码和线路关键词的筛选要求。
+修改名称格式、关键词提取规则或订阅名后，检查最终名称是否仍满足 `configs/base.yaml` 中代理组对机场名、地区代码和线路关键词的筛选要求。
 
 ## 修改与更新
 

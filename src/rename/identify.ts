@@ -117,18 +117,16 @@ export function identifyCountryFromName(name: string): string | null {
 }
 
 /**
- * 仅从节点名称识别地区：先移除屏蔽内容并尝试 Viking 格式，再剥离域名并匹配地区。
+ * 仅从原节点名称识别地区：先尝试 Viking 格式，再剥离域名并匹配地区。
  * 不修改节点；server 为假值时直接返回 null，不执行名称识别。
  *
  * @preserve
  * @param {Object} proxy 待识别的节点。
  * @param {string} proxy.name 原节点名。
  * @param {string} [proxy.server] 节点服务器；仅用于判断是否允许识别，不查询其地理位置。
- * @param {RegExp|null} [blockPattern] 识别前移除名称片段的正则；省略或 null 时不屏蔽。
  * @returns {string|null} 命中的标准地区代码；无法识别时返回 null。
  */
-export function identifyCountry(proxy: ProxyNode, blockPattern?: RegExp | null): string | null {
+export function identifyCountry(proxy: ProxyNode): string | null {
   if (!proxy.server) return null;
-  const cleanName = blockPattern ? proxy.name.replace(blockPattern, '') : proxy.name;
-  return identifyCountryFromName(cleanName);
+  return identifyCountryFromName(proxy.name);
 }

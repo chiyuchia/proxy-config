@@ -217,5 +217,5 @@ export const REGIONS_BY_CODE = new Map<string, Region>(
   REGIONS.map((region) => [region.code, region]),
 );
 
-// hot=true 的默认筛选范围，也是所有输出使用的排序优先级。
+// 输出排序时优先展示的热门地区，不用于过滤节点。
 export const HOT_REGIONS = new Set<string>(['HK', 'TW', 'CN', 'JP', 'SG', 'US']);

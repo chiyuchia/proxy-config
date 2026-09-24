@@ -1,13 +1,11 @@
 /**
  * @file 组合节点的地区标签、序号、保留关键词和订阅名。
- * 保留 Viking 原旗帜与展示代码，并按完整名称处理唯一节点的序号。
+ * 保留 Viking 原旗帜与展示代码，所有已识别节点固定保留序号。
  */
 
 import { parseVikingName } from './identify.ts';
 import { extractRetainKeywords } from './keywords.ts';
-import { REGIONS_BY_CODE } from './regions.ts';
 import type { VikingName } from './identify.ts';
-import type { OutputField, RenameOptions } from './options.ts';
 import type { ProxyNode } from '../types.ts';
 
 /**
@@ -26,55 +24,38 @@ function getFlagEmoji(countryCode?: string | null): string {
 }
 
 /**
- * 按指定字段顺序组合地区标签，优先保留 Viking 名称自带的旗帜和展示代码。
- * 中文名和英文全称查不到地区记录时回退到传入代码。
+ * 组合旗帜与地区代码，优先保留 Viking 名称自带的旗帜和展示代码。
  *
  * @preserve
  * @param {string} countryCode 已识别的标准地区代码。
  * @param {import('./identify.ts').VikingName|null} vikingName Viking 解析结果；null 使用标准地区展示。
- * @param {string[]} outputFields 输出字段顺序，可包含 FG、ZH、EN、QC。
  * @returns {string} 用空格连接的地区标签。
  */
-function formatCountryLabel(
-  countryCode: string,
-  vikingName: VikingName | null,
-  outputFields: OutputField[],
-): string {
-  const region = REGIONS_BY_CODE.get(countryCode);
-  const values = {
-    FG: vikingName?.flag || getFlagEmoji(countryCode),
-    ZH: region?.chineseName || countryCode,
-    QC: region?.englishName || countryCode,
-    EN: vikingName ? vikingName.displayCode : countryCode,
-  };
-  return outputFields.map((field) => values[field]).join(' ');
+function formatCountryLabel(countryCode: string, vikingName: VikingName | null): string {
+  return [
+    vikingName?.flag || getFlagEmoji(countryCode),
+    vikingName ? vikingName.displayCode : countryCode,
+  ].join(' ');
 }
 
 /**
- * 组合地区标签、至少两位序号、原名或保留关键词以及订阅名，不修改节点。
- * Viking 后缀按未经 block 清理的原名解析，仅在其地区与识别结果一致时采用。
+ * 组合地区标签、至少两位序号、内置保留关键词以及订阅名，不修改节点。
+ * Viking 后缀按原名解析，仅在其地区与识别结果一致时采用。
  *
  * @preserve
  * @param {Object} proxy 待命名的节点。
- * @param {string} proxy.name 原节点名，用于保留原文、提取关键词和解析 Viking 格式。
+ * @param {string} proxy.name 原节点名，用于提取关键词和解析 Viking 格式。
  * @param {string} [proxy._subName] 追加到名称末尾的订阅名；假值不追加。
  * @param {string} countryCode 已识别的标准地区代码。
  * @param {number} sequence 当前订阅及地区分组中的序号，从 1 开始。
- * @param {import('./options.ts').RenameOptions} options 已解析的输出格式和保留选项。
  * @returns {string} 格式化后的完整节点名称。
- * @throws {SyntaxError} 需要提取关键词且某个关键词无法编译为正则时抛出。
+ * @throws {SyntaxError} 内置关键词无法编译为正则时抛出。
  */
-export function formatProxyName(
-  proxy: ProxyNode,
-  countryCode: string,
-  sequence: number,
-  options: RenameOptions,
-): string {
-  // 输出按原名解析 Viking 格式；block 只参与地区识别，不能影响后缀。
+export function formatProxyName(proxy: ProxyNode, countryCode: string, sequence: number): string {
   const parsedName = parseVikingName(proxy.name);
   const vikingName = parsedName?.countryCode === countryCode ? parsedName : null;
   const subName = proxy._subName || '';
-  const countryLabel = formatCountryLabel(countryCode, vikingName, options.outputFields);
+  const countryLabel = formatCountryLabel(countryCode, vikingName);
   const baseName = [countryLabel, String(sequence).padStart(2, '0')].filter(Boolean).join(' ');
   /**
    * 在名称后追加当前节点的订阅名，忽略空片段。
@@ -93,40 +74,8 @@ export function formatProxyName(
    */
   const joinNameParts = (...parts: string[]): string => parts.filter(Boolean).join(' | ');
 
-  if (!options.removeOriginalName) return joinNameParts(baseName, appendSubName(proxy.name));
-  if (!options.retainKeywords) return joinNameParts(baseName, subName);
   if (vikingName) return joinNameParts(baseName, appendSubName(vikingName.suffix));
 
-  const retained = extractRetainKeywords(proxy.name, options.retainKeywords);
+  const retained = extractRetainKeywords(proxy.name);
   return joinNameParts(baseName, appendSubName(retained.join(' ')));
-}
-
-/**
- * 按去掉两位序号后的完整名称计数，只为计数为一的名称移除 01 序号。
- * 后缀不同视为不同名称；直接修改传入节点对象的 name，其他序号保持原样。
- *
- * @preserve
- * @param {Array<{name: string}>} proxies 已完成命名和筛选的节点，亦可包含保留原名的未知地区节点。
- * @returns {void} 无返回值，修改结果保存在原节点对象中。
- */
-export function removeUniqueSequence(proxies: Array<{ name: string }>): void {
-  /**
-   * 移除位于名称末尾或管道后缀之前的两位序号，用于归并完整名称。
-   *
-   * @preserve
-   * @param {string} name 待计算归并键的完整名称。
-   * @returns {string} 移除两位序号但保留原管道后缀的名称；不匹配时返回原文。
-   */
-  const withoutSequence = (name: string): string =>
-    name.replace(/\s+\d{2}(\s*\|.*)?$/, (_: string, suffix?: string) => suffix || '');
-  const nameCounts = new Map<string, number>();
-  for (const proxy of proxies) {
-    const baseName = withoutSequence(proxy.name);
-    nameCounts.set(baseName, (nameCounts.get(baseName) || 0) + 1);
-  }
-  for (const proxy of proxies) {
-    if (nameCounts.get(withoutSequence(proxy.name)) === 1) {
-      proxy.name = proxy.name.replace(/\s+01(\s*\|)/, '$1').replace(/\s+01$/, '');
-    }
-  }
 }

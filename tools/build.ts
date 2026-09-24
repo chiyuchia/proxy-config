@@ -43,7 +43,7 @@ const scripts = [
   {
     name: 'rename',
     description: 'Sub-Store 节点重命名脚本：仅按名称识别地区，整理序号、关键词和订阅名。',
-    usage: '用于订阅或组合订阅的节点处理，在配置文件注入节点前执行。',
+    usage: '无需参数，按固定规则处理订阅或组合订阅节点，在配置文件注入节点前执行。',
     signature: 'async function operator(proxies, targetPlatform, context)',
     call: 'operator(proxies, targetPlatform, context)',
   },
