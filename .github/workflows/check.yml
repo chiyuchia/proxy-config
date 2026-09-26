@@ -2,6 +2,7 @@ name: Build and check scripts and configs
 
 on:
   push:
+    branches: ['**']
   pull_request:
 
 permissions:
@@ -26,10 +27,10 @@ jobs:
         with:
           name: built-scripts
           path: |
-            scripts/merge-config.js
-            scripts/config-overwrite.js
-            scripts/rename.js
-            scripts/dialer-proxy.js
+            dist/merge-config.js
+            dist/config-overwrite.js
+            dist/rename.js
+            dist/dialer-proxy.js
           if-no-files-found: error
           overwrite: true
           retention-days: 7
@@ -40,6 +41,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    concurrency:
+      group: publish-release
+      cancel-in-progress: false
+      queue: max
     steps:
       # 检出通过检查的提交；不在较新的 master 上套用旧构建。
       - uses: actions/checkout@v7
@@ -48,27 +53,103 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: built-scripts
-          path: scripts
-      - name: Commit and push generated scripts
+          path: dist
+      - name: Publish scripts as Release assets
         id: publish-scripts
         shell: bash
         env:
           SOURCE_COMMIT: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git fetch origin refs/heads/master
+          set -euo pipefail
+          tag="build-$SOURCE_COMMIT"
+          files=(
+            dist/config-overwrite.js
+            dist/dialer-proxy.js
+            dist/merge-config.js
+            dist/rename.js
+          )
+          for file in "${files[@]}"; do
+            if [ ! -s "$file" ]; then
+              echo "缺少发布产物或文件为空：$file" >&2
+              exit 1
+            fi
+          done
+
+          git fetch --no-tags origin refs/heads/master
           if [ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_COMMIT" ]; then
             echo "master 已更新，跳过旧构建，等待最新提交的工作流。"
             exit 0
           fi
 
-          git add -- scripts/merge-config.js scripts/config-overwrite.js scripts/rename.js scripts/dialer-proxy.js
-          if git diff --cached --quiet; then
-            echo "发布脚本无变化，无需提交。"
-            exit 0
+          # --target 只对新标签生效；已有标签必须解析到本次验证的源码提交。
+          # 同时读取 peeled ref，以支持 annotated tag。
+          verify_tag() {
+            local refs
+            refs=$(git ls-remote origin "refs/tags/$tag" "refs/tags/$tag^{}")
+            tag_commit=$(printf '%s\n' "$refs" | awk '
+              /\^\{\}$/ { peeled = $1; next }
+              NF == 2 { direct = $1 }
+              END { print peeled ? peeled : direct }
+            ')
+            if [ -n "$tag_commit" ] && [ "$tag_commit" != "$SOURCE_COMMIT" ]; then
+              echo "发布标签 $tag 指向其他提交，停止发布。" >&2
+              exit 1
+            fi
+          }
+          verify_tag
+
+          # 列表包含有写权限可见的草稿。查询失败直接报错，不能当作版本不存在。
+          release=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq ".[] | select(.tag_name == \"$tag\") | [.draft, .target_commitish] | @tsv")
+          if [ -n "$release" ]; then
+            IFS=$'\t' read -r is_draft target <<< "$release"
+            if [ "$target" != "$SOURCE_COMMIT" ]; then
+              echo "已有 Release 的来源提交不匹配，停止发布。" >&2
+              exit 1
+            fi
+            if [ "$is_draft" = false ]; then
+              if [ "$tag_commit" != "$SOURCE_COMMIT" ]; then
+                echo "已发布版本缺少对应源码标签，停止发布。" >&2
+                exit 1
+              fi
+              echo "$tag 已发布，保留已有附件和 Latest 状态。"
+              exit 0
+            fi
+            if [ "$is_draft" != true ]; then
+              echo "无法识别 Release 的草稿状态，停止发布。" >&2
+              exit 1
+            fi
+          else
+            notes=$(mktemp)
+            trap 'rm -f "$notes"' EXIT
+            cat > "$notes" <<EOF
+          Source commit: [$SOURCE_COMMIT](https://github.com/$GITHUB_REPOSITORY/commit/$SOURCE_COMMIT)
+
+          附件为通过检查的四个 Sub-Store 发布脚本。
+          对应版本的配置源码：[configs](https://github.com/$GITHUB_REPOSITORY/tree/$SOURCE_COMMIT/configs)
+          固定版本时，将 configBaseUrl 中的 master 替换为上述源码提交 SHA；接入方法见 README。
+          EOF
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --target "$SOURCE_COMMIT" --draft \
+              --title "Build ${SOURCE_COMMIT:0:12}" --notes-file "$notes"
           fi
 
-          git -c user.name='github-actions[bot]' \
-              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-              commit -m 'chore(build): 更新 Sub-Store 发布脚本'
-          # 使用普通推送，检查后若 master 又有更新则失败，不覆盖或合并未验证的代码。
-          git push origin HEAD:refs/heads/master
+          # 仅重试草稿上传；已发布的附件不会被覆盖，兼容不可变 Release。
+          gh release upload "$tag" "${files[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+          assets=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '[.assets[].name] | sort | .[]')
+          expected=$(printf '%s\n' "${files[@]#dist/}")
+          if [ "$assets" != "$expected" ]; then
+            echo "Release 附件与四个发布脚本不一致，保留草稿。" >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin refs/heads/master
+          if [ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_COMMIT" ]; then
+            echo "上传期间 master 已更新，保留草稿，等待最新提交发布。"
+            exit 0
+          fi
+          verify_tag
+          gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --latest

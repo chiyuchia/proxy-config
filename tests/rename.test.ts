@@ -23,7 +23,7 @@ interface RenameRuntime {
 }
 type RenameSession = (proxies: TestNode[]) => Promise<TestNode[]>;
 
-const scriptPath = fileURLToPath(new URL('../scripts/rename.js', import.meta.url));
+const scriptPath = fileURLToPath(new URL('../dist/rename.js', import.meta.url));
 
 /**
  * 创建可重复调用的重命名 VM 会话，记录并禁止名称识别期间的联网和计时器调用。

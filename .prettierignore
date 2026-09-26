@@ -1,4 +1,4 @@
 node_modules/
-scripts/
+dist/
 temp/
 package-lock.json

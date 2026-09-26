@@ -22,12 +22,12 @@ import type {
 } from '../src/types.ts';
 
 interface PublishedScripts {
-  'scripts/merge-config.js': typeof import('../src/entries/merge-config.ts');
-  'scripts/config-overwrite.js': typeof import('../src/entries/config-overwrite.ts');
-  'scripts/dialer-proxy.js': typeof import('../src/entries/dialer-proxy.ts');
-  'scripts/rename.js': typeof import('../src/entries/rename.ts');
+  'dist/merge-config.js': typeof import('../src/entries/merge-config.ts');
+  'dist/config-overwrite.js': typeof import('../src/entries/config-overwrite.ts');
+  'dist/dialer-proxy.js': typeof import('../src/entries/dialer-proxy.ts');
+  'dist/rename.js': typeof import('../src/entries/rename.ts');
 }
-type MergeMain = PublishedScripts['scripts/merge-config.js']['main'];
+type MergeMain = PublishedScripts['dist/merge-config.js']['main'];
 interface FileRuntime {
   $content: string;
   $arguments: ScriptArguments;
@@ -214,7 +214,7 @@ function runtime(
   responder: HttpResponder,
 ): { calls: HttpRequest[]; main: MergeMain } {
   const calls: HttpRequest[] = [];
-  const context = loadScript('scripts/merge-config.js', {
+  const context = loadScript('dist/merge-config.js', {
     $arguments: args,
     ProxyUtils: { yaml: { safeLoad: parseYaml } },
     $substore: {
@@ -843,7 +843,7 @@ test('the same injected nodes produce matching group members in both live profil
   ];
   const { mihomo, stash } = liveConfigs(proxies);
   for (const config of [mihomo, stash]) {
-    loadScript('scripts/config-overwrite.js', { $arguments: {} }).main(config);
+    loadScript('dist/config-overwrite.js', { $arguments: {} }).main(config);
   }
   assert.deepEqual(sharedGroups(stash), sharedGroups(mihomo));
   for (const config of [mihomo, stash]) {
@@ -914,7 +914,7 @@ test('both live source profiles work with the existing airport and transit node 
       ),
     }));
     const merged = await main({ proxies: plain(proxies) });
-    const overwrite = loadScript('scripts/config-overwrite.js', {
+    const overwrite = loadScript('dist/config-overwrite.js', {
       $arguments: {},
     }).main;
     const result = overwrite(merged);
@@ -1002,7 +1002,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
         },
       }) as unknown as FileRuntime;
 
-      await runWrapped('scripts/merge-config.js', context);
+      await runWrapped('dist/merge-config.js', context);
       assert.equal(context.main, undefined, 'merge main must stay in its script scope');
       assert.equal(context.mergeConfigDocuments, undefined);
       const merged = parseYaml(context.$content) as MergedConfig;
@@ -1031,7 +1031,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
       const expectedProxies = injected ?? input.proxies ?? [];
 
       context.$arguments = {};
-      await runWrapped('scripts/config-overwrite.js', context);
+      await runWrapped('dist/config-overwrite.js', context);
       assert.equal(context.main, undefined, 'overwrite main must also stay in its script scope');
       assert.equal(context.compileGroupFilter, undefined);
       const result = parseYaml(context.$content) as MergedConfig;
@@ -1049,7 +1049,7 @@ test('Mihomo file wrappers await merge and serialize each independently scoped s
         expectedProxies.map(({ name }) => name),
       );
       const serialized = context.$content;
-      await assert.rejects(runWrapped('scripts/config-overwrite.js', context), /x-substore/);
+      await assert.rejects(runWrapped('dist/config-overwrite.js', context), /x-substore/);
       assert.equal(context.$content, serialized, 'rejected overwrite must not replace the output');
     }
   }
@@ -1090,7 +1090,7 @@ test('final validation rejects invalid late-injected nodes before either client 
   for (const client of ['mihomo', 'stash']) {
     for (const { proxies, pattern, relay } of scenarios) {
       const { context, outputs, requests } = fileRuntime(client);
-      await runWrapped('scripts/merge-config.js', context);
+      await runWrapped('dist/merge-config.js', context);
       const merged = parseYaml(context.$content) as MergedConfig;
       merged.proxies = proxies;
       if (relay) {
@@ -1104,7 +1104,7 @@ test('final validation rejects invalid late-injected nodes before either client 
       context.$content = stringify(merged);
       context.$arguments = {};
       const before = context.$content;
-      await assert.rejects(runWrapped('scripts/config-overwrite.js', context), pattern);
+      await assert.rejects(runWrapped('dist/config-overwrite.js', context), pattern);
       assert.equal(
         context.$content,
         before,
@@ -1127,7 +1127,7 @@ test('final validation rejects invalid late-injected nodes before either client 
 test('final validation accepts acyclic node and group dialer chains in both file runtimes', async () => {
   for (const client of ['mihomo', 'stash']) {
     const { context, outputs, requests } = fileRuntime(client);
-    await runWrapped('scripts/merge-config.js', context);
+    await runWrapped('dist/merge-config.js', context);
     const merged = parseYaml(context.$content) as MergedConfig;
     const proxies = [
       { name: '直连出口', type: 'ss', 'dialer-proxy': 'DIRECT' },
@@ -1143,7 +1143,7 @@ test('final validation accepts acyclic node and group dialer chains in both file
     });
     context.$content = stringify(merged);
     context.$arguments = {};
-    await runWrapped('scripts/config-overwrite.js', context);
+    await runWrapped('dist/config-overwrite.js', context);
     const result = parseYaml(context.$content) as MergedConfig;
     assert.deepEqual(result.proxies, proxies);
     assert.ok(result['proxy-groups'].every((group) => !Object.hasOwn(group, 'x-substore')));
@@ -1158,7 +1158,7 @@ test('final validation checks locally declared HTTP provider URLs in both file r
     for (const field of ['proxy-providers', 'rule-providers']) {
       for (const url of [undefined, '', 'not-a-url', 'ftp://example.com/provider']) {
         const { context, outputs } = fileRuntime(client);
-        await runWrapped('scripts/merge-config.js', context);
+        await runWrapped('dist/merge-config.js', context);
         const merged = parseYaml(context.$content) as MergedConfig;
         merged[field] = {
           ...(merged[field] as Record<string, unknown> | undefined),
@@ -1168,7 +1168,7 @@ test('final validation checks locally declared HTTP provider URLs in both file r
         context.$arguments = {};
         const before = context.$content;
         await assert.rejects(
-          runWrapped('scripts/config-overwrite.js', context),
+          runWrapped('dist/config-overwrite.js', context),
           /无效来源.*url|url.*无效来源/i,
         );
         assert.equal(outputs.length, 1);
@@ -1185,9 +1185,9 @@ test('cache refresh preserves final providers and injected group members in both
     for (const args of [{}, { noCache: false }, { noCache: true }]) {
       const { context, outputs, requests } = fileRuntime(client, args);
       context.$content = stringify({ proxies: [node] });
-      await runWrapped('scripts/merge-config.js', context);
+      await runWrapped('dist/merge-config.js', context);
       context.$arguments = {};
-      await runWrapped('scripts/config-overwrite.js', context);
+      await runWrapped('dist/config-overwrite.js', context);
       const result = parseYaml(context.$content) as MergedConfig;
       results.push(result);
       assert.deepEqual(
@@ -1221,7 +1221,7 @@ test('file output preserves the managed file provider and ignores retired URL pa
       { oixCloudEdgePath: 'not-a-url' },
     ]) {
       const { context, outputs, requests } = fileRuntime(client);
-      await runWrapped('scripts/merge-config.js', context);
+      await runWrapped('dist/merge-config.js', context);
       const merged = parseYaml(context.$content) as MergedConfig;
       assert.deepEqual(
         merged['proxy-providers'],
@@ -1230,7 +1230,7 @@ test('file output preserves the managed file provider and ignores retired URL pa
           : undefined,
       );
       context.$arguments = args;
-      await runWrapped('scripts/config-overwrite.js', context);
+      await runWrapped('dist/config-overwrite.js', context);
       const result = parseYaml(context.$content) as MergedConfig;
       assert.deepEqual(result['proxy-providers'], merged['proxy-providers']);
       assert.equal(Object.hasOwn(result, 'x-substore'), false);
@@ -1271,14 +1271,14 @@ test('final validation rejects missing managed providers and invalid late provid
   ];
   for (const { field, value, pattern } of scenarios) {
     const { context, outputs, requests } = fileRuntime('mihomo');
-    await runWrapped('scripts/merge-config.js', context);
+    await runWrapped('dist/merge-config.js', context);
     const merged = parseYaml(context.$content) as MergedConfig;
     if (value === undefined) delete merged[field];
     else merged[field] = value;
     context.$content = stringify(merged);
     context.$arguments = {};
     const before = context.$content;
-    await assert.rejects(runWrapped('scripts/config-overwrite.js', context), pattern);
+    await assert.rejects(runWrapped('dist/config-overwrite.js', context), pattern);
     assert.equal(context.$content, before);
     assert.equal(outputs.length, 1, 'invalid runtime references must not reach serialization');
     assert.equal(requests.length, 2);
@@ -1286,15 +1286,12 @@ test('final validation rejects missing managed providers and invalid late provid
 
   for (const client of ['mihomo', 'stash']) {
     const { context, outputs } = fileRuntime(client);
-    await runWrapped('scripts/merge-config.js', context);
+    await runWrapped('dist/merge-config.js', context);
     const merged = parseYaml(context.$content) as MergedConfig;
     merged['proxy-groups'][0].use = ['missing-subscription'];
     context.$content = stringify(merged);
     const before = context.$content;
-    await assert.rejects(
-      runWrapped('scripts/config-overwrite.js', context),
-      /missing-subscription/,
-    );
+    await assert.rejects(runWrapped('dist/config-overwrite.js', context), /missing-subscription/);
     assert.equal(context.$content, before);
     assert.equal(outputs.length, 1);
   }
@@ -1326,7 +1323,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
     { name: 'SG CT', type: 'hysteria2', _subName: '良心云', server: 'hy2.example.com' },
     { name: 'JP 电信', type: 'ss', _subName: '吹雪云', server: 'chuixue.example.com' },
   ];
-  const { operator: assignDialer } = loadScript('scripts/dialer-proxy.js');
+  const { operator: assignDialer } = loadScript('dist/dialer-proxy.js');
   const originalSelfHosted = structuredClone(selfHostedSource);
   const selfHosted = await assignDialer(selfHostedSource, 'ClashMeta', {});
   assert.deepEqual(
@@ -1348,7 +1345,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
     ['oix-us.example.com', '🛡️ 美西中转'],
     ['yiyuan.example.com', '🛡️ 亚太中转'],
   ]);
-  const { operator: rename } = loadScript('scripts/rename.js', {
+  const { operator: rename } = loadScript('dist/rename.js', {
     console: {
       /**
        * 丢弃重命名脚本的日志，保持节点中转集成测试的输出简洁。
@@ -1384,7 +1381,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   ];
   const configs = liveConfigs(proxies);
   for (const [client, config] of Object.entries(configs)) {
-    const overwrite = loadScript('scripts/config-overwrite.js', {
+    const overwrite = loadScript('dist/config-overwrite.js', {
       $arguments: {},
     }).main;
     const originalRules = plain(config.rules);

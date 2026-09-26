@@ -27,7 +27,7 @@
 
 ### 脚本开发
 
-源码、构建工具和测试使用 TypeScript ES Modules 维护，按职责拆分，再由 esbuild 将四个入口打包到 `scripts/`。`scripts/*.js` 是供 Sub-Store 运行并纳入版本控制的 JavaScript 发布产物，请修改 `src/` 后在本地构建并验证，不要直接修改生成文件。源码可单独提交，也可连同重新生成的产物一起提交；`master` 的产物由[自动构建与发布](#自动构建与发布)流程补齐。
+源码、构建工具和测试使用 TypeScript ES Modules 维护，按职责拆分，再由 esbuild 将四个入口打包到 `dist/`。`dist/*.js` 是供 Sub-Store 运行的 JavaScript 产物；`dist/` 由 `.gitignore` 排除，不纳入版本控制。请修改 `src/` 后在本地构建并验证，不要直接修改或提交生成文件。推送到 `master` 后，由[自动构建与发布](#自动构建与发布)流程重新构建、检查并上传 GitHub Releases 附件。
 
 ```text
 src/
@@ -39,7 +39,7 @@ src/
   runtime-providers.ts  运行时 provider 声明读取与校验
   types.ts           共享节点、代理组、配置和运行时接口
   sub-store.d.ts     Sub-Store 注入的全局对象声明，仅用于类型检查
-tools/build.ts       将四个入口分别打包为 scripts/*.js
+tools/build.ts       将四个入口分别打包为 dist/*.js
 tests/*.test.ts      核心逻辑测试与发布脚本的 Sub-Store 运行环境模拟
 tests/type-contracts.ts  仅在类型检查阶段验证的输入输出类型契约
 tsconfig.json        源码、构建工具和测试的严格类型检查配置
@@ -59,10 +59,10 @@ tsconfig.json        源码、构建工具和测试的严格类型检查配置
 
 - `configs/base.yaml` 保留 `$base: true`，两份差异文件分别保留 `$profile: mihomo` 和 `$profile: stash`；标记用于检查来源，输出时移除。
 - 三份 YAML 分别解析，锚点只能引用同一文件中的定义。实际节点由 Sub-Store 注入，三份配置源不要定义顶层 `proxies`。
-- `scripts/merge-config.js` 通过 `async main(config)` 读取公共配置和指定客户端差异；保留已有 `config.proxies`，其余输入配置由合并结果替换。
-- 合并与 `scripts/config-overwrite.js` 覆写必须作为两个独立的脚本操作执行，不能拼接；覆写在合并和节点注入之后执行。额外的配置修改也应放在合并之后、最终覆写之前，以便进入最终校验。
-- `scripts/dialer-proxy.js` 在需要中转的来源订阅中通过 `operator(proxies, targetPlatform, context)` 按地区设置中转，无需模式参数。自建仅为 SS 节点设置中转并保留原名，直接供文件注入和覆写使用；oixCloud Edge 和一元机场设置中转后可按需重命名。自建识别、协议限制及地区分配规则见 [README.md 的节点中转说明](README.md#节点中转)。
-- `scripts/rename.js` 在订阅或组合订阅中通过 `async operator(proxies, targetPlatform, context)` 按固定规则处理节点数组，无需参数，再供文件注入和覆写使用；接入及命名规则见 [README.md 的节点重命名说明](README.md#节点重命名)。
+- `dist/merge-config.js` 通过 `async main(config)` 读取公共配置和指定客户端差异；保留已有 `config.proxies`，其余输入配置由合并结果替换。
+- 合并与 `dist/config-overwrite.js` 覆写必须作为两个独立的脚本操作执行，不能拼接；覆写在合并和节点注入之后执行。额外的配置修改也应放在合并之后、最终覆写之前，以便进入最终校验。
+- `dist/dialer-proxy.js` 在需要中转的来源订阅中通过 `operator(proxies, targetPlatform, context)` 按地区设置中转，无需模式参数。自建仅为 SS 节点设置中转并保留原名，直接供文件注入和覆写使用；oixCloud Edge 和一元机场设置中转后可按需重命名。自建识别、协议限制及地区分配规则见 [README.md 的节点中转说明](README.md#节点中转)。
+- `dist/rename.js` 在订阅或组合订阅中通过 `async operator(proxies, targetPlatform, context)` 按固定规则处理节点数组，无需参数，再供文件注入和覆写使用；接入及命名规则见 [README.md 的节点重命名说明](README.md#节点重命名)。
 
 ### 测速参数复用
 
@@ -143,7 +143,7 @@ x-substore:
 
 ### 最终配置校验
 
-`scripts/config-overwrite.js` 在成员生成之后、返回配置之前执行最终校验，成功后移除内部声明。校验代码随覆写脚本打包为单文件 JavaScript，直接在 Sub-Store 运行；无需新增处理操作或在 Sub-Store 安装开发依赖。合并阶段的引用检查仍保留，最终校验同时覆盖合并后才注入的节点和新增的 provider。
+`dist/config-overwrite.js` 在成员生成之后、返回配置之前执行最终校验，成功后移除内部声明。校验代码随覆写脚本打包为单文件 JavaScript，直接在 Sub-Store 运行；无需新增处理操作或在 Sub-Store 安装开发依赖。合并阶段的引用检查仍保留，最终校验同时覆盖合并后才注入的节点和新增的 provider。
 
 检查范围包括：
 
@@ -223,13 +223,19 @@ proxy-groups:
 
 ## 资源链接
 
-本仓库 `chiyuchia/proxy-config` 的脚本、YAML 和其他资源统一使用 GitHub Raw 链接：
+本仓库 `chiyuchia/proxy-config` 的四个 JavaScript 发布脚本使用 GitHub Releases 附件下载地址，例如：
 
 ```text
-https://raw.githubusercontent.com/chiyuchia/proxy-config/{branch}/{path}
+https://github.com/chiyuchia/proxy-config/releases/latest/download/merge-config.js
 ```
 
-例如，合并脚本使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/master/scripts/merge-config.js`。修改链接时保留正确的仓库、分支和路径，并检查资源是否可访问。
+配置、规则和其他源码资源使用 GitHub Raw 链接，默认读取 `master` 分支：
+
+```text
+https://raw.githubusercontent.com/chiyuchia/proxy-config/{ref}/{path}
+```
+
+例如，公共配置使用 `https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs/base.yaml`。修改链接时保留正确的仓库、版本和路径，并在发布后检查资源是否可访问。不要将本地 `dist/` 路径拼接成 Raw 下载地址。
 
 其他仓库（如 `ACL4SSR`、`blackmatrix7` 和 `dler-io`）保留各自现有的 CDN 链接策略。
 
@@ -239,7 +245,7 @@ https://raw.githubusercontent.com/chiyuchia/proxy-config/{branch}/{path}
 
 开发环境需要 Node.js 22 或更高版本及 npm。首次安装或锁文件更新后运行 `npm ci`；TypeScript、tsx、构建、格式化和测试依赖由 `package-lock.json` 固定，只用于本地开发与 CI。构建工具和测试通过 tsx 执行，不依赖 Node.js 的原生 TypeScript 支持。Sub-Store 继续运行 JavaScript 发布文件并使用自带的 YAML 解析器。
 
-发布流程测试还需要 Git 和 Bash，只在临时目录创建本地仓库，不访问项目远端。
+发布流程测试还需要 Git 和 Bash；测试在临时目录中创建本地仓库并模拟 GitHub CLI，不需要 GitHub 凭据，不访问项目远端或创建真实 Release。
 
 ```bash
 npm ci
@@ -248,7 +254,7 @@ npm run build
 npm run check
 ```
 
-`npm run check` 依次检查格式、严格类型、源码与 `scripts/` 产物一致性并执行测试，不会修改文件。可单独运行 `npm run typecheck` 检查类型，或运行 `npm test` 测试当前 TypeScript 源码与已有 JavaScript 发布产物；修改源码后须先构建再做完整检查。GitHub Actions 对所有推送和 PR 依次执行 `npm ci`、`npm run build`、`npm run check`，同样包含类型检查，不要求提交前已更新产物。
+`npm run check` 依次检查格式、严格类型、源码与 `dist/` 产物一致性并执行测试，不会修改文件。可单独运行 `npm run typecheck` 检查类型，或运行 `npm test` 测试当前 TypeScript 源码与已有 JavaScript 发布产物；修改源码后须先构建再做完整检查。GitHub Actions 对分支推送和 PR 依次执行 `npm ci`、`npm run build`、`npm run check`，同样包含类型检查；CI 从源码重新生成产物，无需提交 `dist/`。
 
 如已安装 oix 内核，可额外运行原生解析回归；未设置 `MIHOMO_BIN` 时该项默认跳过：
 
@@ -270,7 +276,7 @@ MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
 - 中转节点的地区识别、自建 SS 协议限制、符合条件节点的中转字段覆盖及其他节点原字段保留，以及自建保留原名和机场可选重命名后注入、覆写的完整流程。
 - 重命名仅按节点名称识别地区、未知地区保留原名、保留全部地区并按内置热门地区优先排序，以及仅按原始节点名称过滤信息节点的行为。
 - 重命名的固定格式、内置关键词与旗帜保留、按订阅和地区分组编号及单节点序号保留，以及覆写的无效筛选、正则状态、从合并结果重复生成和拒绝直接覆写最终输出。
-- 自动发布的触发限制、无变化跳过、提交范围，以及旧构建和并发推送保护。
+- 自动发布的触发限制、已发布版本跳过、草稿重试、附件范围，以及过期构建检查和发布串行执行。
 
 修改配置或脚本后，检查两种客户端的最终输出、规则集和策略组引用、组成员及候选顺序，不能只验证未注入节点的合并结果。有意调整行为时，同步更新测试预期。
 
@@ -282,7 +288,7 @@ MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
 
 `master` 是稳定生产分支，只接纳已验证的更改。功能分支为可选项，仅在大型功能时使用；提交或合并前都需完成本地验证。
 
-1. 修改文件，并按[本地验证](#本地验证)构建和检查结果；脚本源码可单独提交，也可将重新生成的 `scripts/` 产物一同纳入提交。
+1. 修改文件，并按[本地验证](#本地验证)构建和检查结果；提交源码、配置和相关维护文件，`dist/` 产物保持忽略。
 2. 检查差异，使用约定式提交格式手动执行 `git commit`。
 3. 检查提交内容和 commit 信息，确认后再单独手动执行 `git push`。
 
@@ -290,21 +296,15 @@ MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
 
 ### 自动构建与发布
 
-[GitHub Actions 工作流](.github/workflows/check.yml) 在所有分支的 push 和 PR 上安装锁定的依赖、构建四个脚本并执行完整检查。仅 `master` 的 push 在检查成功后自动发布产物；其他分支和 PR 只构建与检查，不回写文件。
+[GitHub Actions 工作流](.github/workflows/check.yml) 在分支 push 和 PR 上安装锁定的依赖、构建四个脚本并执行完整检查。本地 `git commit` 不会触发远程工作流；仅推送到 `master` 且检查成功后，才自动发布 GitHub Release。其他分支和 PR 只构建与检查。
 
-发布使用本次已验证的 `scripts/merge-config.js`、`scripts/config-overwrite.js`、`scripts/dialer-proxy.js` 和 `scripts/rename.js`。这些文件仍纳入版本控制，只有产物存在差异时，机器人才会创建提交并普通推送到 `master`。发布前会检查远端分支：若 `master` 已前进，旧运行跳过发布，由最新 push 的运行负责构建；不会强制推送或覆盖后续提交。现有 `master/scripts/` 地址及 `configs/` 读取方式保持不变。
+发布任务使用本次已验证的 `dist/merge-config.js`、`dist/config-overwrite.js`、`dist/dialer-proxy.js` 和 `dist/rename.js`，使用 `build-<SHA>` 标签创建 Release，`<SHA>` 为来源提交的完整 40 位 SHA。先创建草稿并上传四个 `.js` 附件，附件齐全后再公开发布并设为 latest；附件下载地址不含 `dist/` 目录。产物不回写 `master`，也不产生额外的源码提交。
 
-发布任务使用 `GITHUB_TOKEN`，并声明 `contents: write` 权限，无需另配个人访问令牌。仓库及组织的 Actions 权限策略须允许该写权限，`master` 的分支保护或规则集也须允许机器人写入；不满足时，发布会失败。使用 `GITHUB_TOKEN` 推送的机器人提交不会再次触发 push 工作流，因此不会循环构建。
+同一来源提交的 Release 已公开发布时，重跑跳过发布，不覆盖其附件；未完成的草稿可以重试上传。发布任务串行执行，并在发布前核对远端 `master` 是否仍指向来源提交；检查时发现分支已前进，旧运行跳过公开发布，由最新 push 的运行负责发布。这些检查不将 Release 和 `master` 配置变成原子更新；需要固定匹配版本时，使用 README 中的[固定版本地址](README.md#合并脚本参数)。
 
-推送后，在 Actions 中确认本次构建与发布成功，再按 README 的[修改与更新](README.md#修改与更新)刷新 Sub-Store。构建或发布失败时，脚本修改尚未完成发布，应先修复对应错误。固定版本时须选用包含对应产物的提交，具体用法见[合并脚本参数](README.md#合并脚本参数)。
+发布任务使用 `GITHUB_TOKEN`，并声明 `contents: write` 权限，无需另配个人访问令牌。仓库及组织的 Actions 权限策略和标签规则须允许创建对应标签、Release 及附件；不满足时，发布会失败。
 
-机器人发布后，远端 `master` 可能比本地多一个产物提交。后续推送前，先妥善处理本地未提交改动，再在本地 `master` 执行：
-
-```bash
-git pull --ff-only
-```
-
-若本地已有新提交导致无法快进，先检查并整合双方提交，再推送；不要用强制推送覆盖机器人的发布提交。
+推送后，在 Actions 中确认本次构建与发布成功，并在 Releases 中确认四个 `.js` 附件齐全，再按 README 的[修改与更新](README.md#修改与更新)刷新 Sub-Store。构建或发布失败时，脚本修改尚未完成发布，应先修复对应错误。接入地址、迁移方法和 Source code 压缩包的区别见 README 的[文件说明](README.md)与[接入 Sub-Store](README.md#接入-sub-store)。
 
 ### 提交信息
 

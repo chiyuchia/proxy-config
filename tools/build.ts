@@ -1,9 +1,9 @@
 /**
  * @file 将模块化入口构建为 Sub-Store 可直接执行的独立发布脚本。
- * 默认写入 scripts/；传入 --check 时仅检查源码与产物是否同步。
+ * 默认写入 dist/；传入 --check 时仅检查源码与产物是否同步。
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 
@@ -56,8 +56,10 @@ const scripts = [
   },
 ];
 
+if (!checkOnly) await mkdir(new URL('../dist/', import.meta.url), { recursive: true });
+
 for (const { name, description, usage, signature, call } of scripts) {
-  const outfile = `scripts/${name}.js`;
+  const outfile = `dist/${name}.js`;
   const source = await readFile(new URL(`../src/entries/${name}.ts`, import.meta.url), 'utf8');
   const entryDocumentation = readEntrypointDocumentation(source);
   const result = await build({
@@ -100,7 +102,7 @@ for (const { name, description, usage, signature, call } of scripts) {
       throw error;
     });
     if (current !== output.text) {
-      console.error(`${outfile} 与源码不一致，请运行 npm run build 并一同提交生成文件。`);
+      console.error(`${outfile} 与源码不一致，请运行 npm run build。`);
       process.exitCode = 1;
     } else {
       console.log(`${outfile} 已同步`);

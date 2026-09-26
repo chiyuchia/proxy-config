@@ -15,7 +15,7 @@ type DialerOperator = (
   context?: Record<string, unknown>,
 ) => ProxyNode[];
 
-const script = fs.readFileSync(new URL('../scripts/dialer-proxy.js', import.meta.url), 'utf8');
+const script = fs.readFileSync(new URL('../dist/dialer-proxy.js', import.meta.url), 'utf8');
 
 /**
  * 在独立 VM 中加载中转发布脚本，取得不依赖源码模块加载器的入口。
@@ -25,7 +25,7 @@ const script = fs.readFileSync(new URL('../scripts/dialer-proxy.js', import.meta
  */
 function loadOperator(globals: Record<string, unknown> = {}): DialerOperator {
   const context = vm.createContext(globals);
-  vm.runInContext(script, context, { filename: 'scripts/dialer-proxy.js' });
+  vm.runInContext(script, context, { filename: 'dist/dialer-proxy.js' });
   return (context as unknown as { operator: DialerOperator }).operator;
 }
 
