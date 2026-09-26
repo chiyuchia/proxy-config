@@ -5,7 +5,7 @@
 
 import { updateGroupMembers } from './group-members.ts';
 import { validateFinalConfig, validateOverwriteStructure } from './validation.ts';
-import type { OverwrittenConfig, ProxyConfig } from '../types.ts';
+import type { OverwrittenConfig, ProxyConfig } from '../shared/types.ts';
 
 /**
  * 就地更新代理组成员，校验本地配置及明确声明的运行时 provider 引用。

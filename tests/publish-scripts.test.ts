@@ -47,12 +47,13 @@ interface ReleaseState {
 const workflow = parse(
   fs.readFileSync(new URL('../.github/workflows/check.yml', import.meta.url), 'utf8'),
 ) as Workflow;
-const publishStep = workflow.jobs.publish.steps.find((step) => step.id === 'publish-scripts')!;
+const publishStep = workflow.jobs.publish.steps.find((step) => step.id === 'publish-assets')!;
 const publishedFiles = [
   'dist/config-overwrite.js',
   'dist/dialer-proxy.js',
-  'dist/merge-config.js',
+  'dist/mihomo.yaml',
   'dist/rename.js',
+  'dist/stash.yaml',
 ];
 const assetNames = publishedFiles.map((file) => path.basename(file));
 
@@ -368,7 +369,7 @@ test('publishing requires successful checks and a master branch push, with seria
   assert.equal(checkout!.with!.ref, '${{ github.sha }}');
 });
 
-test('publishing uploads exactly four assets tied to the source commit without committing dist', (t) => {
+test('publishing uploads exactly five assets tied to the source commit without committing dist', (t) => {
   const repo = fixture(t);
   assertSuccess(repo.publish());
   const state = repo.state();
@@ -499,11 +500,11 @@ test('a published release without its source tag stops instead of claiming succe
   assert.ok(repo.calls().every((args) => args[0] === 'api'));
 });
 
-test('missing or empty build outputs stop publication before any GitHub API call', (t) => {
+test('missing or empty config templates stop publication before any GitHub API call', (t) => {
   const repo = fixture(t);
-  fs.unlinkSync(path.join(repo.checkout, publishedFiles[0]));
+  fs.unlinkSync(path.join(repo.checkout, 'dist/stash.yaml'));
   assert.notEqual(repo.publish().status, 0);
-  repo.write(publishedFiles[0], '');
+  repo.write('dist/stash.yaml', '');
   assert.notEqual(repo.publish().status, 0);
   assert.equal(repo.state().latest, 'previous');
   assert.equal(repo.state().releases[repo.tag], undefined);

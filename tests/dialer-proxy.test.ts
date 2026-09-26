@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
-import { assignDialerProxy } from '../src/dialer-proxy/index.ts';
-import type { ProxyNode } from '../src/types.ts';
+import { assignDialerProxy } from '../src/scripts/dialer-proxy/index.ts';
+import type { ProxyNode } from '../src/scripts/shared/types.ts';
 
 type DialerOperator = (
   proxies: ProxyNode[],

@@ -1,4 +1,5 @@
 node_modules/
 dist/
+src/configs/
 temp/
 package-lock.json

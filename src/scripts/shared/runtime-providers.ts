@@ -3,7 +3,7 @@
  * 声明仅放行组的 use 引用，不创建 provider，也不将其名称视为节点或规则集。
  */
 
-import { isConfigMap } from './merge-config/value.ts';
+import { isConfigMap } from './value.ts';
 import type { ConfigMap } from './types.ts';
 
 /**

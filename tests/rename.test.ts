@@ -8,8 +8,8 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import vm from 'node:vm';
-import { renameProxies } from '../src/rename/index.ts';
-import type { ProxyNode, ScriptArguments } from '../src/types.ts';
+import { renameProxies } from '../src/scripts/rename/index.ts';
+import type { ProxyNode, ScriptArguments } from '../src/scripts/shared/types.ts';
 
 interface TestNode extends ProxyNode {
   id: string;

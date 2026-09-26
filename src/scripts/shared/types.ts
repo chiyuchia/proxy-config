@@ -61,26 +61,6 @@ export type OverwrittenConfig<T extends ProxyConfig = ProxyConfig> = Omit<
 > &
   ProxyConfig & { 'proxy-groups': FinalProxyGroup[]; 'x-substore'?: never };
 
-/** 远程配置读取请求，timeout 单位为毫秒。 */
-export interface HttpRequest {
-  url: string;
-  timeout: number;
-  headers?: Record<string, string>;
-}
-
-/** 外部响应字段在读取来源时检查状态、类型和内容。 */
-export interface HttpResponse {
-  statusCode?: unknown;
-  status?: unknown;
-  body?: unknown;
-}
-
-/** 合并模块依赖的 HTTP 与 YAML 能力，避免核心逻辑绑定 Sub-Store 全局对象。 */
-export interface ConfigRuntime {
-  get: (request: HttpRequest) => Promise<HttpResponse | undefined>;
-  parseYaml: (source: string) => unknown;
-}
-
 /** 核心模块只依赖日志写入能力。 */
 export interface Logger {
   log: (...values: unknown[]) => void;

@@ -3,7 +3,7 @@
  * x-substore 仅用于合并与覆写之间传递指令，最终客户端配置中移除。
  */
 
-import type { ConfigMap, ProxyGroup } from '../types.ts';
+import type { ConfigMap, ProxyGroup } from './types.ts';
 
 /** 成员生成方式，必须在模板中显式声明。 */
 export type MemberMode = 'append' | 'replace' | 'manual';

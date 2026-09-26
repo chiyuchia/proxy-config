@@ -15,6 +15,7 @@
     "check": "npm run format:check && npm run typecheck && npm run build:check && npm test"
   },
   "devDependencies": {
+    "@pkgship/mihomo": "1.19.31",
     "@types/node": "22.20.4",
     "esbuild": "0.28.2",
     "prettier": "3.9.8",

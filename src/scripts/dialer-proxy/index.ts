@@ -3,8 +3,8 @@
  * 自建仅处理 SS 节点，其余来源处理全部节点；美国使用美西中转，其他地区使用亚太中转。
  */
 
-import { identifyCountryFromName } from '../rename/identify.ts';
-import type { ProxyNode } from '../types.ts';
+import { identifyCountryFromName } from '../shared/regions/identify.ts';
+import type { ProxyNode } from '../shared/types.ts';
 
 /**
  * 按节点名称识别地区，就地设置符合条件节点的 dialer-proxy，保留原名称和输入顺序。

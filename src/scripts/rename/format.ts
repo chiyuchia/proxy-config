@@ -3,10 +3,10 @@
  * 保留 Viking 原旗帜与展示代码，所有已识别节点固定保留序号。
  */
 
-import { parseVikingName } from './identify.ts';
+import { parseVikingName } from '../shared/regions/identify.ts';
 import { extractRetainKeywords } from './keywords.ts';
-import type { VikingName } from './identify.ts';
-import type { ProxyNode } from '../types.ts';
+import type { VikingName } from '../shared/regions/identify.ts';
+import type { ProxyNode } from '../shared/types.ts';
 
 /**
  * 将地区代码中的英文字母转为区域指示符，TW 按现有展示约定使用萨摩亚旗帜。

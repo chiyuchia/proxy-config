@@ -1,55 +1,50 @@
 # 代理配置
 
-Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一维护在基础配置中，客户端差异仅保留 DNS、Mihomo 嗅探和 oixCloud provider 相关配置。Sub-Store 在服务端读取 YAML 并合并，再使用现有覆写脚本处理节点，无需在本地生成完整配置。
+Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一维护在基础配置中，客户端差异仅保留 DNS、Mihomo 嗅探和 oixCloud provider 相关配置。构建时将公共配置与客户端差异合并为两份 YAML 模板；Sub-Store 读取模板、注入订阅节点，再运行覆写脚本输出完整配置。
 
-| 文件 | 维护内容 |
+| 文件 | 用途与维护位置 |
 | --- | --- |
-| [configs/base.yaml](configs/base.yaml) | 公共网络设置、全部共同代理组及其候选顺序、成员生成声明、筛选、测速设置、规则集和分流规则 |
-| [configs/mihomo.yaml](configs/mihomo.yaml) | Mihomo 的 DNS、嗅探、oixCloud 文件 provider 声明、Optimized 组及相关 `use` 和菜单引用 |
-| [configs/stash.yaml](configs/stash.yaml) | Stash 的 DNS 差异 |
-| [merge-config.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/merge-config.js) | 服务端拉取、合并与配置检查的发布脚本；源码在 [src/merge-config/](src/merge-config/) |
-| [config-overwrite.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/config-overwrite.js) | 组成员筛选、去重和最终配置校验的发布脚本；源码在 [src/config-overwrite/](src/config-overwrite/) |
-| [dialer-proxy.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.js) | 为自建、oixCloud Edge 和一元机场节点按地区设置中转的发布脚本；源码在 [src/dialer-proxy/](src/dialer-proxy/) |
-| [rename.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/rename.js) | 地区识别、名称整理和关键词过滤的发布脚本；源码在 [src/rename/](src/rename/) |
+| [src/configs/base.yaml](src/configs/base.yaml) | 公共配置源：网络设置、全部共同代理组及其候选顺序、成员生成声明、筛选、测速设置、规则集和分流规则 |
+| [src/configs/mihomo.yaml](src/configs/mihomo.yaml) | Mihomo 差异源：DNS、嗅探、oixCloud 文件 provider 声明、Optimized 组及相关 `use` 和菜单引用 |
+| [src/configs/stash.yaml](src/configs/stash.yaml) | Stash 差异源：DNS 设置 |
+| [mihomo.yaml](https://github.com/chiyuchia/proxy-config/releases/latest/download/mihomo.yaml) | 构建生成的 Mihomo 模板，作为 Sub-Store 的远程文件来源 |
+| [stash.yaml](https://github.com/chiyuchia/proxy-config/releases/latest/download/stash.yaml) | 构建生成的 Stash 模板，作为 Sub-Store 的远程文件来源 |
+| [config-overwrite.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/config-overwrite.js) | 组成员筛选、去重和最终配置校验的发布脚本；源码在 [src/scripts/config-overwrite/](src/scripts/config-overwrite/) |
+| [dialer-proxy.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.js) | 为自建、oixCloud Edge 和一元机场节点按地区设置中转的发布脚本；源码在 [src/scripts/dialer-proxy/](src/scripts/dialer-proxy/) |
+| [rename.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/rename.js) | 地区识别、名称整理和关键词过滤的发布脚本；源码在 [src/scripts/rename/](src/scripts/rename/) |
+| [src/scripts/shared/](src/scripts/shared/) | 脚本与构建工具共用的类型、配置声明校验和地区识别逻辑；维护位置见[贡献指南](CONTRIBUTING.md#修改位置) |
 
-维护脚本时修改 `src/` 中的 TypeScript 源码，在本地构建并验证；`dist/` 是被 Git 忽略的本地产物目录，不随源码提交。推送到 `master` 后，GitHub Actions 构建并检查脚本，再将四个 JavaScript 文件发布为 [GitHub Releases](https://github.com/chiyuchia/proxy-config/releases) 附件，详见[自动构建与发布](CONTRIBUTING.md#自动构建与发布)。Sub-Store 使用下方的附件下载地址，无需安装开发依赖。Release 自动提供的 Source code 压缩包只包含源码，不包含 `dist/`；下载可执行脚本时选择对应的 `.js` 附件。
+修改 `src/configs/` 中的配置源或 `src/scripts/` 中的 TypeScript 脚本源码后，在本地构建并验证；`dist/` 是被 Git 忽略的本地产物目录，不随源码提交。推送到 `master` 后，GitHub Actions 构建并检查两份 YAML 和三份 JavaScript，再将五个文件发布为 [GitHub Releases](https://github.com/chiyuchia/proxy-config/releases) 附件，详见[自动构建与发布](CONTRIBUTING.md#自动构建与发布)。Sub-Store 使用附件下载地址，无需安装开发依赖。Release 自动提供的 Source code 压缩包不包含 `dist/`；使用时下载对应的 `.yaml` 和 `.js` 附件。
 
 ## 接入 Sub-Store
 
-适用于 Sub-Store 的 **“Mihomo 配置”文件类型**。Mihomo 与 Stash 分别保留一个输出文件，通过脚本的 `client` 参数选择差异配置。
+适用于 Sub-Store 的 **“Mihomo 配置”文件类型**。Mihomo 与 Stash 分别保留一个输出文件，以不同的远程模板地址选择客户端。这两份 YAML 是供 Sub-Store 注入节点的模板，需要完成下述流程后输出给客户端。
 
-确认所用版本已成功发布，且 Sub-Store 服务端能够读取下方的 GitHub Releases 附件和配置 Raw 地址；也可以使用自行托管的 HTTP(S) 地址。本地尚未推送或尚未完成发布的脚本修改不会生效。
+确认所用版本已成功发布，且 Sub-Store 服务端能够读取下方的 GitHub Releases 附件；也可以使用自行托管的 HTTP(S) 地址。本地尚未推送或尚未完成发布的模板、脚本修改不会生效。
 
-发布脚本改由 GitHub Releases 提供。升级到此版本时，请将 Sub-Store 文件及来源订阅中原来指向 `scripts/` 或 `dist/` 的 GitHub Raw 地址替换为下方对应的 Releases 下载地址，并保留 `#` 后的参数；旧路径不再提供兼容入口。配置和规则仍使用 `master` 分支的 GitHub Raw 地址。
+升级到此版本时，删除旧的 `merge-config.js` 合并操作及本地 `{}` 来源，将文件来源改为对应的远程 YAML 模板。旧合并脚本的参数随操作一起移除；节点注入和最终覆写操作保留在远程模板加载之后。原来指向 `scripts/` 或 `dist/` 的 JavaScript Raw 地址也应替换为 Releases 下载地址，新版本不再提供旧合并脚本或兼容入口。
 
-文件类型使用“Mihomo 配置”，文件来源设为本地内容，填写非空初始内容 `{}`，并配置订阅节点来源。三份 YAML 由合并脚本自行下载，不需要逐份添加为文件来源或添加模板处理操作。
-
-然后按以下顺序配置处理操作：
-
-1. 添加远程脚本 `merge-config.js`，通过下方的 URL 参数选择客户端。
-2. 配置节点注入操作（例如“从订阅添加节点”）；先在各自来源订阅中完成[节点中转](#节点中转)等处理。自建节点保留原名；oixCloud Edge 和一元机场设置中转后可按需[重命名](#节点重命名)。
-3. 最后运行 `config-overwrite.js`，无需参数；脚本完成覆写后自动校验最终配置。
+1. 创建“Mihomo 配置”文件，将文件来源设为**远程**，填写下方对应客户端的 YAML 地址，参见 [Sub-Store 文件说明](https://sub-store-org.github.io/doc/file/overview)。不要将 `src/configs/base.yaml` 或客户端差异源直接用作文件来源。
+2. 配置订阅节点来源与节点注入操作（例如“从订阅添加节点”）；先在各自来源订阅中完成[节点中转](#节点中转)等处理。自建节点保留原名；oixCloud Edge 和一元机场设置中转后可按需[重命名](#节点重命名)。
+3. 最后运行远程脚本 `config-overwrite.js`，无需参数；脚本重建代理组成员并校验最终配置。额外的配置修改放在模板加载之后、最终覆写之前。
 
 ```text
-本地初始内容：{}
-→ merge-config.js：读取 base.yaml + 客户端差异
+远程 mihomo.yaml / stash.yaml 模板
 → 注入已在来源订阅中处理的节点
 → config-overwrite.js：重建代理组成员、校验最终配置、移除内部声明
 → Sub-Store 输出完整 YAML
 ```
 
-若现有节点注入操作位于合并脚本之前，也可以保留：合并脚本会保留传入的 `config.proxies`。输入中的其他配置由合并结果替换；需要额外修改配置时，将相应操作放在合并之后、最终覆写脚本之前，以便检查完整结果。
-
-Mihomo 的远程脚本地址：
+Mihomo 的远程模板地址：
 
 ```text
-https://github.com/chiyuchia/proxy-config/releases/latest/download/merge-config.js#client=mihomo
+https://github.com/chiyuchia/proxy-config/releases/latest/download/mihomo.yaml
 ```
 
-Stash 的远程脚本地址：
+Stash 的远程模板地址：
 
 ```text
-https://github.com/chiyuchia/proxy-config/releases/latest/download/merge-config.js#client=stash
+https://github.com/chiyuchia/proxy-config/releases/latest/download/stash.yaml
 ```
 
 覆写脚本地址：
@@ -71,51 +66,27 @@ proxy-providers:
 
 如需自行管理其他 HTTP provider，在配置中显式定义其有效 `url`，并按需添加组内 `use` 引用。
 
-这两个 JavaScript 文件必须作为**两个独立的脚本操作**执行，它们分别提供 `main(config)`，不能拼接到同一个脚本中。Sub-Store 会等待异步 `main` 并将返回值序列化为 YAML，参见[官方脚本处理实现](https://github.com/sub-store-org/Sub-Store/blob/master/backend/src/core/proxy-utils/processors/index.js)。
+`config-overwrite.js` 在文件的脚本操作中提供 `main(config)`；来源订阅中的节点脚本使用 `operator`，不要拼接到同一个操作中。Sub-Store 会调用 `main` 并将返回值序列化为 YAML，参见[官方脚本处理实现](https://github.com/sub-store-org/Sub-Store/blob/master/backend/src/core/proxy-utils/processors/index.js)。
 
-代理组通过模板中的 `x-substore.members` 声明成员生成方式，覆写不再根据组名决定行为；声明在最终输出前移除。每次刷新都应重新执行合并与覆写，不能直接对上次输出再次覆写。新增组和声明字段的说明见[贡献指南的成员生成声明](CONTRIBUTING.md#成员生成声明)。
+代理组通过模板中的 `x-substore.members` 声明成员生成方式，构建后的 YAML 保留这些声明，覆写在最终输出前移除。每次刷新都应从远程模板重新注入节点并覆写，不能直接对上次输出再次覆写。新增组和声明字段的说明见[贡献指南的成员生成声明](CONTRIBUTING.md#成员生成声明)。
 
 最终校验随覆写脚本直接在 Sub-Store 中运行，无需另加脚本或安装依赖。发现重复名称、无效引用、依赖循环或无效 HTTP provider 地址时，本次脚本报错并停止输出；具体范围和限制见[贡献指南的最终配置校验](CONTRIBUTING.md#最终配置校验)。
 
 首次切换后，在 Sub-Store 预览最终配置，确认原来的订阅节点仍在 `proxies` 中，并检查三个机场亚太组的成员，再更新客户端订阅。
 
-### 合并脚本参数
+### 固定版本
 
-| 参数 | 含义 |
-| --- | --- |
-| `client` | 必填，值为 `mihomo` 或 `stash` |
-| `configBaseUrl` | 三份 YAML 的远程目录；默认 `https://raw.githubusercontent.com/chiyuchia/proxy-config/master/configs` |
-| `baseUrl` | 单独指定公共配置地址，优先于 `configBaseUrl` |
-| `profileUrl` | 单独指定客户端差异地址，优先于 `configBaseUrl` |
-| `timeout` | 每次请求的超时毫秒数，默认 `10000` |
-| `noCache` | 默认 `true`；仅接受布尔值或字符串 `true` / `false`。请求 YAML 时要求缓存重新验证，GitHub Raw 地址还会附加动态刷新参数；设为 `false` 可关闭 |
-
-参数放在脚本 URL 的 `#` 后，用 `&` 分隔。URL 参数值需要进行 URL 编码，例如使用自己的目录：
+需要固定版本时，选择已发布的 `build-<SHA>` Release，其中 `<SHA>` 是构建来源的完整 40 位源码提交 SHA。将所用模板和脚本的 `releases/latest/download/` 地址全部改为同一标签下的 `releases/download/build-<SHA>/` 地址：
 
 ```text
-https://github.com/chiyuchia/proxy-config/releases/latest/download/merge-config.js#client=stash&configBaseUrl=https%3A%2F%2Fexample.com%2Fproxy-config%2Fconfigs
+https://github.com/chiyuchia/proxy-config/releases/download/build-<SHA>/mihomo.yaml
+https://github.com/chiyuchia/proxy-config/releases/download/build-<SHA>/stash.yaml
+https://github.com/chiyuchia/proxy-config/releases/download/build-<SHA>/config-overwrite.js
+https://github.com/chiyuchia/proxy-config/releases/download/build-<SHA>/dialer-proxy.js
+https://github.com/chiyuchia/proxy-config/releases/download/build-<SHA>/rename.js
 ```
 
-YAML 请求刷新默认开启，无需额外参数。若还需跳过 Sub-Store 的脚本下载缓存，使用：
-
-```text
-https://github.com/chiyuchia/proxy-config/releases/latest/download/merge-config.js#client=mihomo#noCache
-```
-
-合并脚本的 `noCache` 参数控制内部 YAML 请求，可显式添加 `&noCache=false` 关闭；末尾 `#noCache` 是 Sub-Store 的脚本资源下载选项，两者互不替代。需要使用已发布且支持该默认行为的脚本版本；仍固定到旧版本时，仅追加参数不会生效。
-
-启用后，公共配置和客户端差异的请求都会携带 `Cache-Control: no-cache`。主机名为 `raw.githubusercontent.com` 的地址额外附加动态 `_substore_refresh` 查询参数，同一次合并共用一个值，后续合并使用新值；通过 `baseUrl`、`profileUrl` 显式指定的 GitHub Raw 地址也适用。其他自定义域名只添加请求头，保留 URL 原样以兼容签名地址。该选项降低旧缓存命中的可能性，不保证所有 CDN 即时更新，也不保证跟随分支的两份 YAML 来自同一提交。
-
-需要固定版本时，选择已发布的 `build-<SHA>` Release，其中 `<SHA>` 是构建来源的完整 40 位源码提交 SHA。四个脚本使用该 Release 的附件地址，`configBaseUrl` 使用同一 SHA 对应的配置目录：
-
-```text
-脚本：https://github.com/chiyuchia/proxy-config/releases/download/build-<SHA>/<name>.js
-配置：https://raw.githubusercontent.com/chiyuchia/proxy-config/<SHA>/configs
-```
-
-将 `<name>` 替换为对应脚本名，并保留脚本所需的 `#` 参数；`configBaseUrl` 参数值需进行 URL 编码。仅固定脚本地址不会自动固定 YAML 版本。默认的 `latest` 脚本和 `master` 配置会各自更新，需要匹配同一版本时应同时固定两者。
-
-合并脚本在远程请求失败、来源为空、客户端不匹配、补丁无效或配置引用错误时会报错并停止生成配置。
+根据客户端选择一份模板，所有使用到的脚本与模板固定到同一 Release。默认的 `latest` 下载地址会随新版本更新；多次下载可能跨越一次发布，需要严格匹配时应固定标签。模板中的规则集 URL 仍按各自来源更新，固定这五个附件不会同时固定远程规则内容。
 
 ## 节点中转
 
@@ -134,7 +105,7 @@ https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.
 | 美国 | `🛡️ 美西中转` |
 | 其他地区或无法识别 | `🛡️ 亚太中转` |
 
-地区识别复用重命名脚本的名称识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。符合条件节点的已有 `dialer-proxy` 会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除；配置中仅保留亚太和美西两个中转组。
+中转与重命名脚本共用名称地区识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。符合条件节点的已有 `dialer-proxy` 会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除；配置中仅保留亚太和美西两个中转组。
 
 自建节点保留原名，不经过重命名脚本：
 
@@ -165,7 +136,7 @@ oixCloud Edge 和一元机场分别在各自来源订阅中设置中转，可按
 https://github.com/chiyuchia/proxy-config/releases/latest/download/rename.js
 ```
 
-该脚本通过 `async operator(proxies, targetPlatform, context)` 处理节点数组。自建节点不使用此脚本；oixCloud Edge 和一元机场如需重命名，在各自来源订阅中先完成[节点中转](#节点中转)，再执行此脚本。之后由“Mihomo 配置”文件注入处理后的节点，并运行 `config-overwrite.js`。文件中的合并与覆写脚本使用 `main(config)`，`dialer-proxy.js` 和 `rename.js` 应分别配置为订阅中的独立节点处理操作。
+该脚本通过 `async operator(proxies, targetPlatform, context)` 处理节点数组。自建节点不使用此脚本；oixCloud Edge 和一元机场如需重命名，在各自来源订阅中先完成[节点中转](#节点中转)，再执行此脚本。之后由“Mihomo 配置”文件注入处理后的节点，并运行 `config-overwrite.js`。文件中的覆写脚本使用 `main(config)`，`dialer-proxy.js` 和 `rename.js` 应分别配置为订阅中的独立节点处理操作。
 
 脚本使用固定的重命名规则，不读取外部脚本参数，旧地址中的参数可直接移除。先按内置词表过滤信息节点，再仅从节点名称识别地区，无需联网解析或查询；不按地区删除节点，无法识别地区时保留原名。
 
@@ -181,7 +152,7 @@ https://github.com/chiyuchia/proxy-config/releases/latest/download/rename.js
 
 内置过滤词为：`过期、剩余、官网、套餐、重置、到期、Traffic、Expire、一元机场、客户端、网站`。它们只按原始节点名称中的字面子串匹配，不区分大小写，不检查 `_subName`。
 
-修改名称格式、关键词提取规则或订阅名后，检查最终名称是否仍满足 `configs/base.yaml` 中代理组对机场名、地区代码和线路关键词的筛选要求。
+修改名称格式、关键词提取规则或订阅名后，检查最终名称是否仍满足 `src/configs/base.yaml` 中代理组对机场名、地区代码和线路关键词的筛选要求。
 
 ## 修改与更新
 

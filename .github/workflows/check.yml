@@ -25,12 +25,13 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
-          name: built-scripts
+          name: built-assets
           path: |
-            dist/merge-config.js
             dist/config-overwrite.js
-            dist/rename.js
             dist/dialer-proxy.js
+            dist/mihomo.yaml
+            dist/rename.js
+            dist/stash.yaml
           if-no-files-found: error
           overwrite: true
           retention-days: 7
@@ -52,10 +53,10 @@ jobs:
           ref: ${{ github.sha }}
       - uses: actions/download-artifact@v8
         with:
-          name: built-scripts
+          name: built-assets
           path: dist
-      - name: Publish scripts as Release assets
-        id: publish-scripts
+      - name: Publish configs and scripts as Release assets
+        id: publish-assets
         shell: bash
         env:
           SOURCE_COMMIT: ${{ github.sha }}
@@ -67,8 +68,9 @@ jobs:
           files=(
             dist/config-overwrite.js
             dist/dialer-proxy.js
-            dist/merge-config.js
+            dist/mihomo.yaml
             dist/rename.js
+            dist/stash.yaml
           )
           for file in "${files[@]}"; do
             if [ ! -s "$file" ]; then
@@ -127,9 +129,9 @@ jobs:
             cat > "$notes" <<EOF
           Source commit: [$SOURCE_COMMIT](https://github.com/$GITHUB_REPOSITORY/commit/$SOURCE_COMMIT)
 
-          附件为通过检查的四个 Sub-Store 发布脚本。
-          对应版本的配置源码：[configs](https://github.com/$GITHUB_REPOSITORY/tree/$SOURCE_COMMIT/configs)
-          固定版本时，将 configBaseUrl 中的 master 替换为上述源码提交 SHA；接入方法见 README。
+          附件为通过检查的两份已合并、待注入节点的配置模板（mihomo.yaml、stash.yaml）和三个 Sub-Store 发布脚本。
+          对应版本的配置源码：[src/configs](https://github.com/$GITHUB_REPOSITORY/tree/$SOURCE_COMMIT/src/configs)
+          固定版本时，配置模板与脚本均使用本 Release 标签 $tag 的附件下载地址；接入方法见 README。
           EOF
             gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
               --target "$SOURCE_COMMIT" --draft \
@@ -142,7 +144,7 @@ jobs:
             --json assets --jq '[.assets[].name] | sort | .[]')
           expected=$(printf '%s\n' "${files[@]#dist/}")
           if [ "$assets" != "$expected" ]; then
-            echo "Release 附件与四个发布脚本不一致，保留草稿。" >&2
+            echo "Release 附件与两份配置模板及三个发布脚本不一致，保留草稿。" >&2
             exit 1
           fi
 

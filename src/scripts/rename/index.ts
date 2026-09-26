@@ -3,10 +3,10 @@
  * 使用固定命名规则，日志对象由调用者提供，未识别节点保留原名。
  */
 
-import { identifyCountry } from './identify.ts';
+import { identifyCountry } from '../shared/regions/identify.ts';
 import { formatProxyName } from './format.ts';
-import { HOT_REGIONS } from './regions.ts';
-import type { Logger, ProxyNode } from '../types.ts';
+import { HOT_REGIONS } from '../shared/regions/regions.ts';
+import type { Logger, ProxyNode } from '../shared/types.ts';
 
 // 只匹配原始节点名中的信息词，不检查稍后追加到名称中的 _subName。
 const INFORMATION_NODE_PATTERN =

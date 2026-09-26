@@ -4,9 +4,9 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { overwriteConfig } from '../src/config-overwrite/index.ts';
-import { validateFinalConfig } from '../src/config-overwrite/validation.ts';
-import type { ProxyConfig, ProxyGroup } from '../src/types.ts';
+import { overwriteConfig } from '../src/scripts/config-overwrite/index.ts';
+import { validateFinalConfig } from '../src/scripts/config-overwrite/validation.ts';
+import type { ProxyConfig, ProxyGroup } from '../src/scripts/shared/types.ts';
 
 /**
  * 创建带手工成员声明的完整代理组，可直接用于覆写或最终校验。

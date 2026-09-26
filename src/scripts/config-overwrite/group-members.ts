@@ -3,9 +3,9 @@
  * 保留候选顺序，移除只供 Sub-Store 使用的生成策略，不依据组名决定行为。
  */
 
-import { readMemberPolicy } from './member-policy.ts';
-import type { MemberPolicy } from './member-policy.ts';
-import type { FinalProxyGroup, ProxyGroup, ProxyNode } from '../types.ts';
+import { readMemberPolicy } from '../shared/member-policy.ts';
+import type { MemberPolicy } from '../shared/member-policy.ts';
+import type { FinalProxyGroup, ProxyGroup, ProxyNode } from '../shared/types.ts';
 
 /**
  * 判断值是否为包含非空白字符的字符串。

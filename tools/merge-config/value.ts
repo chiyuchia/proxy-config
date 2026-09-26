@@ -1,20 +1,10 @@
 /**
- * @file 提供 YAML 配置值的类型检查、深拷贝和统一错误格式。
+ * @file 提供构建合并使用的 YAML 配置值深拷贝、数组检查和错误格式。
  * 仅接受映射、数组与普通标量，复制时拒绝可能影响对象原型的配置键。
  */
 
-import type { ConfigMap } from '../types.ts';
-
-/**
- * 通过对象类型标签判断值是否可按配置映射处理，不检查其键或内部成员。
- *
- * @preserve
- * @param {*} value 待判断的值，可为任意类型。
- * @returns {boolean} 对象类型标签为 `[object Object]` 时返回 true，否则返回 false。
- */
-export function isConfigMap(value: unknown): value is ConfigMap {
-  return Object.prototype.toString.call(value) === '[object Object]';
-}
+import { isConfigMap } from '../../src/scripts/shared/value.ts';
+import type { ConfigMap } from '../../src/scripts/shared/types.ts';
 
 /**
  * 添加合并模块前缀并抛出错误，中止当前配置处理。

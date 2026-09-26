@@ -3,15 +3,10 @@
  * 映射递归合并，代理组按名称合并，按既定补丁顺序保留候选优先级。
  */
 
-import {
-  checkConfigKey,
-  configError,
-  copyConfigValue,
-  isConfigMap,
-  requireArray,
-} from './value.ts';
+import { checkConfigKey, configError, copyConfigValue, requireArray } from './value.ts';
+import { isConfigMap } from '../../src/scripts/shared/value.ts';
 import { checkGroupNames } from './validation.ts';
-import type { ConfigMap } from '../types.ts';
+import type { ConfigMap } from '../../src/scripts/shared/types.ts';
 
 type NamedConfigMap = ConfigMap & { name: string };
 

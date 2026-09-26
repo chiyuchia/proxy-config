@@ -1,12 +1,13 @@
 /**
- * @file 合并公共配置与客户端差异，生成经过校验的客户端配置。
- * 检查并移除来源标记，只保留 Sub-Store 注入的订阅节点。
+ * @file 合并公共配置与客户端差异，生成经过校验的客户端模板。
+ * 构建时检查并移除来源标记，保留供 Sub-Store 注入节点后覆写的内部声明。
  */
 
-import { configError, copyConfigValue, isConfigMap, requireArray } from './value.ts';
+import { configError, copyConfigValue, requireArray } from './value.ts';
+import { isConfigMap } from '../../src/scripts/shared/value.ts';
 import { mergeConfigValue } from './patch.ts';
 import { validateMergedConfig } from './validation.ts';
-import type { ConfigMap, MergedConfig } from '../types.ts';
+import type { ConfigMap, MergedConfig } from '../../src/scripts/shared/types.ts';
 
 /**
  * 校验来源标记，合并公共模板与客户端差异，再复制注入节点并校验当前配置引用。
@@ -28,7 +29,7 @@ export function mergeConfigDocuments(
   if (!isConfigMap(profile) || !(['mihomo', 'stash'] as unknown[]).includes(profile.$profile)) {
     configError('客户端差异必须包含 $profile: mihomo 或 stash');
   }
-  // 标记可检测远程来源返回 HTML、颠倒的文件或错误的客户端差异，输出中不保留标记。
+  // 标记可检测颠倒的文件或错误的配置源，输出中不保留标记。
   const { $base, ...common } = base;
   const { $profile, ...overlay } = profile;
   if (Object.hasOwn(common, 'proxies') || Object.hasOwn(overlay, 'proxies')) {

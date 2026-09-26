@@ -1,4 +1,4 @@
-# Mihomo 专用差异；与 base.yaml 合并后交给节点注入和 dist/config-overwrite.js。
+# Mihomo 专用差异源；构建时与 base.yaml 合并为 dist/mihomo.yaml，再由 Sub-Store 注入节点并覆写。
 $profile: mihomo
 
 # 下载后的内核测试也需要 provider 定义；file 类型在 -t 时不要求文件已存在。

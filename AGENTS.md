@@ -4,19 +4,19 @@
 
 ## 开始工作前
 
-本仓库通过 Sub-Store 合并公共配置与客户端差异，为 Mihomo 和 Stash 生成配置。
+本仓库在构建时合并公共配置与客户端差异，生成 Mihomo 和 Stash 模板，再由 Sub-Store 注入节点并覆写为完整配置。
 
 - 修改配置、脚本或规则前，先阅读贡献指南的[修改位置](CONTRIBUTING.md#修改位置)、[配置与合并](CONTRIBUTING.md#配置与合并)和[规则与节点筛选](CONTRIBUTING.md#规则与节点筛选)。
-- 脚本修改在 `src/` 完成，按[脚本开发](CONTRIBUTING.md#脚本开发)构建并检查 `dist/` 发布产物。
+- `src/configs/` 维护配置源，`src/scripts/` 维护运行期脚本，公共依赖集中在 `src/scripts/shared/`，`tools/` 维护构建编排与专用合并逻辑；按[脚本开发](CONTRIBUTING.md#脚本开发)构建并检查 `dist/` 发布产物。
 - 修改接入方式或脚本参数时，阅读 README 中对应的[接入 Sub-Store](README.md#接入-sub-store)、[节点中转](README.md#节点中转)或[节点重命名](README.md#节点重命名)，同步更新使用说明。
 - 修改远程资源地址时，遵循[资源链接约定](CONTRIBUTING.md#资源链接)。
 
 ## 关键约束
 
-- 共同代理组、候选顺序、筛选和测速参数只在 `configs/base.yaml` 维护。两端代理组仅允许 oixCloud provider、Optimized 组及相关引用存在差异。
+- 共同代理组、候选顺序、筛选和测速参数只在 `src/configs/base.yaml` 维护。两端代理组仅允许 oixCloud provider、Optimized 组及相关引用存在差异。
 - 三份 YAML 独立解析，保留 `$base` / `$profile` 标记，不使用跨文件锚点，不在配置源定义顶层 `proxies`。
 - 保留规则的匹配优先级和候选顺序；修改组名、规则集名或文件位置时，同步检查引用。
-- `merge-config.js` 与 `config-overwrite.js` 是两个独立的 `main(config)` 操作，合并先于覆写；`dialer-proxy.js` 与 `rename.js` 在来源订阅中分别通过 `operator` 处理节点，自建节点仅设置中转并保留原名。
+- 构建模板保留成员生成和运行时 provider 声明；Sub-Store 按远程模板、节点注入、`config-overwrite.js` 的顺序处理，不再运行合并脚本。`dialer-proxy.js` 与 `rename.js` 在来源订阅中分别通过 `operator` 处理节点，自建节点仅设置中转并保留原名。
 - 节点筛选的具体限制以贡献指南为准；验证时检查注入节点并覆写后的最终分组。
 
 ## 验证与交付

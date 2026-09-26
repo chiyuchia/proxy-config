@@ -3,7 +3,7 @@
  */
 
 import { assignDialerProxy } from '../dialer-proxy/index.ts';
-import type { ProxyNode } from '../types.ts';
+import type { ProxyNode } from '../shared/types.ts';
 
 /**
  * 按节点名称识别地区，为自建 SS 节点和其他来源节点设置中转，无需脚本参数。

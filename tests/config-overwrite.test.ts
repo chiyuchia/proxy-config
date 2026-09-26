@@ -5,9 +5,9 @@
 
 import assert from 'node:assert/strict';
 import test, { type Mock } from 'node:test';
-import { updateGroupMembers } from '../src/config-overwrite/group-members.ts';
-import { overwriteConfig } from '../src/config-overwrite/index.ts';
-import type { ProxyConfig, ProxyGroup, ProxyNode } from '../src/types.ts';
+import { updateGroupMembers } from '../src/scripts/config-overwrite/group-members.ts';
+import { overwriteConfig } from '../src/scripts/config-overwrite/index.ts';
+import type { ProxyConfig, ProxyGroup, ProxyNode } from '../src/scripts/shared/types.ts';
 
 /**
  * 从测试配置中读取指定代理组的成员，供结果断言使用。

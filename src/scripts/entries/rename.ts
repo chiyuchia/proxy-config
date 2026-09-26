@@ -4,7 +4,7 @@
  */
 
 import { renameProxies } from '../rename/index.ts';
-import type { ProxyNode } from '../types.ts';
+import type { ProxyNode } from '../shared/types.ts';
 
 /**
  * 使用控制台日志，按节点名称识别地区并按固定规则整理名称，无需脚本参数。

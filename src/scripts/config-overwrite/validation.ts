@@ -3,10 +3,10 @@
  * 仅检查本地配置和显式依赖，不请求远程 provider 或展开客户端动态成员。
  */
 
-import { BUILTIN_TARGETS, validateRuleReferences } from '../merge-config/validation.ts';
-import { isConfigMap } from '../merge-config/value.ts';
-import { readRuntimeProxyProviders } from '../runtime-providers.ts';
-import type { ConfigMap, ProxyConfig } from '../types.ts';
+import { BUILTIN_TARGETS, validateRuleReferences } from '../shared/rules.ts';
+import { isConfigMap } from '../shared/value.ts';
+import { readRuntimeProxyProviders } from '../shared/runtime-providers.ts';
+import type { ConfigMap, ProxyConfig } from '../shared/types.ts';
 
 /**
  * 抛出可在 Sub-Store 定位的最终配置错误，不输出节点凭据或 provider 地址。
