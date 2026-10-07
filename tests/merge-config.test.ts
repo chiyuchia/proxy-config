@@ -37,6 +37,7 @@ interface FixtureConfig extends MergedConfig {
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const clients = ['mihomo', 'stash'] as const;
+const mihomoOptimizedGroups = ['✈️ oixCloud Optimized', '✈️ oixCloud Optimized 亚太'];
 
 /**
  * 独立解析已发布的 YAML 模板或最终配置，拒绝重复键且不启用源码合并键。
@@ -203,10 +204,10 @@ function liveConfigs(proxies?: ProxyNode[]): Record<'mihomo' | 'stash', MergedCo
  */
 function sharedGroups(config: MergedConfig): ProxyGroup[] {
   return plain(config['proxy-groups'])
-    .filter(({ name }) => name !== '✈️ oixCloud Optimized')
+    .filter(({ name }) => !mihomoOptimizedGroups.includes(name))
     .map((group) => {
       if (group.proxies) {
-        group.proxies = group.proxies.filter((name) => name !== '✈️ oixCloud Optimized');
+        group.proxies = group.proxies.filter((name) => !mihomoOptimizedGroups.includes(name));
       }
       if (group.use) {
         group.use = group.use.filter((name) => name !== 'oixCloud');
@@ -445,7 +446,8 @@ test('live profiles share group definitions and menu order except for the Mihomo
   assert.ok(
     stash['proxy-groups'].every(
       (group) =>
-        group.name !== '✈️ oixCloud Optimized' && !group.proxies?.includes('✈️ oixCloud Optimized'),
+        !mihomoOptimizedGroups.includes(group.name) &&
+        !group.proxies?.some((name) => mihomoOptimizedGroups.includes(name)),
     ),
   );
   assert.deepEqual(mihomo['proxy-providers'], {
@@ -489,8 +491,9 @@ test('live profiles share group definitions and menu order except for the Mihomo
     '✈️ 良心云 Hy2',
   ];
   assert.ok(!groups.has('🛡️ Edge 中转'));
-  assert.deepEqual(groups.get('🛡️ 亚太中转')!.proxies, asiaRelays);
+  assert.deepEqual(groups.get('🛡️ 亚太中转')!.proxies, ['🛡️ 亚太 Fallback', ...asiaRelays]);
   assert.deepEqual(groups.get('🛡️ 美西中转')!.proxies, asiaRelays);
+  assert.equal(groups.get('🛡️ 亚太 Fallback')!.type, 'fallback');
   assert.deepEqual(groups.get('🚀 节点选择')!.proxies, [
     '🏝️ 精品节点',
     '🇭🇰 香港节点',
@@ -590,6 +593,26 @@ test('the same injected nodes produce matching group members in both live profil
 });
 
 test('both built templates work with the existing airport and transit node filters', async () => {
+  const optimizedAsiaNames = [
+    'IXP HK',
+    'CIA SG',
+    'IXP JP',
+    'CIA TW',
+    '香港 IXP',
+    'CIA 新加坡',
+    '日本 IXP',
+    'CIA 台湾',
+    '台灣 IXP',
+    'Hong Kong IXP',
+    'CIA HongKong',
+    'Singapore IXP',
+    'CIA Japan',
+    'Taiwan IXP',
+    '🇭🇰 IXP',
+    'CIA 🇸🇬',
+    '🇯🇵 IXP',
+    'CIA 🇹🇼',
+  ];
   const proxies = [
     { name: '良心云 HK CT', type: 'vless' },
     { name: '良心云 SG CTCU', type: 'vless' },
@@ -614,6 +637,12 @@ test('both built templates work with the existing airport and transit node filte
     { name: 'VikingLinks JP 沪日', type: 'ss' },
     { name: 'VikingLinks US Go', type: 'ss' },
     { name: 'VikingLinks HK Go 落地', type: 'ss', 'dialer-proxy': 'DIRECT' },
+    ...optimizedAsiaNames.map((name) => ({ name, type: 'ss' })),
+    { name: 'IXP US', type: 'ss' },
+    { name: 'CIA UK', type: 'ss' },
+    { name: 'oixCloud Edge HK', type: 'ss' },
+    { name: 'CIA HKG', type: 'ss' },
+    { name: 'IXP SG 落地', type: 'ss', 'dialer-proxy': 'DIRECT' },
   ];
   const expected = {
     '✈️ 良心云 亚太': proxies.slice(0, 4).map(({ name }) => name),
@@ -633,6 +662,24 @@ test('both built templates work with the existing airport and transit node filte
       assert.equal(group.type, 'url-test');
       assert.equal(group.interval, 60);
       assert.deepEqual(plain(group.proxies), members, `${client}: ${name}`);
+    }
+    const fallback = result['proxy-groups'].find(({ name }) => name === '🛡️ 亚太 Fallback')!;
+    assert.deepEqual(
+      plain(fallback.proxies),
+      [
+        '✈️ VikingLinks 亚太',
+        '✈️ 吹雪云 亚太',
+        ...(client === 'mihomo' ? ['✈️ oixCloud Optimized 亚太'] : []),
+        '✈️ 良心云 亚太',
+      ],
+      `${client}: fallback retains only its ordered airport groups after node injection`,
+    );
+    if (client === 'mihomo') {
+      const optimizedAsia = result['proxy-groups'].find(
+        ({ name }) => name === '✈️ oixCloud Optimized 亚太',
+      )!;
+      assert.deepEqual(plain(optimizedAsia.proxies), optimizedAsiaNames);
+      assert.deepEqual(plain(optimizedAsia.use), ['oixCloud']);
     }
     const firstMembers = plain(result['proxy-groups']);
     assert.deepEqual(

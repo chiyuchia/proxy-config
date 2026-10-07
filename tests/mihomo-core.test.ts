@@ -1,7 +1,7 @@
 /**
  * @file 默认使用 npm 安装的 Mihomo 内核，回归文件 provider 与代理组的原生解析。
  * MIHOMO_BIN 可用绝对路径指定其他内核；缺少依赖或执行失败时直接报错，不跳过测试。
- * 只取真实模板覆写后的 oixCloud provider 和 Optimized 组，隔离订阅节点及远程规则、DNS 数据。
+ * 只取真实模板覆写后的 oixCloud provider、Optimized 组和亚太 Fallback 引用链，隔离远程规则、DNS 数据。
  */
 
 import assert from 'node:assert/strict';
@@ -27,11 +27,46 @@ test('native config test resolves oixCloud without a token or an existing provid
     mihomoBinary === undefined
       ? [createRequire(import.meta.url).resolve('@pkgship/mihomo/bin/mihomo.js')]
       : [];
-  const config = overwriteConfig(
-    parse(fs.readFileSync(new URL('../dist/mihomo.yaml', import.meta.url), 'utf8')) as MergedConfig,
-  );
+  const config = overwriteConfig({
+    ...(parse(
+      fs.readFileSync(new URL('../dist/mihomo.yaml', import.meta.url), 'utf8'),
+    ) as MergedConfig),
+    proxies: [
+      {
+        name: 'VikingLinks HK Go',
+        type: 'ss',
+        server: '127.0.0.1',
+        port: 443,
+        cipher: 'aes-128-gcm',
+        password: 'test-only',
+      },
+      {
+        name: '吹雪云 SG 电信',
+        type: 'ss',
+        server: '127.0.0.1',
+        port: 443,
+        cipher: 'aes-128-gcm',
+        password: 'test-only',
+      },
+      {
+        name: '良心云 TW CT',
+        type: 'vless',
+        server: '127.0.0.1',
+        port: 443,
+        uuid: '00000000-0000-4000-8000-000000000001',
+      },
+    ],
+  });
   const optimized = config['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized');
+  const optimizedAsia = config['proxy-groups'].find(
+    ({ name }) => name === '✈️ oixCloud Optimized 亚太',
+  );
+  const fallback = config['proxy-groups'].find(({ name }) => name === '🛡️ 亚太 Fallback');
   assert.ok(optimized);
+  assert.ok(optimizedAsia);
+  assert.ok(fallback);
+  const nativeGroupNames = new Set([optimized.name, fallback.name, ...(fallback.proxies ?? [])]);
+  const nativeGroups = config['proxy-groups'].filter(({ name }) => nativeGroupNames.has(name));
   assert.deepEqual(config['proxy-providers'], {
     oixCloud: { type: 'file', path: './proxy_provider/oixCloud' },
   });
@@ -48,9 +83,10 @@ test('native config test resolves oixCloud without a token or an existing provid
       fs.writeFileSync(
         configPath,
         stringify({
-          'proxy-groups': [optimized],
+          proxies: config.proxies,
+          'proxy-groups': nativeGroups,
           ...(withProvider ? { 'proxy-providers': config['proxy-providers'] } : {}),
-          rules: [`MATCH,${optimized.name}`],
+          rules: [`MATCH,${fallback.name}`],
         }),
       );
       assert.equal(fs.existsSync(providerPath), false);

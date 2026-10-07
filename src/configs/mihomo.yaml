@@ -60,6 +60,11 @@ proxy-groups:
       $insert-before:
         "✈️ 吹雪云": *oix_optimized
 
+  - name: "🛡️ 亚太 Fallback"
+    proxies:
+      $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+
   - name: "♊ Gemini"
     use: *oix_provider
     proxies:
@@ -185,14 +190,26 @@ proxy-groups:
       members:
         mode: append
     $before: "✈️ oixCloud Edge"
-    type: url-test
-    interval: 60
-    timeout: 5000
-    lazy: false
-    url: https://cp.cloudflare.com/generate_204
-    expected-status: 204
-    tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
-    max-failed-times: 3
+    <<: &oix_url_test_defaults
+      type: url-test
+      interval: 60
+      timeout: 5000
+      lazy: false
+      url: https://cp.cloudflare.com/generate_204
+      expected-status: 204
+      tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
+      max-failed-times: 3
     filter: "(IXP|CIA)"
     use:
       - oixCloud
+
+  - name: "✈️ oixCloud Optimized 亚太"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+    $before: "✈️ oixCloud Edge"
+    <<: *oix_url_test_defaults
+    # 保留 IXP/CIA 线路，仅筛选 HK、SG、JP、TW，兼容 provider 的中英文地区名和旗帜。
+    filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\b(?:HK|SG|JP|TW)\b|香港|新加坡|日本|台湾|台灣|Hong\s*Kong|Singapore|Japan|Taiwan|🇭🇰|🇸🇬|🇯🇵|🇹🇼)).*'
+    use: *oix_provider

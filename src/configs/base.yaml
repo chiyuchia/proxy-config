@@ -84,6 +84,7 @@ proxy-groups:
         exclude-dialer: true
     type: select
     proxies:
+      - "🛡️ 亚太 Fallback"
       - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
@@ -106,6 +107,23 @@ proxy-groups:
       - "✈️ 吹雪云"
       - "✈️ 良心云"
       - "✈️ 良心云 Hy2"
+
+  - name: "🛡️ 亚太 Fallback"
+    x-substore:
+      members:
+        mode: manual
+    type: fallback
+    url: "https://cp.cloudflare.com/generate_204"
+    interval: 60
+    timeout: 5000
+    lazy: false
+    max-failed-times: 3
+    expected-status: 204
+    # 仅按固定子组顺序回退，不追加注入节点；Mihomo 补入 oixCloud Optimized 亚太。
+    proxies:
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
+      - "✈️ 良心云 亚太"
 
   - name: "🏝️ 精品节点"
     x-substore:

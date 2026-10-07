@@ -107,6 +107,8 @@ https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.
 
 中转与重命名脚本共用名称地区识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。符合条件节点的已有 `dialer-proxy` 会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除；配置中仅保留亚太和美西两个中转组。
 
+在 `🛡️ 亚太中转` 中选择 `🛡️ 亚太 Fallback`，即可按 `✈️ VikingLinks 亚太` → `✈️ 吹雪云 亚太` → `✈️ oixCloud Optimized 亚太` → `✈️ 良心云 亚太` 的优先级自动回退，每 60 秒检查可用性。该选项位于候选首位；Stash 不含 oixCloud，按其余三个组的顺序回退。oixCloud 的亚太子组沿用 IXP/CIA 线路限制，并限定 HK、SG、JP、TW 地区。
+
 自建节点保留原名，不经过重命名脚本：
 
 ```text

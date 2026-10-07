@@ -83,9 +83,9 @@ tsconfig.json        源码、构建工具和测试的严格类型检查配置
 
 ### 测速参数复用
 
-公共测速组通过 `<<: *url_test_defaults` 复用参数，锚点定义在 `base.yaml` 的 VikingLinks 亚太组中。调整公共测速参数时只改该定义，各组名称和筛选条件单独维护。
+公共 `url-test` 组通过 `<<: *url_test_defaults` 复用参数，锚点定义在 `base.yaml` 的 VikingLinks 亚太组中。调整公共测速参数时只改该定义，各组名称和筛选条件单独维护。亚太 Fallback 的健康检查参数也在 `base.yaml` 中维护。
 
-Mihomo 的 Optimized 组在 `src/configs/mihomo.yaml` 中直接维护测速参数，以及 `tolerance`、`max-failed-times` 等组设置。oixCloud provider 的健康检查由 oix 内核运行时管理，不在模板中定义。
+Mihomo 的 Optimized 组在 `src/configs/mihomo.yaml` 中维护测速参数，以及 `tolerance`、`max-failed-times` 等组设置；Optimized 亚太组通过同文件的 `oix_url_test_defaults` 锚点复用。oixCloud provider 的健康检查由 oix 内核运行时管理，不在模板中定义。
 
 ### 合并与补丁语法
 
@@ -191,7 +191,7 @@ rules:
 
 各组的成员生成方式由模板中的 `x-substore.members` 声明，覆写脚本不根据组名或其中的关键词推断行为。共同组的声明只在 `src/configs/base.yaml` 维护；Mihomo 的共同组补丁继承声明，仅新增的 oixCloud Optimized 组在差异文件中声明。字段和处理边界见[成员生成声明](#成员生成声明)。
 
-当前普通组使用 `append`，全球直连组使用 `manual` 保留手工配置。亚太和美西两个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；三个机场亚太组和良心云 Hy2 组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
+当前普通组使用 `append`，全球直连组和亚太 Fallback 组使用 `manual` 保留手工配置；Fallback 只引用固定子组，不追加注入节点，使用方式与候选顺序见 [README 的节点中转说明](README.md#节点中转)。亚太和美西两个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；三个公共机场亚太组、Mihomo 的 oixCloud Optimized 亚太组和良心云 Hy2 组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
 
 | 代理组 | 额外限制 |
 | --- | --- |
@@ -199,6 +199,8 @@ rules:
 | `✈️ 良心云 亚太` | 名称含良心云及 `CT`（包括 `CTCU`、`CTCUCM`），实际协议仅限 VLESS |
 | `✈️ 吹雪云 亚太` | 名称含吹雪云及“电信”，不限制协议 |
 | `✈️ 良心云 Hy2` | 名称含良心云，实际协议仅限 `hysteria2` / `hy2`，排除带 `dialer-proxy` 的节点，每次覆写重建成员 |
+
+Mihomo 的 `✈️ oixCloud Optimized 亚太` 保留 `IXP` / `CIA` 线路筛选，并按地区代码、中英文地区名或旗帜限定 HK、SG、JP、TW。其 `filter` 同时供覆写脚本筛选注入节点和 Mihomo 筛选 `oixCloud` provider 成员；provider 内部节点仍由客户端运行时处理。
 
 协议筛选依据节点实际 `type`，不依据名称中的协议字样。修改重命名脚本的名称格式、关键词提取规则或订阅名后，检查最终名称仍能满足机场名、地区代码和线路关键词的筛选要求。
 
@@ -282,7 +284,7 @@ npm run check
 MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
 ```
 
-该回归从构建后的模板提取 `proxy-providers` 和 oixCloud Optimized 组，隔离其他分组、DNS 和规则等外部依赖，在不传 oix 凭据且 provider 文件不存在的临时目录中执行 `-t`，并验证移除 provider 后会失败。它只验证显式 `file` provider 与标准 `url-test` 组引用的静态解析，不证明 oix 接管、解密、订阅下载或正式启动成功，也不验证完整最终配置。
+该回归从构建后的模板提取 `proxy-providers`、两个 oixCloud Optimized 组及亚太 Fallback 和它引用的公共亚太子组，注入本地测试节点，隔离其他分组、DNS 和规则等外部依赖，在不传 oix 凭据且 provider 文件不存在的临时目录中执行 `-t`，并验证移除 provider 后会失败。它只验证显式 `file` provider、`url-test` 和 `fallback` 组及其引用的静态解析，不证明 oix 接管、解密、订阅下载或正式启动成功，也不验证完整最终配置或实际故障切换。
 
 测试覆盖：
 
