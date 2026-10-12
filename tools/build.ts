@@ -84,7 +84,8 @@ const scripts = [
   },
   {
     name: 'dialer-proxy',
-    description: 'Sub-Store 节点中转脚本：美国节点使用美西中转，其他节点使用亚太中转。',
+    description:
+      'Sub-Store 节点中转脚本：新加坡、日本和美国节点使用各自中转，其余节点使用亚太中转。',
     usage: '无需参数，自建仅处理 SS 节点，其他来源不限协议；设置中转后供配置文件注入使用。',
     signature: 'function operator(proxies, targetPlatform, context)',
     call: 'operator(proxies, targetPlatform, context)',

@@ -1,7 +1,7 @@
 /**
  * @file 默认使用 npm 安装的 Mihomo 内核，回归文件 provider 与代理组的原生解析。
  * MIHOMO_BIN 可用绝对路径指定其他内核；缺少依赖或执行失败时直接报错，不跳过测试。
- * 只取真实模板覆写后的 oixCloud provider、Optimized 组和亚太 Fallback 引用链，隔离远程规则、DNS 数据。
+ * 只取真实模板覆写后的 oixCloud provider、Optimized 组和中转引用链，隔离远程规则、DNS 数据。
  */
 
 import assert from 'node:assert/strict';
@@ -55,6 +55,18 @@ test('native config test resolves oixCloud without a token or an existing provid
         port: 443,
         uuid: '00000000-0000-4000-8000-000000000001',
       },
+      ...[
+        ['自建 SG', '🛡️ 新加坡中转'],
+        ['自建 JP', '🛡️ 日本中转'],
+      ].map(([name, dialer]) => ({
+        name,
+        type: 'ss',
+        server: '127.0.0.1',
+        port: 443,
+        cipher: 'aes-128-gcm',
+        password: 'test-only',
+        'dialer-proxy': dialer,
+      })),
     ],
   });
   const optimized = config['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized');
@@ -65,8 +77,23 @@ test('native config test resolves oixCloud without a token or an existing provid
   assert.ok(optimized);
   assert.ok(optimizedAsia);
   assert.ok(fallback);
-  const nativeGroupNames = new Set([optimized.name, fallback.name, ...(fallback.proxies ?? [])]);
+  const nativeGroupNames = new Set([optimized.name, fallback.name, '🛡️ 新加坡中转', '🛡️ 日本中转']);
+  const groupsByName = new Map(config['proxy-groups'].map((group) => [group.name, group]));
+  for (const name of nativeGroupNames) {
+    const group = groupsByName.get(name);
+    assert.ok(group, `missing native regression group: ${name}`);
+    for (const member of group.proxies ?? []) {
+      if (groupsByName.has(member)) nativeGroupNames.add(member);
+    }
+  }
   const nativeGroups = config['proxy-groups'].filter(({ name }) => nativeGroupNames.has(name));
+  for (const direction of ['SG', 'JP']) {
+    const expectedRegions =
+      direction === 'SG' ? ['香港', '新加坡', '亚太'] : ['香港', '日本', '亚太'];
+    for (const region of expectedRegions) {
+      assert.ok(nativeGroupNames.has(`✈️ oixCloud Optimized ${region} · ${direction}`));
+    }
+  }
   assert.deepEqual(config['proxy-providers'], {
     oixCloud: { type: 'file', path: './proxy_provider/oixCloud' },
   });

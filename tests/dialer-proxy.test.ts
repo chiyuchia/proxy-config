@@ -33,6 +33,7 @@ test('eligible nodes use regional dialers while retaining names, fields and orde
   const proxies = [
     { name: '自建 SG 落地', 'dialer-proxy': '旧中转', type: 'ss', _subName: '自建节点', port: 443 },
     { name: '自建 US 落地', type: 'SS', _subName: '自建节点' },
+    { name: '自建 JP 落地', type: 'sS', _subName: '自建节点', server: 'sg.example.com' },
     { name: '自建 sg 落地' },
     { name: '自建 新加坡 落地' },
     { name: '自建 SG 直连' },
@@ -45,14 +46,15 @@ test('eligible nodes use regional dialers while retaining names, fields and orde
   ];
   const before = structuredClone(proxies);
   const expectedDialers = [
-    '🛡️ 亚太中转',
+    '🛡️ 新加坡中转',
     '🛡️ 美西中转',
-    '🛡️ 亚太中转',
-    '🛡️ 亚太中转',
-    '🛡️ 亚太中转',
+    '🛡️ 日本中转',
+    '🛡️ 新加坡中转',
+    '🛡️ 新加坡中转',
+    '🛡️ 新加坡中转',
     '🛡️ 美西中转',
-    '🛡️ 亚太中转',
-    '🛡️ 亚太中转',
+    '🛡️ 新加坡中转',
+    '🛡️ 日本中转',
     '🛡️ 美西中转',
     '🛡️ 亚太中转',
     '🛡️ 亚太中转',
@@ -78,6 +80,7 @@ test('self-hosted subscription non-SS nodes preserve their fields including exis
     ...['vless', 'hysteria2', 'hy2', 'ssr', '', undefined].flatMap((type) => [
       { name: '自建 US SS 落地', type, _subName: '自建节点' },
       { name: '自建 SG SS 落地', type, _subName: '自建节点', 'dialer-proxy': '手动中转' },
+      { name: '自建 JP SS 落地', type, _subName: '自建节点', 'dialer-proxy': '手动中转' },
     ]),
   ];
   const before = structuredClone(proxies);
@@ -120,12 +123,32 @@ test('recognition uses names, supports region aliases and does not require a ser
     ['LAX 01', '🛡️ 美西中转'],
     ['🇭🇰 US-Go-01-Provider', '🛡️ 美西中转'],
     ['HK-Go-01-US', '🛡️ 亚太中转'],
-    ['日本 01', '🛡️ 亚太中转'],
+    ['新加坡 01', '🛡️ 新加坡中转'],
+    ['🇸🇬 01', '🛡️ 新加坡中转'],
+    ['Singapore 01', '🛡️ 新加坡中转'],
+    ['sg_01', '🛡️ 新加坡中转'],
+    ['狮城 01', '🛡️ 新加坡中转'],
+    ['SIN 01', '🛡️ 新加坡中转'],
+    ['SG-Go-01-JP', '🛡️ 新加坡中转'],
+    ['日本 01', '🛡️ 日本中转'],
+    ['🇯🇵 01', '🛡️ 日本中转'],
+    ['Japan 01', '🛡️ 日本中转'],
+    ['jp_01', '🛡️ 日本中转'],
+    ['东京 01', '🛡️ 日本中转'],
+    ['Tokyo 01', '🛡️ 日本中转'],
+    ['Osaka 01', '🛡️ 日本中转'],
+    ['HND 01', '🛡️ 日本中转'],
+    ['NRT 01', '🛡️ 日本中转'],
+    ['JP-Go-01-SG', '🛡️ 日本中转'],
+    ['HK 01', '🛡️ 亚太中转'],
+    ['韩国 KR 01', '🛡️ 亚太中转'],
+    ['台湾 TW 01', '🛡️ 亚太中转'],
     ['加拿大 01', '🛡️ 亚太中转'],
     ['Australia 01', '🛡️ 亚太中转'],
     ['RUS 01', '🛡️ 亚太中转'],
     ['未知节点', '🛡️ 亚太中转'],
     ['us.example.com 未知节点', '🛡️ 亚太中转'],
+    ['sg.example.com jp.example.com 未知节点', '🛡️ 亚太中转'],
   ];
 
   for (const [name, expected] of cases) {
@@ -147,6 +170,7 @@ test('published operator runs standalone without arguments and ignores legacy mo
     const operator = loadOperator(globals);
     const proxies = [
       { name: 'SG 落地' },
+      { name: 'JP 落地' },
       { name: 'US 落地' },
       { name: 'SG 直连' },
       { name: '美国 01' },
@@ -154,20 +178,33 @@ test('published operator runs standalone without arguments and ignores legacy mo
       { name: '德国 01' },
       { name: '未知节点' },
       { name: 'US SS', type: 'ss', _subName: '自建节点' },
+      { name: '狮城 SS', type: 'ss', _subName: '自建节点', 'dialer-proxy': '旧中转' },
+      { name: 'Tokyo SS', type: 'SS', _subName: '自建节点', 'dialer-proxy': '旧中转' },
+      { name: 'HK 01', _subName: 'oixCloud Edge' },
+      { name: 'KR 01', _subName: '一元机场' },
+      { name: 'TW 01', _subName: '一元机场' },
       { name: 'US VLESS', type: 'vless', _subName: '自建节点' },
       { name: 'SG Hy2', type: 'hy2', _subName: '自建节点', 'dialer-proxy': 'DIRECT' },
+      { name: 'JP VLESS', type: 'vless', _subName: '自建节点', 'dialer-proxy': '手动中转' },
     ];
     const expected = [
-      '🛡️ 亚太中转',
+      '🛡️ 新加坡中转',
+      '🛡️ 日本中转',
+      '🛡️ 美西中转',
+      '🛡️ 新加坡中转',
+      '🛡️ 美西中转',
       '🛡️ 美西中转',
       '🛡️ 亚太中转',
-      '🛡️ 美西中转',
-      '🛡️ 美西中转',
-      '🛡️ 亚太中转',
       '🛡️ 亚太中转',
       '🛡️ 美西中转',
+      '🛡️ 新加坡中转',
+      '🛡️ 日本中转',
+      '🛡️ 亚太中转',
+      '🛡️ 亚太中转',
+      '🛡️ 亚太中转',
       undefined,
       'DIRECT',
+      '手动中转',
     ];
     for (const platform of ['ClashMeta', 'Stash']) {
       const result = await operator(structuredClone(proxies), platform, {});

@@ -9,7 +9,7 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 | [src/configs/stash.yaml](src/configs/stash.yaml) | Stash 差异源：DNS 设置 |
 | [mihomo.yaml](https://github.com/chiyuchia/proxy-config/releases/latest/download/mihomo.yaml) | 构建生成的 Mihomo 模板，作为 Sub-Store 的远程文件来源 |
 | [stash.yaml](https://github.com/chiyuchia/proxy-config/releases/latest/download/stash.yaml) | 构建生成的 Stash 模板，作为 Sub-Store 的远程文件来源 |
-| [config-overwrite.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/config-overwrite.js) | 组成员筛选、去重和最终配置校验的发布脚本；源码在 [src/scripts/config-overwrite/](src/scripts/config-overwrite/) |
+| [config-overwrite.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/config-overwrite.js) | 组成员筛选、方向测速副本生成和最终配置校验的发布脚本；源码在 [src/scripts/config-overwrite/](src/scripts/config-overwrite/) |
 | [dialer-proxy.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.js) | 为自建、oixCloud Edge 和一元机场节点按地区设置中转的发布脚本；源码在 [src/scripts/dialer-proxy/](src/scripts/dialer-proxy/) |
 | [rename.js](https://github.com/chiyuchia/proxy-config/releases/latest/download/rename.js) | 地区识别、名称整理和关键词过滤的发布脚本；源码在 [src/scripts/rename/](src/scripts/rename/) |
 | [src/scripts/shared/](src/scripts/shared/) | 脚本与构建工具共用的类型、配置声明校验和地区识别逻辑；维护位置见[贡献指南](CONTRIBUTING.md#修改位置) |
@@ -31,7 +31,7 @@ Mihomo 和 Stash 的共同代理组、候选顺序、筛选和测速设置统一
 ```text
 远程 mihomo.yaml / stash.yaml 模板
 → 注入已在来源订阅中处理的节点
-→ config-overwrite.js：重建代理组成员、校验最终配置、移除内部声明
+→ config-overwrite.js：重建代理组成员、生成方向测速副本、校验最终配置、移除内部声明
 → Sub-Store 输出完整 YAML
 ```
 
@@ -102,12 +102,35 @@ https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.
 
 | 节点地区 | `dialer-proxy` |
 | --- | --- |
+| 新加坡 | `🛡️ 新加坡中转` |
+| 日本 | `🛡️ 日本中转` |
 | 美国 | `🛡️ 美西中转` |
 | 其他地区或无法识别 | `🛡️ 亚太中转` |
 
-中转与重命名脚本共用名称地区识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。符合条件节点的已有 `dialer-proxy` 会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除；配置中仅保留亚太和美西两个中转组。
+中转与重命名脚本共用名称地区识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。符合条件节点的已有 `dialer-proxy` 会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除。
 
-在 `🛡️ 亚太中转` 中选择 `🛡️ 亚太 Fallback`，即可按 `✈️ VikingLinks 亚太` → `✈️ 吹雪云 亚太` → `✈️ oixCloud Optimized 亚太` → `✈️ 良心云 亚太` 的优先级自动回退，每 60 秒检查可用性。该选项位于候选首位；Stash 不含 oixCloud，按其余三个组的顺序回退。oixCloud 的亚太子组沿用 IXP/CIA 线路限制，并限定 HK、SG、JP、TW 地区。
+`🛡️ 新加坡中转`、`🛡️ 日本中转` 的首个选项分别为对应的 Fallback，也可手动选定下列子组。两个方向都优先尝试香港，不把香港绑定到单一方向；方向组名称以 `· SG` / `· JP` 区分。
+
+| 回退阶段 | 新加坡方向 | 日本方向 |
+| --- | --- | --- |
+| VikingLinks 定向候选 | 香港 → 新加坡 | 香港 → 日本 |
+| 吹雪云定向候选 | 香港 → 新加坡 | 香港 → 日本 |
+| oixCloud Optimized 定向候选 | 香港 → 新加坡 | 香港 → 日本 |
+| 良心云定向候选 | 香港 → 新加坡 | 香港 → 日本 |
+| 最后兜底 | VikingLinks 亚太 → 吹雪云亚太 → oixCloud Optimized 亚太 → 良心云亚太 | 同左 |
+
+按表格从上到下回退；Stash 跳过 oixCloud。只有全部定向候选不可用后，才进入亚太兜底。亚太包含 HK、SG、JP、TW；台湾暂不单独建方向组。各机场沿用现有线路和协议限制，见[节点与代理组](CONTRIBUTING.md#节点与代理组)。Fallback 按可用性维持优先级，子组在同一机场、同一地区池内自动测速选点。
+
+| 方向 | 公共探测地址 | 预期响应 |
+| --- | --- | --- |
+| SG | `https://sgp-ping.vultr.com/`（新加坡） | HTTP 200 |
+| JP | `https://hnd-jp-ping.vultr.com/`（东京） | HTTP 200 |
+
+方向子组每 300 秒测速，外层 Fallback 每 60 秒检查可用性；超时 5 秒，不使用懒检测，子组保留 100 ms 切换容差。启动时各层探测可能先后完成，自动回退需等待健康结果更新，并非即时切换。上述地址来自 [Vultr 新加坡](https://sgp-ping.vultr.com/)与[东京](https://hnd-jp-ping.vultr.com/)测试站。探测走“本机 → 机场中转 → 公共测试站”，用于估计方向连通性和延迟，不能证明机场到自建 VPS 的路径、SS 服务或落地出网正常，也不测带宽。无需在 VPS 上部署测速接口。
+
+覆写会为匹配的注入中转节点追加 `[SG测速]` / `[JP测速]` 副本，同一节点在同一方向只生成一次，香港池与亚太池复用。副本带对应的 `benchmark-url` 和 5 秒 `benchmark-timeout`，解决 [Stash 同一节点在多个组中共享测速记录](https://stash.wiki/proxy-protocols/proxy-benchmark)的问题；两端保持同一分组结构。原始节点及其名称保留，普通机场组继续使用原节点，自建落地不复制。没有本地候选的方向子组使用 `REJECT`，避免空组回落为直连；Mihomo 的 oixCloud 组同时保留运行时 provider 候选，其测试由内核处理，provider 的检查参数及内核版本边界见[测速参数复用](CONTRIBUTING.md#测速参数复用)。
+
+其他地区继续使用原来的亚太或美西中转。`🛡️ 亚太中转` 首选的 `🛡️ 亚太 Fallback` 按 VikingLinks 亚太 → 吹雪云亚太 → oixCloud Optimized 亚太 → 良心云亚太回退，每 60 秒检查，Stash 跳过 oixCloud。原有亚太测速组仍使用 Cloudflare 204 地址。
 
 自建节点保留原名，不经过重命名脚本：
 

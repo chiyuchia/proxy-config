@@ -15,7 +15,7 @@
 | 构建与运行时共用的值类型判断 | `src/scripts/shared/value.ts` |
 | 构建与运行时共用的内置策略和规则引用检查 | `src/scripts/shared/rules.ts` |
 | 构建与运行时共用的成员生成声明校验 | `src/scripts/shared/member-policy.ts` |
-| 节点协议筛选、代理组成员生成和最终配置校验 | `src/scripts/config-overwrite/` |
+| 节点协议筛选、代理组成员生成、方向测速副本和最终配置校验 | `src/scripts/config-overwrite/` |
 | 按节点地区设置 `dialer-proxy` | `src/scripts/dialer-proxy/` |
 | 节点名称整理、格式和关键词提取 | `src/scripts/rename/` |
 | 中转与重命名共用的地区识别、别名和地区数据 | `src/scripts/shared/regions/` |
@@ -38,7 +38,7 @@ src/
   configs/              公共配置源及 Mihomo、Stash 差异源
   scripts/              运行期脚本及共用依赖
     entries/            Sub-Store 的 main / operator 调用入口
-    config-overwrite/   组成员筛选与重建、最终配置校验
+    config-overwrite/   组成员筛选与重建、方向测速副本、最终配置校验
     dialer-proxy/       根据地区设置 dialer-proxy
     rename/             重命名流程、名称格式与关键词提取
     shared/             业务脚本与构建工具共用的依赖
@@ -46,6 +46,7 @@ src/
       value.ts          映射值类型判断 isConfigMap
       rules.ts          内置策略与规则引用检查
       member-policy.ts  成员生成声明读取与校验
+      http-url.ts       HTTP(S) 地址格式校验
       runtime-providers.ts  运行时 provider 声明读取与校验
       regions/
         identify.ts     名称地区识别及 Viking 格式解析
@@ -83,9 +84,9 @@ tsconfig.json        源码、构建工具和测试的严格类型检查配置
 
 ### 测速参数复用
 
-公共 `url-test` 组通过 `<<: *url_test_defaults` 复用参数，锚点定义在 `base.yaml` 的 VikingLinks 亚太组中。调整公共测速参数时只改该定义，各组名称和筛选条件单独维护。亚太 Fallback 的健康检查参数也在 `base.yaml` 中维护。
+原有公共 `url-test` 组通过 `<<: *url_test_defaults` 复用参数，锚点定义在 `base.yaml` 的 VikingLinks 亚太组中。新加坡、日本方向子组通过 `direction_url_test_defaults` 复用参数，方向 Fallback 通过 `direction_fallback_defaults` 复用参数；两种公共探测 URL 分别通过 `sg_benchmark_url`、`jp_benchmark_url` 复用。共同测速参数只在基础配置中维护，各组名称和筛选条件单独定义，具体间隔与探测范围见 [README](README.md#节点中转)。
 
-Mihomo 的 Optimized 组在 `src/configs/mihomo.yaml` 中维护测速参数，以及 `tolerance`、`max-failed-times` 等组设置；Optimized 亚太组通过同文件的 `oix_url_test_defaults` 锚点复用。oixCloud provider 的健康检查由 oix 内核运行时管理，不在模板中定义。
+Mihomo 的 Optimized 组在 `src/configs/mihomo.yaml` 中维护测速参数，以及 `tolerance`、`max-failed-times` 等组设置；原有组通过 `oix_url_test_defaults`、新增方向组通过 `oix_direction_url_test_defaults` 复用，方向参数与基础配置对应组保持一致。oixCloud provider 的健康检查由内核运行时管理，不在模板中定义。上游 Mihomo 1.19.31 会为 `use` 的 provider 注册各组 URL 的健康任务并按 URL 保存结果；注册参数不包含组的 `lazy`、`timeout`，不能把组设置视为 provider 检查参数。部署的 oix 内核版本仍需验证，Sub-Store 不展开或复制 provider 内部节点。
 
 ### 合并与补丁语法
 
@@ -169,7 +170,7 @@ x-substore:
 - 根据显式组成员和节点中转关系检测依赖循环，包括组引用组、节点中转节点，以及“节点 → 中转组 → 原节点”等混合路径。未显式定义的 `GLOBAL` 按包含全部本地节点和组处理，可捕获“节点 A → GLOBAL → 节点 A”的循环。
 - `proxy-providers` 和 `rule-providers` 中 `type: http` 的 provider 必须配置合法的 HTTP(S) `url`，不按名称提供例外。只检查地址格式，不执行下载或连通性测试。
 
-覆写先构造候选结果，校验成功后才将生成的组写回原配置对象、移除内部声明并返回该对象。失败时抛出包含问题位置的异常，保留输入配置、成员生成声明和运行时 provider 声明，供定位或修正；不会返回这份无效结果。测试应同时验证错误内容和失败时的输入保留。
+覆写先构造候选结果，校验成功后才将生成的组及新增测速节点写回原配置对象、移除内部声明并返回该对象。没有新增测速节点时保留原 `proxies` 引用及该字段是否存在。失败时抛出包含问题位置的异常，保留输入配置、成员生成声明和运行时 provider 声明，供定位或修正；不会返回这份无效结果。测试应同时验证错误内容和失败时的输入保留。
 
 校验仅检查当前配置对象已经包含的内容，不展开远程 provider 的节点或 `include-all` 等客户端动态生成的成员，也不替代 Mihomo、Stash 对全部配置字段的解析和校验。新增引用字段或动态成员机制时，需要明确其运行阶段和检查范围，不能将远程 provider 名称视为已知节点名称。
 
@@ -191,7 +192,7 @@ rules:
 
 各组的成员生成方式由模板中的 `x-substore.members` 声明，覆写脚本不根据组名或其中的关键词推断行为。共同组的声明只在 `src/configs/base.yaml` 维护；Mihomo 的共同组补丁继承声明，仅新增的 oixCloud Optimized 组在差异文件中声明。字段和处理边界见[成员生成声明](#成员生成声明)。
 
-当前普通组使用 `append`，全球直连组和亚太 Fallback 组使用 `manual` 保留手工配置；Fallback 只引用固定子组，不追加注入节点，使用方式与候选顺序见 [README 的节点中转说明](README.md#节点中转)。亚太和美西两个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；三个公共机场亚太组、Mihomo 的 oixCloud Optimized 亚太组和良心云 Hy2 组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
+当前普通组使用 `append`，全球直连、新加坡与日本中转入口及各 Fallback 组使用 `manual` 保留手工配置；Fallback 只引用固定子组，不追加注入节点，使用方式与候选顺序见 [README 的节点中转说明](README.md#节点中转)。亚太和美西两个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；三个公共机场亚太组、Mihomo 的 oixCloud Optimized 亚太组和良心云 Hy2 组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
 
 | 代理组 | 额外限制 |
 | --- | --- |
@@ -201,6 +202,8 @@ rules:
 | `✈️ 良心云 Hy2` | 名称含良心云，实际协议仅限 `hysteria2` / `hy2`，排除带 `dialer-proxy` 的节点，每次覆写重建成员 |
 
 Mihomo 的 `✈️ oixCloud Optimized 亚太` 保留 `IXP` / `CIA` 线路筛选，并按地区代码、中英文地区名或旗帜限定 HK、SG、JP、TW。其 `filter` 同时供覆写脚本筛选注入节点和 Mihomo 筛选 `oixCloud` provider 成员；provider 内部节点仍由客户端运行时处理。
+
+新加坡、日本方向子组沿用对应机场的线路和协议限制，分别筛选香港、目标地区、亚太兜底池，并通过 `members.benchmark` 生成独立测速副本。两个方向的亚太范围都维持 HK、SG、JP、TW，不额外纳入韩国；香港同时参与两个方向。方向入口与 Fallback 的机场顺序、最后亚太兜底顺序只在基础配置中维护，Mihomo 补入对应 Optimized 引用。
 
 协议筛选依据节点实际 `type`，不依据名称中的协议字样。修改重命名脚本的名称格式、关键词提取规则或订阅名后，检查最终名称仍能满足机场名、地区代码和线路关键词的筛选要求。
 
@@ -220,13 +223,14 @@ proxy-groups:
         types: [vless]
 ```
 
-代理组内的 `x-substore` 只接受 `members` 字段，`members` 只接受下表三个字段；顶层 `x-substore` 使用独立的[运行时 provider 声明](#运行时-provider-声明)。缺少成员声明或 `mode`、未知字段、未知模式、错误的字段类型都会报错，不会回退到按组名判断或全量注入。
+代理组内的 `x-substore` 只接受 `members` 字段，`members` 只接受下表四个字段；顶层 `x-substore` 使用独立的[运行时 provider 声明](#运行时-provider-声明)。缺少成员声明或 `mode`、未知字段、未知模式、错误的字段类型都会报错，不会回退到按组名判断或全量注入。
 
 | 字段 | 要求 | 含义 |
 | --- | --- | --- |
 | `mode` | 必填字符串，只接受 `append`、`replace`、`manual` | 指定成员更新方式，见下表 |
 | `exclude-dialer` | 可选布尔值，省略为 `false` | 为 `true` 时排除带 `dialer-proxy` 的注入节点；字符串 `"true"` / `"false"` 无效 |
 | `types` | 可选的非空字符串数组，数组成员不能是空字符串 | 按节点实际 `type` 限制协议，不区分大小写；省略时不限协议，`[]` 无效 |
+| `benchmark` | 可选非空字符串标签，去除首尾空白 | 为匹配的注入节点生成独立测速副本；仅允许用于 `mode: replace`、`type: url-test` 且 `exclude-dialer: true` 的组 |
 
 | `mode` | 处理方式 |
 | --- | --- |
@@ -237,6 +241,10 @@ proxy-groups:
 名称筛选继续使用现有组字段 `filter`，不在 `members` 中重复配置。`append` 的新增节点和 `replace` 的重建节点需要同时满足 `filter`、`types` 和 `exclude-dialer`；没有 `filter` 时不限节点名称。`append` 不使用 `filter` 移除原有手工候选，无效正则不会退回全量匹配。两种客户端使用相同的声明执行逻辑，保留共同候选及节点的顺序。
 
 这些限制只处理当前 `config.proxies` 中的注入节点，不递归筛选组引用、`use` 或 provider 内部成员。中转组声明 `exclude-dialer: true` 不代表其引用的每个子组或 provider 也会受到同样限制；需要限制的子组必须声明自己的规则。`manual` 不执行成员筛选，附带的 `types` 或 `exclude-dialer` 不改变手工名单。
+
+声明 `benchmark` 的组必须提供合法 HTTP(S) `url`；若提供 `timeout`，必须为正有限毫秒数。同标签的各组必须使用完全相同的 URL 和 timeout（包括是否省略），即使没有匹配节点也检查一致性。覆写先用原节点完成全部组的筛选，再将方向组成员改为 `原节点名 [标签测速]`，同一节点与标签跨组复用一份副本，最后追加到顶层节点列表。普通组不纳入这些新副本。副本继承原节点的连接字段，覆写 `benchmark-url`、`benchmark-disabled: false`，并将毫秒 timeout 转为秒级 `benchmark-timeout`；省略 timeout 时删除副本继承的旧值。生成名称与原节点、组或其他副本重名时报错。
+
+方向测速组没有匹配的注入节点时显式使用 `proxies: [REJECT]`，仍保留 `use`；运行时 provider 可继续提供候选。其他组的空成员行为不变。以上生成和最终校验都成功后才写回节点与组，失败时输入不变。
 
 声明在构建后的 YAML 模板及 Sub-Store 节点注入过程中保留，覆写完成后从各组移除，不进入最终客户端配置。每次刷新都从远程模板重新执行节点注入与覆写，固定候选仍以模板为准。不要把已输出的客户端配置直接交给覆写脚本再次处理：它已不包含声明，会因缺少声明报错。脚本与配置应一起更新；使用自定义模板时，也需要为每个组补全声明。
 
@@ -284,7 +292,9 @@ npm run check
 MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
 ```
 
-该回归从构建后的模板提取 `proxy-providers`、两个 oixCloud Optimized 组及亚太 Fallback 和它引用的公共亚太子组，注入本地测试节点，隔离其他分组、DNS 和规则等外部依赖，在不传 oix 凭据且 provider 文件不存在的临时目录中执行 `-t`，并验证移除 provider 后会失败。它只验证显式 `file` provider、`url-test` 和 `fallback` 组及其引用的静态解析，不证明 oix 接管、解密、订阅下载或正式启动成功，也不验证完整最终配置或实际故障切换。
+原生解析回归从构建后的模板提取 `proxy-providers`、全部 oixCloud Optimized 组、亚太 Fallback、新加坡与日本中转入口及递归引用的子组，注入本地中转和 SG/JP 自建 SS 测试节点，隔离其他分组、DNS 和规则等外部依赖，在不传 oix 凭据且 provider 文件不存在的临时目录中执行 `-t`，并验证移除 provider 后会失败。它只验证显式 `file` provider、`url-test` 和 `fallback` 组及其引用的静态解析，不证明 oix 接管、解密、订阅下载或正式启动成功，也不验证完整最终配置或实际故障切换。
+
+另有原生运行回归在临时目录中启动内核，以随机回环端口上的 HTTP 代理模拟两个方向的探测响应，验证同一 provider 的不同组 URL 自动探测、预期状态码和独立选点，以及 `REJECT` 与 provider 共存、空组回退。测试将外层 Fallback 间隔缩短为 1 秒，以等待内核的选点缓存收敛；生产方向 Fallback 使用 60 秒，子组测速使用 300 秒。该测试需要允许本机监听，不连接公网、不读取真实订阅；它验证上游内核的方向检查能力，不代表真实线路或 oix 服务可用。
 
 测试覆盖：
 
@@ -295,6 +305,7 @@ MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
 - 两份构建模板的 YAML 解析、来源标记与补丁移除、成员生成及运行时 provider 声明保留，以及远程模板加载、节点注入和最终覆写流程。
 - 成员声明的字段校验、模式和默认值、组名变化不改变行为、声明在中间配置中的保留及最终移除，以及实际机场与中转节点筛选、协议限制、节点注入和覆写结果。
 - 运行时 provider 声明的字段与名称校验、与本地定义的冲突、`use` 引用边界、声明在中间配置中的保留及最终移除，以及 Mihomo 文件 provider 与 Stash 无依赖的输出。
+- SG/JP 方向候选与最后亚太兜底顺序、机场和协议筛选、独立测速副本的生成与复用、空方向池 REJECT、普通组隔离及失败原子性。
 - 中转节点的地区识别、自建 SS 协议限制、符合条件节点的中转字段覆盖及其他节点原字段保留，以及自建保留原名和机场可选重命名后注入、覆写的完整流程。
 - 重命名仅按节点名称识别地区、未知地区保留原名、保留全部地区并按内置热门地区优先排序，以及仅按原始节点名称过滤信息节点的行为。
 - 重命名的固定格式、内置关键词与旗帜保留、按订阅和地区分组编号及单节点序号保留，以及覆写的无效筛选、正则状态、从合并结果重复生成和拒绝直接覆写最终输出。

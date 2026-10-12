@@ -37,7 +37,7 @@ interface FixtureConfig extends MergedConfig {
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const clients = ['mihomo', 'stash'] as const;
-const mihomoOptimizedGroups = ['✈️ oixCloud Optimized', '✈️ oixCloud Optimized 亚太'];
+const mihomoOptimizedPrefix = '✈️ oixCloud Optimized';
 
 /**
  * 独立解析已发布的 YAML 模板或最终配置，拒绝重复键且不启用源码合并键。
@@ -67,6 +67,32 @@ function parseSourceYaml(source: string): unknown {
  */
 function plain<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/**
+ * 验证注入节点完整保留，仅在末尾新增未设置中转的地区测速副本。
+ * @param {Object} config 已覆写的最终配置。
+ * @param {Object[]} originals 覆写前注入的节点。
+ * @returns {void} 原始节点和新增副本均满足保留约定时正常返回。
+ */
+function assertOriginalNodesPreserved(config: MergedConfig, originals: ProxyNode[]): void {
+  const nodes = plain(config.proxies ?? []);
+  assert.deepEqual(nodes.slice(0, originals.length), originals);
+  for (const alias of nodes.slice(originals.length)) {
+    const match = alias.name.match(/^(.*) \[(SG|JP)测速\]$/);
+    assert.ok(match, `unexpected generated node: ${alias.name}`);
+    const original = originals.find(({ name }) => name === match[1]);
+    assert.ok(original, `benchmark node must retain a known source: ${alias.name}`);
+    assert.ok(!original['dialer-proxy'], 'landing nodes must not gain benchmark copies');
+    assert.deepEqual(alias, {
+      ...original,
+      name: alias.name,
+      'benchmark-url':
+        match[2] === 'SG' ? 'https://sgp-ping.vultr.com/' : 'https://hnd-jp-ping.vultr.com/',
+      'benchmark-timeout': 5,
+      'benchmark-disabled': false,
+    });
+  }
 }
 
 /**
@@ -204,10 +230,10 @@ function liveConfigs(proxies?: ProxyNode[]): Record<'mihomo' | 'stash', MergedCo
  */
 function sharedGroups(config: MergedConfig): ProxyGroup[] {
   return plain(config['proxy-groups'])
-    .filter(({ name }) => !mihomoOptimizedGroups.includes(name))
+    .filter(({ name }) => !name.startsWith(mihomoOptimizedPrefix))
     .map((group) => {
       if (group.proxies) {
-        group.proxies = group.proxies.filter((name) => !mihomoOptimizedGroups.includes(name));
+        group.proxies = group.proxies.filter((name) => !name.startsWith(mihomoOptimizedPrefix));
       }
       if (group.use) {
         group.use = group.use.filter((name) => name !== 'oixCloud');
@@ -446,8 +472,8 @@ test('live profiles share group definitions and menu order except for the Mihomo
   assert.ok(
     stash['proxy-groups'].every(
       (group) =>
-        !mihomoOptimizedGroups.includes(group.name) &&
-        !group.proxies?.some((name) => mihomoOptimizedGroups.includes(name)),
+        !group.name.startsWith(mihomoOptimizedPrefix) &&
+        !group.proxies?.some((name) => name.startsWith(mihomoOptimizedPrefix)),
     ),
   );
   assert.deepEqual(mihomo['proxy-providers'], {
@@ -566,7 +592,7 @@ test('the same injected nodes produce matching group members in both live profil
   }
   assert.deepEqual(sharedGroups(stash), sharedGroups(mihomo));
   for (const config of [mihomo, stash]) {
-    assert.deepEqual(config.proxies, proxies);
+    assertOriginalNodesPreserved(config, proxies);
     for (const [name, expected] of [
       ['✈️ oixCloud Edge', ['oixCloud Edge HK']],
       ['✈️ 吹雪云', ['吹雪云 SG 电信']],
@@ -736,7 +762,7 @@ test('built templates survive node injection and independently scoped Sub-Store 
       assert.equal(context.compileGroupFilter, undefined);
       const result = parseYaml(context.$content) as MergedConfig;
       assert.equal(outputs.length, 1);
-      assert.deepEqual(result.proxies ?? [], proxies ?? []);
+      assertOriginalNodesPreserved(result, proxies ?? []);
       assert.equal(hasDirective(result), false);
       assert.equal(Object.hasOwn(result, 'x-substore'), false);
       assert.deepEqual(result['proxy-providers'], template['proxy-providers']);
@@ -960,12 +986,12 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   const prepared = [...selfHosted, ...airports];
   const originalNames = new Map(prepared.map(({ server, name }) => [server, name]));
   const expectedDialers = new Map([
-    ['sg.example.com', '🛡️ 亚太中转'],
+    ['sg.example.com', '🛡️ 新加坡中转'],
     ['us.example.com', '🛡️ 美西中转'],
     ['manual.example.com', 'DIRECT'],
     ['oix.example.com', '🛡️ 亚太中转'],
     ['oix-us.example.com', '🛡️ 美西中转'],
-    ['yiyuan.example.com', '🛡️ 亚太中转'],
+    ['yiyuan.example.com', '🛡️ 日本中转'],
   ]);
   const { operator: rename } = loadScript('dist/rename.js', {
     console: {
@@ -1012,7 +1038,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
     );
     overwrite(config);
     const groups = new Map(config['proxy-groups'].map((group) => [group.name, group]));
-    assert.deepEqual(config.proxies, proxies, `${client}: injected nodes remain intact`);
+    assertOriginalNodesPreserved(config, proxies);
     assert.deepEqual(config.rules, originalRules, `${client}: rule priority remains intact`);
     for (const [name, originalMembers] of originalGroups) {
       assert.deepEqual(

@@ -4,19 +4,28 @@
  */
 
 import type { ConfigMap, ProxyGroup } from './types.ts';
+import { isHttpUrl } from './http-url.ts';
 
 /** 成员生成方式，必须在模板中显式声明。 */
 export type MemberMode = 'append' | 'replace' | 'manual';
+
+/** 为同一方向生成独立节点测速记录所需的已校验参数。 */
+export interface BenchmarkPolicy {
+  label: string;
+  url: string;
+  timeout: number | undefined;
+}
 
 /** 通过校验并规范化后的成员生成策略。 */
 export interface MemberPolicy {
   mode: MemberMode;
   excludeDialer: boolean;
   types: Set<string> | null;
+  benchmark: BenchmarkPolicy | null;
 }
 
 const MEMBER_MODES = new Set<string>(['append', 'replace', 'manual']);
-const MEMBER_FIELDS = new Set(['mode', 'exclude-dialer', 'types']);
+const MEMBER_FIELDS = new Set(['mode', 'exclude-dialer', 'types', 'benchmark']);
 
 /**
  * 抛出包含代理组名称和字段路径的成员声明错误。
@@ -51,13 +60,51 @@ function requireMap(
 }
 
 /**
+ * 读取独立测速标签及组级测速参数，未声明时返回 null，不修改原配置。
+ * @preserve
+ * @param {Object} group 提供 url 和可选毫秒 timeout 的 url-test 代理组。
+ * @param {Object} policy 已通过容器检查的成员策略。
+ * @returns {Object|null} 标签去除首尾空白；timeout 转为秒，缺省时为 undefined。
+ * @throws {Error} 标签、组类型、模式、中转排除开关或测速参数无效。
+ */
+function readBenchmarkPolicy(group: ProxyGroup, policy: ConfigMap): BenchmarkPolicy | null {
+  if (!Object.hasOwn(policy, 'benchmark')) return null;
+  const field = 'x-substore.members.benchmark';
+  if (typeof policy.benchmark !== 'string' || !policy.benchmark.trim()) {
+    policyError(group, field, '必须为非空字符串标签');
+  }
+  if (policy.mode !== 'replace' || group.type !== 'url-test') {
+    policyError(group, field, '仅可用于 mode: replace 且 type: url-test 的组');
+  }
+  if (policy['exclude-dialer'] !== true) {
+    policyError(group, field, '要求 exclude-dialer: true，避免复制已设置中转的节点');
+  }
+  if (!isHttpUrl(group.url)) {
+    policyError(group, 'url', '必须为有效的 HTTP(S) 地址，以生成独立测速节点');
+  }
+  const timeout = group.timeout;
+  if (
+    Object.hasOwn(group, 'timeout') &&
+    (typeof timeout !== 'number' || !Number.isFinite(timeout) || timeout <= 0)
+  ) {
+    policyError(group, 'timeout', '必须为正有限数字，单位为毫秒');
+  }
+  return {
+    label: policy.benchmark.trim(),
+    // isHttpUrl 已检查字符串，保留 URL 原值以匹配客户端按 URL 保存的测速结果。
+    url: group.url as string,
+    timeout: typeof timeout === 'number' ? timeout / 1000 : undefined,
+  };
+}
+
+/**
  * 校验并读取 x-substore.members，规范化协议列表及可选的中转排除开关。
  * 每组必须显式声明 mode；可选限制只作用于当前注入节点，不修改原声明。
  * @preserve
  * @param {Object} group 含 x-substore.members 映射的代理组。
- * @returns {{mode: 'append'|'replace'|'manual', excludeDialer: boolean, types: Set<string>|null}}
- *   成员策略；excludeDialer 默认为 false，types 去除首尾空白并转为小写集合，省略时为 null。
- * @throws {Error} 声明缺失、字段未知，或 mode、exclude-dialer、types 的类型或值无效。
+ * @returns {Object} 成员策略；excludeDialer 默认为 false，types 去除首尾空白并转为小写集合，
+ *   types 和 benchmark 省略时为 null；benchmark 含标签、URL 及可选的秒级 timeout。
+ * @throws {Error} 声明缺失、字段未知，或成员限制与测速参数的类型或值无效。
  */
 export function readMemberPolicy(group: ProxyGroup): MemberPolicy {
   const metadata = group?.['x-substore'];
@@ -94,5 +141,6 @@ export function readMemberPolicy(group: ProxyGroup): MemberPolicy {
     mode: policy.mode as MemberMode,
     excludeDialer: (policy['exclude-dialer'] as boolean | undefined) ?? false,
     types,
+    benchmark: readBenchmarkPolicy(group, policy),
   };
 }

@@ -125,6 +125,83 @@ proxy-groups:
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
+  - name: "🛡️ 新加坡中转"
+    x-substore:
+      members:
+        mode: manual
+    type: select
+    proxies:
+      - "🛡️ 新加坡 Fallback"
+      - "✈️ VikingLinks 香港 · SG"
+      - "✈️ VikingLinks 新加坡 · SG"
+      - "✈️ 吹雪云 香港 · SG"
+      - "✈️ 吹雪云 新加坡 · SG"
+      - "✈️ 良心云 香港 · SG"
+      - "✈️ 良心云 新加坡 · SG"
+      - "✈️ VikingLinks 亚太 · SG"
+      - "✈️ 吹雪云 亚太 · SG"
+      - "✈️ 良心云 亚太 · SG"
+
+  - name: "🛡️ 新加坡 Fallback"
+    x-substore:
+      members:
+        mode: manual
+    <<: &direction_fallback_defaults
+      type: fallback
+      # 比方向池更频繁检查，缩短启动时子组测速尚未完成后的回退恢复等待。
+      interval: 60
+      timeout: 5000
+      lazy: false
+      max-failed-times: 3
+      expected-status: 200
+    url: &sg_benchmark_url "https://sgp-ping.vultr.com/"
+    # 先按机场顺序尝试香港及目标地区，全部不可用后再进入各机场亚太兜底。
+    proxies:
+      - "✈️ VikingLinks 香港 · SG"
+      - "✈️ VikingLinks 新加坡 · SG"
+      - "✈️ 吹雪云 香港 · SG"
+      - "✈️ 吹雪云 新加坡 · SG"
+      - "✈️ 良心云 香港 · SG"
+      - "✈️ 良心云 新加坡 · SG"
+      - "✈️ VikingLinks 亚太 · SG"
+      - "✈️ 吹雪云 亚太 · SG"
+      - "✈️ 良心云 亚太 · SG"
+
+  - name: "🛡️ 日本中转"
+    x-substore:
+      members:
+        mode: manual
+    type: select
+    proxies:
+      - "🛡️ 日本 Fallback"
+      - "✈️ VikingLinks 香港 · JP"
+      - "✈️ VikingLinks 日本 · JP"
+      - "✈️ 吹雪云 香港 · JP"
+      - "✈️ 吹雪云 日本 · JP"
+      - "✈️ 良心云 香港 · JP"
+      - "✈️ 良心云 日本 · JP"
+      - "✈️ VikingLinks 亚太 · JP"
+      - "✈️ 吹雪云 亚太 · JP"
+      - "✈️ 良心云 亚太 · JP"
+
+  - name: "🛡️ 日本 Fallback"
+    x-substore:
+      members:
+        mode: manual
+    <<: *direction_fallback_defaults
+    url: &jp_benchmark_url "https://hnd-jp-ping.vultr.com/"
+    # 先按机场顺序尝试香港及目标地区，全部不可用后再进入各机场亚太兜底。
+    proxies:
+      - "✈️ VikingLinks 香港 · JP"
+      - "✈️ VikingLinks 日本 · JP"
+      - "✈️ 吹雪云 香港 · JP"
+      - "✈️ 吹雪云 日本 · JP"
+      - "✈️ 良心云 香港 · JP"
+      - "✈️ 良心云 日本 · JP"
+      - "✈️ VikingLinks 亚太 · JP"
+      - "✈️ 吹雪云 亚太 · JP"
+      - "✈️ 良心云 亚太 · JP"
+
   - name: "🏝️ 精品节点"
     x-substore:
       members:
@@ -604,6 +681,200 @@ proxy-groups:
         mode: append
     type: select
     filter: "(一元机场)"
+
+  # 方向测速使用独立中转副本，香港可同时参与 SG、JP，台湾保留在亚太兜底。
+  - name: "✈️ VikingLinks 香港 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+    <<: &direction_url_test_defaults
+      type: url-test
+      interval: 300
+      timeout: 5000
+      lazy: false
+      tolerance: 100
+      max-failed-times: 3
+      expected-status: 200
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)HK(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+
+  - name: "✈️ VikingLinks 新加坡 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)SG(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+
+  - name: "✈️ VikingLinks 亚太 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+
+  - name: "✈️ 吹雪云 香港 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)HK(?:\s|-)).*'
+
+  - name: "✈️ 吹雪云 新加坡 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)SG(?:\s|-)).*'
+
+  - name: "✈️ 吹雪云 亚太 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
+
+  - name: "✈️ 良心云 香港 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+        types: [vless]
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)HK(?:\s|-)).*'
+
+  - name: "✈️ 良心云 新加坡 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+        types: [vless]
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)SG(?:\s|-)).*'
+
+  - name: "✈️ 良心云 亚太 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+        types: [vless]
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
+
+  - name: "✈️ VikingLinks 香港 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)HK(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+
+  - name: "✈️ VikingLinks 日本 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)JP(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+
+  - name: "✈️ VikingLinks 亚太 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+
+  - name: "✈️ 吹雪云 香港 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)HK(?:\s|-)).*'
+
+  - name: "✈️ 吹雪云 日本 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)JP(?:\s|-)).*'
+
+  - name: "✈️ 吹雪云 亚太 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
+
+  - name: "✈️ 良心云 香港 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+        types: [vless]
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)HK(?:\s|-)).*'
+
+  - name: "✈️ 良心云 日本 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+        types: [vless]
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)JP(?:\s|-)).*'
+
+  - name: "✈️ 良心云 亚太 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+        types: [vless]
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "🎯 全球直连"
     x-substore:
