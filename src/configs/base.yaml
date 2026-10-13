@@ -125,24 +125,24 @@ proxy-groups:
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
-  - name: "🛡️ 新加坡中转"
+  - name: "🛡️ 狮城中转"
     x-substore:
       members:
         mode: manual
     type: select
     proxies:
-      - "🛡️ 新加坡 Fallback"
+      - "🛡️ 狮城 Fallback"
       - "✈️ VikingLinks 香港 · SG"
-      - "✈️ VikingLinks 新加坡 · SG"
+      - "✈️ VikingLinks 狮城 · SG"
       - "✈️ 吹雪云 香港 · SG"
-      - "✈️ 吹雪云 新加坡 · SG"
+      - "✈️ 吹雪云 狮城 · SG"
       - "✈️ 良心云 香港 · SG"
-      - "✈️ 良心云 新加坡 · SG"
+      - "✈️ 良心云 狮城 · SG"
       - "✈️ VikingLinks 亚太 · SG"
       - "✈️ 吹雪云 亚太 · SG"
       - "✈️ 良心云 亚太 · SG"
 
-  - name: "🛡️ 新加坡 Fallback"
+  - name: "🛡️ 狮城 Fallback"
     x-substore:
       members:
         mode: manual
@@ -158,11 +158,11 @@ proxy-groups:
     # 先按机场顺序尝试香港及目标地区，全部不可用后再进入各机场亚太兜底。
     proxies:
       - "✈️ VikingLinks 香港 · SG"
-      - "✈️ VikingLinks 新加坡 · SG"
+      - "✈️ VikingLinks 狮城 · SG"
       - "✈️ 吹雪云 香港 · SG"
-      - "✈️ 吹雪云 新加坡 · SG"
+      - "✈️ 吹雪云 狮城 · SG"
       - "✈️ 良心云 香港 · SG"
-      - "✈️ 良心云 新加坡 · SG"
+      - "✈️ 良心云 狮城 · SG"
       - "✈️ VikingLinks 亚太 · SG"
       - "✈️ 吹雪云 亚太 · SG"
       - "✈️ 良心云 亚太 · SG"
@@ -700,7 +700,7 @@ proxy-groups:
     url: *sg_benchmark_url
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)HK(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
-  - name: "✈️ VikingLinks 新加坡 · SG"
+  - name: "✈️ VikingLinks 狮城 · SG"
     x-substore:
       members:
         mode: replace
@@ -730,7 +730,7 @@ proxy-groups:
     url: *sg_benchmark_url
     filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)HK(?:\s|-)).*'
 
-  - name: "✈️ 吹雪云 新加坡 · SG"
+  - name: "✈️ 吹雪云 狮城 · SG"
     x-substore:
       members:
         mode: replace
@@ -761,7 +761,7 @@ proxy-groups:
     url: *sg_benchmark_url
     filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)HK(?:\s|-)).*'
 
-  - name: "✈️ 良心云 新加坡 · SG"
+  - name: "✈️ 良心云 狮城 · SG"
     x-substore:
       members:
         mode: replace

@@ -56,7 +56,7 @@ test('native config test resolves oixCloud without a token or an existing provid
         uuid: '00000000-0000-4000-8000-000000000001',
       },
       ...[
-        ['自建 SG', '🛡️ 新加坡中转'],
+        ['自建 SG', '🛡️ 狮城中转'],
         ['自建 JP', '🛡️ 日本中转'],
       ].map(([name, dialer]) => ({
         name,
@@ -77,7 +77,7 @@ test('native config test resolves oixCloud without a token or an existing provid
   assert.ok(optimized);
   assert.ok(optimizedAsia);
   assert.ok(fallback);
-  const nativeGroupNames = new Set([optimized.name, fallback.name, '🛡️ 新加坡中转', '🛡️ 日本中转']);
+  const nativeGroupNames = new Set([optimized.name, fallback.name, '🛡️ 狮城中转', '🛡️ 日本中转']);
   const groupsByName = new Map(config['proxy-groups'].map((group) => [group.name, group]));
   for (const name of nativeGroupNames) {
     const group = groupsByName.get(name);
@@ -89,7 +89,7 @@ test('native config test resolves oixCloud without a token or an existing provid
   const nativeGroups = config['proxy-groups'].filter(({ name }) => nativeGroupNames.has(name));
   for (const direction of ['SG', 'JP']) {
     const expectedRegions =
-      direction === 'SG' ? ['香港', '新加坡', '亚太'] : ['香港', '日本', '亚太'];
+      direction === 'SG' ? ['香港', '狮城', '亚太'] : ['香港', '日本', '亚太'];
     for (const region of expectedRegions) {
       assert.ok(nativeGroupNames.has(`✈️ oixCloud Optimized ${region} · ${direction}`));
     }

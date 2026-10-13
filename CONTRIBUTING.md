@@ -192,7 +192,7 @@ rules:
 
 各组的成员生成方式由模板中的 `x-substore.members` 声明，覆写脚本不根据组名或其中的关键词推断行为。共同组的声明只在 `src/configs/base.yaml` 维护；Mihomo 的共同组补丁继承声明，仅新增的 oixCloud Optimized 组在差异文件中声明。字段和处理边界见[成员生成声明](#成员生成声明)。
 
-当前普通组使用 `append`，全球直连、新加坡与日本中转入口及各 Fallback 组使用 `manual` 保留手工配置；Fallback 只引用固定子组，不追加注入节点，使用方式与候选顺序见 [README 的节点中转说明](README.md#节点中转)。亚太和美西两个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；三个公共机场亚太组、Mihomo 的 oixCloud Optimized 亚太组和良心云 Hy2 组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
+当前普通组使用 `append`，全球直连、狮城与日本中转入口及各 Fallback 组使用 `manual` 保留手工配置；Fallback 只引用固定子组，不追加注入节点，使用方式与候选顺序见 [README 的节点中转说明](README.md#节点中转)。亚太和美西两个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；三个公共机场亚太组、Mihomo 的 oixCloud Optimized 亚太组和良心云 Hy2 组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
 
 | 代理组 | 额外限制 |
 | --- | --- |
@@ -292,7 +292,7 @@ npm run check
 MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
 ```
 
-原生解析回归从构建后的模板提取 `proxy-providers`、全部 oixCloud Optimized 组、亚太 Fallback、新加坡与日本中转入口及递归引用的子组，注入本地中转和 SG/JP 自建 SS 测试节点，隔离其他分组、DNS 和规则等外部依赖，在不传 oix 凭据且 provider 文件不存在的临时目录中执行 `-t`，并验证移除 provider 后会失败。它只验证显式 `file` provider、`url-test` 和 `fallback` 组及其引用的静态解析，不证明 oix 接管、解密、订阅下载或正式启动成功，也不验证完整最终配置或实际故障切换。
+原生解析回归从构建后的模板提取 `proxy-providers`、全部 oixCloud Optimized 组、亚太 Fallback、狮城与日本中转入口及递归引用的子组，注入本地中转和 SG/JP 自建 SS 测试节点，隔离其他分组、DNS 和规则等外部依赖，在不传 oix 凭据且 provider 文件不存在的临时目录中执行 `-t`，并验证移除 provider 后会失败。它只验证显式 `file` provider、`url-test` 和 `fallback` 组及其引用的静态解析，不证明 oix 接管、解密、订阅下载或正式启动成功，也不验证完整最终配置或实际故障切换。
 
 另有原生运行回归在临时目录中启动内核，以随机回环端口上的 HTTP 代理模拟两个方向的探测响应，验证同一 provider 的不同组 URL 自动探测、预期状态码和独立选点，以及 `REJECT` 与 provider 共存、空组回退。测试将外层 Fallback 间隔缩短为 1 秒，以等待内核的选点缓存收敛；生产方向 Fallback 使用 60 秒，子组测速使用 300 秒。该测试需要允许本机监听，不连接公网、不读取真实订阅；它验证上游内核的方向检查能力，不代表真实线路或 oix 服务可用。
 

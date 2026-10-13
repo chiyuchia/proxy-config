@@ -14,7 +14,7 @@ import type { MergedConfig, ProxyGroup, ProxyNode } from '../src/scripts/shared/
 const clients = ['mihomo', 'stash'] as const;
 type Client = (typeof clients)[number];
 const directions = [
-  { code: 'SG', region: '新加坡', url: 'https://sgp-ping.vultr.com/favicon.ico?v=2' },
+  { code: 'SG', region: '狮城', url: 'https://sgp-ping.vultr.com/favicon.ico?v=2' },
   { code: 'JP', region: '日本', url: 'https://hnd-jp-ping.vultr.com/favicon.ico?v=2' },
 ] as const;
 
@@ -110,7 +110,7 @@ function injectedNodes(): ProxyNode[] {
     { name: 'IXP KR', type: 'ss' },
     { name: 'CIA US', type: 'ss' },
     { name: 'IXP JP 链式', type: 'ss', 'dialer-proxy': 'DIRECT' },
-    { name: '自建 SG 落地', type: 'ss', 'dialer-proxy': '🛡️ 新加坡中转' },
+    { name: '自建 SG 落地', type: 'ss', 'dialer-proxy': '🛡️ 狮城中转' },
     { name: '自建 JP 落地', type: 'ss', 'dialer-proxy': '🛡️ 日本中转' },
   ];
   return [...valid, ...excluded];

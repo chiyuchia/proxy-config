@@ -988,7 +988,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   const prepared = [...selfHosted, ...airports];
   const originalNames = new Map(prepared.map(({ server, name }) => [server, name]));
   const expectedDialers = new Map([
-    ['sg.example.com', '🛡️ 新加坡中转'],
+    ['sg.example.com', '🛡️ 狮城中转'],
     ['us.example.com', '🛡️ 美西中转'],
     ['manual.example.com', 'DIRECT'],
     ['oix.example.com', '🛡️ 亚太中转'],

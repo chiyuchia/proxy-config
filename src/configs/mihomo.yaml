@@ -65,20 +65,20 @@ proxy-groups:
       $insert-before:
         "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
 
-  - name: "🛡️ 新加坡中转"
+  - name: "🛡️ 狮城中转"
     proxies:
       $insert-before:
         "✈️ 良心云 香港 · SG":
           - "✈️ oixCloud Optimized 香港 · SG"
-          - "✈️ oixCloud Optimized 新加坡 · SG"
+          - "✈️ oixCloud Optimized 狮城 · SG"
         "✈️ 良心云 亚太 · SG": ["✈️ oixCloud Optimized 亚太 · SG"]
 
-  - name: "🛡️ 新加坡 Fallback"
+  - name: "🛡️ 狮城 Fallback"
     proxies:
       $insert-before:
         "✈️ 良心云 香港 · SG":
           - "✈️ oixCloud Optimized 香港 · SG"
-          - "✈️ oixCloud Optimized 新加坡 · SG"
+          - "✈️ oixCloud Optimized 狮城 · SG"
         "✈️ 良心云 亚太 · SG": ["✈️ oixCloud Optimized 亚太 · SG"]
 
   - name: "🛡️ 日本中转"
@@ -265,7 +265,7 @@ proxy-groups:
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bHK\b|香港|Hong\s*Kong|🇭🇰)).*'
     use: *oix_provider
 
-  - name: "✈️ oixCloud Optimized 新加坡 · SG"
+  - name: "✈️ oixCloud Optimized 狮城 · SG"
     x-substore:
       members:
         mode: replace
