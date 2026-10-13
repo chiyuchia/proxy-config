@@ -154,7 +154,7 @@ proxy-groups:
       lazy: false
       max-failed-times: 3
       expected-status: 200
-    url: &sg_benchmark_url "https://sgp-ping.vultr.com/"
+    url: &sg_benchmark_url "https://sgp-ping.vultr.com/favicon.ico?v=2"
     # 先按机场顺序尝试香港及目标地区，全部不可用后再进入各机场亚太兜底。
     proxies:
       - "✈️ VikingLinks 香港 · SG"
@@ -189,7 +189,7 @@ proxy-groups:
       members:
         mode: manual
     <<: *direction_fallback_defaults
-    url: &jp_benchmark_url "https://hnd-jp-ping.vultr.com/"
+    url: &jp_benchmark_url "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
     # 先按机场顺序尝试香港及目标地区，全部不可用后再进入各机场亚太兜底。
     proxies:
       - "✈️ VikingLinks 香港 · JP"

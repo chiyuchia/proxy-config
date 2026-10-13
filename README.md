@@ -123,10 +123,12 @@ https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.
 
 | 方向 | 公共探测地址 | 预期响应 |
 | --- | --- | --- |
-| SG | `https://sgp-ping.vultr.com/`（新加坡） | HTTP 200 |
-| JP | `https://hnd-jp-ping.vultr.com/`（东京） | HTTP 200 |
+| SG | `https://sgp-ping.vultr.com/favicon.ico?v=2`（新加坡） | HTTP 200 |
+| JP | `https://hnd-jp-ping.vultr.com/favicon.ico?v=2`（东京） | HTTP 200 |
 
-方向子组每 300 秒测速，外层 Fallback 每 60 秒检查可用性；超时 5 秒，不使用懒检测，子组保留 100 ms 切换容差。启动时各层探测可能先后完成，自动回退需等待健康结果更新，并非即时切换。上述地址来自 [Vultr 新加坡](https://sgp-ping.vultr.com/)与[东京](https://hnd-jp-ping.vultr.com/)测试站。探测走“本机 → 机场中转 → 公共测试站”，用于估计方向连通性和延迟，不能证明机场到自建 VPS 的路径、SS 服务或落地出网正常，也不测带宽。无需在 VPS 上部署测速接口。
+方向子组每 300 秒测速，外层 Fallback 每 60 秒检查可用性；超时 5 秒，不使用懒检测，子组保留 100 ms 切换容差。启动时各层探测可能先后完成，自动回退需等待健康结果更新，并非即时切换。上述地址来自 [Vultr 新加坡](https://sgp-ping.vultr.com/)与[东京](https://hnd-jp-ping.vultr.com/)测试站，采用同站静态 favicon 以减少首页处理开销，实际延迟仍取决于链路与测试站状态。探测走“本机 → 机场中转 → 公共测试站”，用于估计方向连通性和延迟，不能证明机场到自建 VPS 的路径、SS 服务或落地出网正常，也不测带宽。无需在 VPS 上部署测速接口。
+
+Mihomo 的 `url-test` 整组测速仍使用组配置中的 URL；关闭面板的“独立延迟测试”不保证改用面板全局 URL。对比延迟时，可用单节点测速并指定同一目标地址。
 
 覆写会为匹配的注入中转节点追加 `[SG测速]` / `[JP测速]` 副本，同一节点在同一方向只生成一次，香港池与亚太池复用。副本带对应的 `benchmark-url` 和 5 秒 `benchmark-timeout`，解决 [Stash 同一节点在多个组中共享测速记录](https://stash.wiki/proxy-protocols/proxy-benchmark)的问题；两端保持同一分组结构。原始节点及其名称保留，普通机场组继续使用原节点，自建落地不复制。没有本地候选的方向子组使用 `REJECT`，避免空组回落为直连；Mihomo 的 oixCloud 组同时保留运行时 provider 候选，其测试由内核处理，provider 的检查参数及内核版本边界见[测速参数复用](CONTRIBUTING.md#测速参数复用)。
 

@@ -261,7 +261,7 @@ proxy-groups:
       tolerance: 100
       max-failed-times: 3
       expected-status: 200
-    url: "https://sgp-ping.vultr.com/"
+    url: "https://sgp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bHK\b|香港|Hong\s*Kong|🇭🇰)).*'
     use: *oix_provider
 
@@ -273,7 +273,7 @@ proxy-groups:
         benchmark: SG
     $before: "✈️ oixCloud Edge"
     <<: *oix_direction_url_test_defaults
-    url: "https://sgp-ping.vultr.com/"
+    url: "https://sgp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bSG\b|新加坡|Singapore|🇸🇬)).*'
     use: *oix_provider
 
@@ -285,7 +285,7 @@ proxy-groups:
         benchmark: SG
     $before: "✈️ oixCloud Edge"
     <<: *oix_direction_url_test_defaults
-    url: "https://sgp-ping.vultr.com/"
+    url: "https://sgp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\b(?:HK|SG|JP|TW)\b|香港|新加坡|日本|台湾|台灣|Hong\s*Kong|Singapore|Japan|Taiwan|🇭🇰|🇸🇬|🇯🇵|🇹🇼)).*'
     use: *oix_provider
 
@@ -297,7 +297,7 @@ proxy-groups:
         benchmark: JP
     $before: "✈️ oixCloud Edge"
     <<: *oix_direction_url_test_defaults
-    url: "https://hnd-jp-ping.vultr.com/"
+    url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bHK\b|香港|Hong\s*Kong|🇭🇰)).*'
     use: *oix_provider
 
@@ -309,7 +309,7 @@ proxy-groups:
         benchmark: JP
     $before: "✈️ oixCloud Edge"
     <<: *oix_direction_url_test_defaults
-    url: "https://hnd-jp-ping.vultr.com/"
+    url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bJP\b|日本|Japan|🇯🇵)).*'
     use: *oix_provider
 
@@ -321,6 +321,6 @@ proxy-groups:
         benchmark: JP
     $before: "✈️ oixCloud Edge"
     <<: *oix_direction_url_test_defaults
-    url: "https://hnd-jp-ping.vultr.com/"
+    url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\b(?:HK|SG|JP|TW)\b|香港|新加坡|日本|台湾|台灣|Hong\s*Kong|Singapore|Japan|Taiwan|🇭🇰|🇸🇬|🇯🇵|🇹🇼)).*'
     use: *oix_provider

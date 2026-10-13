@@ -14,8 +14,8 @@ import type { MergedConfig, ProxyGroup, ProxyNode } from '../src/scripts/shared/
 const clients = ['mihomo', 'stash'] as const;
 type Client = (typeof clients)[number];
 const directions = [
-  { code: 'SG', region: '新加坡', url: 'https://sgp-ping.vultr.com/' },
-  { code: 'JP', region: '日本', url: 'https://hnd-jp-ping.vultr.com/' },
+  { code: 'SG', region: '新加坡', url: 'https://sgp-ping.vultr.com/favicon.ico?v=2' },
+  { code: 'JP', region: '日本', url: 'https://hnd-jp-ping.vultr.com/favicon.ico?v=2' },
 ] as const;
 
 const relayFixtures = [

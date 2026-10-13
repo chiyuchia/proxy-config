@@ -88,7 +88,9 @@ function assertOriginalNodesPreserved(config: MergedConfig, originals: ProxyNode
       ...original,
       name: alias.name,
       'benchmark-url':
-        match[2] === 'SG' ? 'https://sgp-ping.vultr.com/' : 'https://hnd-jp-ping.vultr.com/',
+        match[2] === 'SG'
+          ? 'https://sgp-ping.vultr.com/favicon.ico?v=2'
+          : 'https://hnd-jp-ping.vultr.com/favicon.ico?v=2',
       'benchmark-timeout': 5,
       'benchmark-disabled': false,
     });
