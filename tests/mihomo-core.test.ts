@@ -41,7 +41,7 @@ test('native config test resolves oixCloud without a token or an existing provid
         password: 'test-only',
       },
       {
-        name: '吹雪云 SG 电信',
+        name: 'VikingLinks SG IEPL',
         type: 'ss',
         server: '127.0.0.1',
         port: 443,

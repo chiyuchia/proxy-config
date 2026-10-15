@@ -23,10 +23,6 @@ const relayFixtures = [
   ['VikingLinks', 'SG', 'VikingLinks SG IEPL', 'ss'],
   ['VikingLinks', 'JP', 'VikingLinks JP SH', 'ss'],
   ['VikingLinks', 'TW', 'VikingLinks TW Go', 'ss'],
-  ['吹雪云', 'HK', '吹雪云 HK 电信', 'ss'],
-  ['吹雪云', 'SG', '吹雪云 SG 电信', 'vless'],
-  ['吹雪云', 'JP', '吹雪云 JP 电信', 'trojan'],
-  ['吹雪云', 'TW', '吹雪云 TW 电信', 'ss'],
   ['良心云', 'HK', '良心云 HK CT', 'vless'],
   ['良心云', 'SG', '良心云 SG CTCU', 'VLESS'],
   ['良心云', 'JP', '良心云 JP CTCUCM', 'vless'],
@@ -60,12 +56,7 @@ function sourceConfig(client: Client, proxies: ProxyNode[] = []): MergedConfig {
  * @returns {string[]} 当前客户端的机场优先级。
  */
 function airportsFor(client: Client): string[] {
-  return [
-    'VikingLinks',
-    '吹雪云',
-    ...(client === 'mihomo' ? ['oixCloud Optimized'] : []),
-    '良心云',
-  ];
+  return ['VikingLinks', ...(client === 'mihomo' ? ['oixCloud Optimized'] : []), '良心云'];
 }
 
 /**
@@ -99,9 +90,6 @@ function injectedNodes(): ProxyNode[] {
     { name: 'VikingLinks KR Go', type: 'ss' },
     { name: 'VikingLinks US Go', type: 'ss' },
     { name: 'VikingLinks HK Go 链式', type: 'ss', 'dialer-proxy': 'DIRECT' },
-    { name: '吹雪云 HK 移动', type: 'ss' },
-    { name: '吹雪云 KR 电信', type: 'ss' },
-    { name: '吹雪云 SG 电信 链式', type: 'ss', 'dialer-proxy': 'DIRECT' },
     { name: '良心云 HK CT Hy2', type: 'hysteria2' },
     { name: '良心云 HK CM', type: 'vless' },
     { name: '良心云 KR CT', type: 'vless' },

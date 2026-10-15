@@ -52,13 +52,13 @@ proxy-groups:
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 吹雪云 亚太": *oix_optimized
+        "✈️ 良心云 亚太": *oix_optimized
 
   - name: "🛡️ 美西中转"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 吹雪云": *oix_optimized
+        "✈️ 良心云": *oix_optimized
 
   - name: "🛡️ 亚太 Fallback"
     proxies:

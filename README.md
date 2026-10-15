@@ -72,7 +72,7 @@ proxy-providers:
 
 最终校验随覆写脚本直接在 Sub-Store 中运行，无需另加脚本或安装依赖。发现重复名称、无效引用、依赖循环或无效 HTTP provider 地址时，本次脚本报错并停止输出；具体范围和限制见[贡献指南的最终配置校验](CONTRIBUTING.md#最终配置校验)。
 
-首次切换后，在 Sub-Store 预览最终配置，确认原来的订阅节点仍在 `proxies` 中，并检查三个机场亚太组的成员，再更新客户端订阅。
+首次切换后，在 Sub-Store 预览最终配置，确认原来的订阅节点仍在 `proxies` 中，并检查 VikingLinks、良心云两个公共机场亚太组的成员，再更新客户端订阅。
 
 ### 固定版本
 
@@ -114,10 +114,9 @@ https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.
 | 回退阶段 | 狮城方向 | 日本方向 |
 | --- | --- | --- |
 | VikingLinks 定向候选 | 香港 → 狮城 | 香港 → 日本 |
-| 吹雪云定向候选 | 香港 → 狮城 | 香港 → 日本 |
 | oixCloud Optimized 定向候选 | 香港 → 狮城 | 香港 → 日本 |
 | 良心云定向候选 | 香港 → 狮城 | 香港 → 日本 |
-| 最后兜底 | VikingLinks 亚太 → 吹雪云亚太 → oixCloud Optimized 亚太 → 良心云亚太 | 同左 |
+| 最后兜底 | VikingLinks 亚太 → oixCloud Optimized 亚太 → 良心云亚太 | 同左 |
 
 按表格从上到下回退；Stash 跳过 oixCloud。只有全部定向候选不可用后，才进入亚太兜底。亚太包含 HK、SG、JP、TW；台湾暂不单独建方向组。各机场沿用现有线路和协议限制，见[节点与代理组](CONTRIBUTING.md#节点与代理组)。Fallback 按可用性维持优先级，子组在同一机场、同一地区池内自动测速选点。
 
@@ -132,7 +131,7 @@ Mihomo 的 `url-test` 整组测速仍使用组配置中的 URL；关闭面板的
 
 覆写会为匹配的注入中转节点追加 `[SG测速]` / `[JP测速]` 副本，同一节点在同一方向只生成一次，香港池与亚太池复用。副本带对应的 `benchmark-url` 和 5 秒 `benchmark-timeout`，解决 [Stash 同一节点在多个组中共享测速记录](https://stash.wiki/proxy-protocols/proxy-benchmark)的问题；两端保持同一分组结构。原始节点及其名称保留，普通机场组继续使用原节点，自建落地不复制。没有本地候选的方向子组使用 `REJECT`，避免空组回落为直连；Mihomo 的 oixCloud 组同时保留运行时 provider 候选，其测试由内核处理，provider 的检查参数及内核版本边界见[测速参数复用](CONTRIBUTING.md#测速参数复用)。
 
-其他地区继续使用原来的亚太或美西中转。`🛡️ 亚太中转` 首选的 `🛡️ 亚太 Fallback` 按 VikingLinks 亚太 → 吹雪云亚太 → oixCloud Optimized 亚太 → 良心云亚太回退，每 60 秒检查，Stash 跳过 oixCloud。原有亚太测速组仍使用 Cloudflare 204 地址。
+其他地区继续使用原来的亚太或美西中转。`🛡️ 亚太中转` 首选的 `🛡️ 亚太 Fallback` 按 VikingLinks 亚太 → oixCloud Optimized 亚太 → 良心云亚太回退，每 60 秒检查，Stash 跳过 oixCloud。原有亚太测速组仍使用 Cloudflare 204 地址。
 
 自建节点保留原名，不经过重命名脚本：
 

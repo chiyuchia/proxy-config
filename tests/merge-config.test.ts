@@ -502,19 +502,11 @@ test('live profiles share group definitions and menu order except for the Mihomo
   );
 
   const groups = new Map(sharedGroups(stash).map((group) => [group.name, group]));
-  const airportMenu = [
-    '✈️ VikingLinks',
-    '✈️ oixCloud Edge',
-    '✈️ 吹雪云',
-    '✈️ 良心云',
-    '✈️ 一元机场',
-  ];
+  const airportMenu = ['✈️ VikingLinks', '✈️ oixCloud Edge', '✈️ 良心云', '✈️ 一元机场'];
   const asiaRelays = [
     '✈️ VikingLinks 亚太',
-    '✈️ 吹雪云 亚太',
     '✈️ 良心云 亚太',
     '✈️ VikingLinks',
-    '✈️ 吹雪云',
     '✈️ 良心云',
     '✈️ 良心云 Hy2',
   ];
@@ -531,7 +523,6 @@ test('live profiles share group definitions and menu order except for the Mihomo
     '🇼🇸 台湾节点',
     '🌍 其他节点',
     '✈️ VikingLinks 亚太',
-    '✈️ 吹雪云 亚太',
     '✈️ 良心云 亚太',
     ...airportMenu.slice(0, -1),
     '✈️ 良心云 Hy2',
@@ -568,7 +559,6 @@ test('live profiles share group definitions and menu order except for the Mihomo
   }
   for (const [name, filter] of [
     ['✈️ oixCloud Edge', '(oixCloud Edge)'],
-    ['✈️ 吹雪云', '(吹雪云)'],
     ['✈️ 一元机场', '(一元机场)'],
   ]) {
     assert.equal(groups.get(name)!.type, 'select');
@@ -579,7 +569,6 @@ test('live profiles share group definitions and menu order except for the Mihomo
 test('the same injected nodes produce matching group members in both live profiles', () => {
   const proxies = [
     { name: 'oixCloud Edge HK', type: 'vless' },
-    { name: '吹雪云 SG 电信', type: 'ss' },
     { name: '一元机场 JP', type: 'ss' },
     { name: '自建 US', type: 'vless' },
     { name: '合租 HK', type: 'vless' },
@@ -597,7 +586,6 @@ test('the same injected nodes produce matching group members in both live profil
     assertOriginalNodesPreserved(config, proxies);
     for (const [name, expected] of [
       ['✈️ oixCloud Edge', ['oixCloud Edge HK']],
-      ['✈️ 吹雪云', ['吹雪云 SG 电信']],
       ['✈️ 一元机场', ['一元机场 JP']],
       ['🏝️ 精品节点', ['自建 US', '合租 HK']],
     ]) {
@@ -650,13 +638,6 @@ test('both built templates work with the existing airport and transit node filte
     { name: '良心云 HK CM', type: 'vless' },
     { name: '良心云 US CT', type: 'vless' },
     { name: '良心云 HK CT 落地', type: 'vless', 'dialer-proxy': 'DIRECT' },
-    { name: '吹雪云 HK 电信', type: 'ss' },
-    { name: '吹雪云 SG 电信', type: 'vless' },
-    { name: '吹雪云 JP 电信', type: 'trojan' },
-    { name: '吹雪云 TW 电信', type: 'ss' },
-    { name: '吹雪云 HK 移动', type: 'ss' },
-    { name: '吹雪云 US 电信', type: 'ss' },
-    { name: '吹雪云 HK 电信 落地', type: 'ss', 'dialer-proxy': 'DIRECT' },
     { name: 'VikingLinks HK Go', type: 'ss' },
     { name: 'VikingLinks SG IEPL', type: 'ss' },
     { name: 'VikingLinks JP SH', type: 'ss' },
@@ -674,8 +655,7 @@ test('both built templates work with the existing airport and transit node filte
   ];
   const expected = {
     '✈️ 良心云 亚太': proxies.slice(0, 4).map(({ name }) => name),
-    '✈️ 吹雪云 亚太': proxies.slice(8, 12).map(({ name }) => name),
-    '✈️ VikingLinks 亚太': proxies.slice(15, 19).map(({ name }) => name),
+    '✈️ VikingLinks 亚太': proxies.slice(8, 12).map(({ name }) => name),
   };
 
   for (const client of clients) {
@@ -696,7 +676,6 @@ test('both built templates work with the existing airport and transit node filte
       plain(fallback.proxies),
       [
         '✈️ VikingLinks 亚太',
-        '✈️ 吹雪云 亚太',
         ...(client === 'mihomo' ? ['✈️ oixCloud Optimized 亚太'] : []),
         '✈️ 良心云 亚太',
       ],
@@ -971,7 +950,6 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
     { name: 'HK-Go-01-GCP', type: 'ss', _subName: 'VikingLinks', server: 'viking.example.com' },
     { name: 'HK CT', type: 'vless', _subName: '良心云', server: 'liangxin.example.com' },
     { name: 'SG CT', type: 'hysteria2', _subName: '良心云', server: 'hy2.example.com' },
-    { name: 'JP 电信', type: 'ss', _subName: '吹雪云', server: 'chuixue.example.com' },
   ];
   const { operator: assignDialer } = loadScript('dist/dialer-proxy.js');
   const originalSelfHosted = structuredClone(selfHostedSource);
@@ -1023,12 +1001,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   const namesFor = (...servers: string[]): string[] =>
     proxies.filter(({ server }) => servers.includes(server!)).map(({ name }) => name);
   const relayGroups = ['🛡️ 亚太中转', '🛡️ 美西中转'];
-  const dedicatedGroups = [
-    '✈️ VikingLinks 亚太',
-    '✈️ 良心云 亚太',
-    '✈️ 吹雪云 亚太',
-    '✈️ 良心云 Hy2',
-  ];
+  const dedicatedGroups = ['✈️ VikingLinks 亚太', '✈️ 良心云 亚太', '✈️ 良心云 Hy2'];
   const configs = liveConfigs(proxies);
   for (const [client, config] of Object.entries(configs)) {
     const overwrite = loadScript('dist/config-overwrite.js', {
@@ -1073,7 +1046,6 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
       ['✈️ 一元机场', ['yiyuan.example.com']],
       ['✈️ VikingLinks 亚太', ['viking.example.com']],
       ['✈️ 良心云 亚太', ['liangxin.example.com']],
-      ['✈️ 吹雪云 亚太', ['chuixue.example.com']],
       ['✈️ 良心云 Hy2', ['hy2.example.com']],
     ] as [string, string[]][]) {
       assert.deepEqual(
