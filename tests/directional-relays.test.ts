@@ -104,18 +104,18 @@ function injectedNodes(): ProxyNode[] {
   return [...valid, ...excluded];
 }
 
-test('directional selectors preserve airport priority before the ordered Asia-Pacific tail', () => {
+test('directional selectors preserve airport priority before the shared Asia-Pacific tail', () => {
   for (const client of clients) {
     const config = sourceConfig(client);
     const airports = airportsFor(client);
+    const result = overwriteConfig(sourceConfig(client, injectedNodes()));
+    assert.ok(config['proxy-groups'].every(({ name }) => !/亚太 · (SG|JP)$/.test(name)));
     for (const { code, region, url } of directions) {
-      const expected = [
-        ...airports.flatMap((airport) => [
-          ...(airport === '良心云' ? [] : [`✈️ ${airport} 香港 · ${code}`]),
-          `✈️ ${airport} ${region} · ${code}`,
-        ]),
-        ...airports.map((airport) => `✈️ ${airport} 亚太 · ${code}`),
-      ];
+      const directionalNames = airports.flatMap((airport) => [
+        ...(airport === '良心云' ? [] : [`✈️ ${airport} 香港 · ${code}`]),
+        `✈️ ${airport} ${region} · ${code}`,
+      ]);
+      const expected = [...directionalNames, ...airports.map((airport) => `✈️ ${airport} 亚太`)];
       const selector = group(config, `🛡️ ${region}中转`);
       const fallback = group(config, `🛡️ ${region} Fallback`);
       assert.equal(selector.type, 'select');
@@ -124,8 +124,10 @@ test('directional selectors preserve airport priority before the ordered Asia-Pa
       assert.equal(fallback.type, 'fallback');
       assert.deepEqual(fallback['x-substore'], { members: { mode: 'manual' } });
       assert.deepEqual(fallback.proxies, expected, `${client}: ${region} fallback order`);
+      assert.deepEqual(group(result, selector.name).proxies, [fallback.name, ...expected]);
+      assert.deepEqual(group(result, fallback.name).proxies, expected);
 
-      for (const candidate of [fallback, ...expected.map((name) => group(config, name))]) {
+      for (const candidate of [fallback, ...directionalNames.map((name) => group(config, name))]) {
         assert.equal(candidate.url, url, candidate.name);
         assert.equal(candidate.interval, candidate === fallback ? 60 : 300, candidate.name);
         assert.equal(candidate.timeout, 5000, candidate.name);
@@ -145,10 +147,28 @@ test('directional selectors preserve airport priority before the ordered Asia-Pa
         });
       }
     }
+    for (const airport of airports) {
+      const pool = group(config, `✈️ ${airport} 亚太`);
+      assert.equal(pool.type, 'url-test');
+      assert.equal(pool.url, 'https://cp.cloudflare.com/generate_204');
+      assert.equal(pool.interval, 60);
+      assert.equal(pool.timeout, 5000);
+      assert.equal(pool.lazy, false);
+      assert.equal(pool.tolerance, 100);
+      assert.equal(pool['expected-status'], 204);
+      assert.equal(pool['max-failed-times'], 3);
+      assert.deepEqual(pool['x-substore'], {
+        members: {
+          mode: 'replace',
+          'exclude-dialer': true,
+          ...(airport === '良心云' ? { types: ['vless'] } : {}),
+        },
+      });
+    }
   }
 });
 
-test('directional pools filter original relays and share only same-direction benchmark copies', () => {
+test('directional pools create only regional benchmark copies while Asia-Pacific pools retain originals', () => {
   for (const client of clients) {
     const originals = injectedNodes();
     const before = structuredClone(originals);
@@ -162,15 +182,14 @@ test('directional pools filter original relays and share only same-direction ben
     originals.forEach((proxy, index) => assert.equal(result.proxies![index], proxy));
     const aliases = result.proxies!.slice(originals.length);
     const aliasNames = new Set(aliases.map(({ name }) => name));
-    assert.equal(aliasNames.size, aliases.length, 'overlapping pools reuse aliases');
-    assert.equal(aliases.length, airportsFor(client).length * 4 * 2);
+    assert.equal(aliasNames.size, aliases.length, 'benchmark aliases are unique');
+    assert.equal(aliases.length, client === 'mihomo' ? 10 : 6);
 
     for (const { code, region, url } of directions) {
       for (const airport of airportsFor(client)) {
         for (const [poolRegion, codes] of [
           ...(airport === '良心云' ? [] : [['香港', ['HK']]]),
           [region, [code]],
-          ['亚太', ['HK', 'SG', 'JP', 'TW']],
         ] as [string, string[]][]) {
           const expected = relayFixtures
             .filter(([source, country]) => source === airport && codes.includes(country))
@@ -191,6 +210,19 @@ test('directional pools filter original relays and share only same-direction ben
           'benchmark-timeout': 5,
           'benchmark-disabled': false,
         });
+      }
+    }
+    for (const airport of airportsFor(client)) {
+      const pool = group(result, `✈️ ${airport} 亚太`);
+      const expected = relayFixtures
+        .filter(([source]) => source === airport)
+        .map(([, , name]) => name);
+      assert.deepEqual(pool.proxies, expected, `${client}: ${pool.name}`);
+      if (airport === 'oixCloud Optimized') assert.deepEqual(pool.use, ['oixCloud']);
+    }
+    for (const [, , name] of relayFixtures.filter(([, country]) => country === 'TW')) {
+      for (const { code } of directions) {
+        assert.ok(!aliasNames.has(`${name} [${code}测速]`), `${name}: no directional copies`);
       }
     }
     for (const name of ordinaryNames) {
@@ -219,7 +251,7 @@ test('one physical relay has independent SG and JP benchmark settings while keep
     const result = overwriteConfig(sourceConfig(client, [original]));
     assert.equal(result.proxies![0], original);
     assert.deepEqual(original, before);
-    assert.equal(result.proxies!.length, 3, 'one shared alias per direction');
+    assert.equal(result.proxies!.length, 3, 'one alias per direction');
     const copies = directions.map(({ code, url }) => {
       const copy = result.proxies!.find(({ name }) => name === `${original.name} [${code}测速]`);
       assert.ok(copy);
@@ -228,9 +260,7 @@ test('one physical relay has independent SG and JP benchmark settings while keep
       assert.equal(copy['benchmark-url'], url);
       assert.equal(copy['benchmark-timeout'], 5);
       assert.equal(copy['benchmark-disabled'], false);
-      for (const region of ['香港', '亚太']) {
-        assert.deepEqual(group(result, `✈️ VikingLinks ${region} · ${code}`).proxies, [copy.name]);
-      }
+      assert.deepEqual(group(result, `✈️ VikingLinks 香港 · ${code}`).proxies, [copy.name]);
       return copy;
     });
     assert.notEqual(copies[0], copies[1]);
@@ -245,7 +275,7 @@ test('empty directional pools reject rather than silently adding direct transit'
     assert.deepEqual(result.proxies ?? [], []);
     for (const { code, region } of directions) {
       for (const airport of airportsFor(client)) {
-        for (const poolRegion of [...(airport === '良心云' ? [] : ['香港']), region, '亚太']) {
+        for (const poolRegion of [...(airport === '良心云' ? [] : ['香港']), region]) {
           const pool = group(result, `✈️ ${airport} ${poolRegion} · ${code}`);
           assert.deepEqual(pool.proxies, ['REJECT'], `${client}: ${pool.name}`);
           if (airport === 'oixCloud Optimized') assert.deepEqual(pool.use, ['oixCloud']);

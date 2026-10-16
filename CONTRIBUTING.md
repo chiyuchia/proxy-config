@@ -201,7 +201,7 @@ rules:
 
 Mihomo 的 `✈️ oixCloud Optimized 亚太` 保留 `IXP` / `CIA` 线路筛选，并按地区代码、中英文地区名或旗帜限定 HK、SG、JP、TW。其 `filter` 同时供覆写脚本筛选注入节点和 Mihomo 筛选 `oixCloud` provider 成员；provider 内部节点仍由客户端运行时处理。
 
-新加坡、日本方向子组沿用对应机场的线路和协议限制，并通过 `members.benchmark` 生成独立测速副本。VikingLinks 和 oixCloud Optimized 分别设置香港、目标地区和亚太兜底池，良心云只设置目标地区和亚太兜底池。两个方向的亚太范围都维持 HK、SG、JP、TW，不额外纳入韩国。方向入口与 Fallback 的机场顺序、最后亚太兜底顺序只在基础配置中维护，Mihomo 补入对应 Optimized 引用。
+新加坡、日本方向子组沿用对应机场的线路和协议限制，并通过 `members.benchmark` 生成独立测速副本。VikingLinks 和 oixCloud Optimized 分别设置香港、目标地区方向池，良心云只设置目标地区方向池。方向入口及其 Fallback 的亚太兜底共用上述不区分方向的机场亚太组，使用原节点、Cloudflare 204 地址及原有测速参数，不声明 `members.benchmark`。亚太范围维持 HK、SG、JP、TW，不额外纳入韩国。方向入口与 Fallback 的机场顺序、最后亚太兜底顺序只在基础配置中维护，Mihomo 补入对应 Optimized 引用。
 
 协议筛选依据节点实际 `type`，不依据名称中的协议字样。修改重命名脚本的名称格式、关键词提取规则或订阅名后，检查最终名称仍能满足机场名、地区代码和线路关键词的筛选要求。
 

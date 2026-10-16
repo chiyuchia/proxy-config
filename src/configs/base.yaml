@@ -91,8 +91,8 @@ proxy-groups:
       - "✈️ VikingLinks 香港 · SG"
       - "✈️ VikingLinks 狮城 · SG"
       - "✈️ 良心云 狮城 · SG"
-      - "✈️ VikingLinks 亚太 · SG"
-      - "✈️ 良心云 亚太 · SG"
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 良心云 亚太"
 
   - name: "🛡️ 狮城 Fallback"
     x-substore:
@@ -107,13 +107,13 @@ proxy-groups:
       max-failed-times: 3
       expected-status: 200
     url: &sg_benchmark_url "https://sgp-ping.vultr.com/favicon.ico?v=2"
-    # 先按机场顺序尝试香港及目标地区，全部不可用后再进入各机场亚太兜底。
+    # 先按机场顺序尝试香港及目标地区，全部不可用后复用不区分方向的机场亚太组兜底。
     proxies:
       - "✈️ VikingLinks 香港 · SG"
       - "✈️ VikingLinks 狮城 · SG"
       - "✈️ 良心云 狮城 · SG"
-      - "✈️ VikingLinks 亚太 · SG"
-      - "✈️ 良心云 亚太 · SG"
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 良心云 亚太"
 
   - name: "🛡️ 日本中转"
     x-substore:
@@ -125,8 +125,8 @@ proxy-groups:
       - "✈️ VikingLinks 香港 · JP"
       - "✈️ VikingLinks 日本 · JP"
       - "✈️ 良心云 日本 · JP"
-      - "✈️ VikingLinks 亚太 · JP"
-      - "✈️ 良心云 亚太 · JP"
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 良心云 亚太"
 
   - name: "🛡️ 日本 Fallback"
     x-substore:
@@ -134,13 +134,13 @@ proxy-groups:
         mode: manual
     <<: *direction_fallback_defaults
     url: &jp_benchmark_url "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
-    # 先按机场顺序尝试香港及目标地区，全部不可用后再进入各机场亚太兜底。
+    # 先按机场顺序尝试香港及目标地区，全部不可用后复用不区分方向的机场亚太组兜底。
     proxies:
       - "✈️ VikingLinks 香港 · JP"
       - "✈️ VikingLinks 日本 · JP"
       - "✈️ 良心云 日本 · JP"
-      - "✈️ VikingLinks 亚太 · JP"
-      - "✈️ 良心云 亚太 · JP"
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 良心云 亚太"
 
   - name: "🛡️ 亚太中转"
     x-substore:
@@ -582,7 +582,7 @@ proxy-groups:
     type: select
     filter: "(一元机场)"
 
-  # 方向测速使用独立中转副本，香港可同时参与 SG、JP，台湾保留在亚太兜底。
+  # 方向测速使用独立中转副本，香港可同时参与 SG、JP，台湾保留在不区分方向的亚太兜底。
   - name: "✈️ VikingLinks 香港 · SG"
     x-substore:
       members:
@@ -610,16 +610,6 @@ proxy-groups:
     url: *sg_benchmark_url
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)SG(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
-  - name: "✈️ VikingLinks 亚太 · SG"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: SG
-    <<: *direction_url_test_defaults
-    url: *sg_benchmark_url
-    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
-
   - name: "✈️ 良心云 狮城 · SG"
     x-substore:
       members:
@@ -630,17 +620,6 @@ proxy-groups:
     <<: *direction_url_test_defaults
     url: *sg_benchmark_url
     filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)SG(?:\s|-)).*'
-
-  - name: "✈️ 良心云 亚太 · SG"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: SG
-        types: [vless]
-    <<: *direction_url_test_defaults
-    url: *sg_benchmark_url
-    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ VikingLinks 香港 · JP"
     x-substore:
@@ -662,16 +641,6 @@ proxy-groups:
     url: *jp_benchmark_url
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)JP(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
-  - name: "✈️ VikingLinks 亚太 · JP"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: JP
-    <<: *direction_url_test_defaults
-    url: *jp_benchmark_url
-    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
-
   - name: "✈️ 良心云 日本 · JP"
     x-substore:
       members:
@@ -682,17 +651,6 @@ proxy-groups:
     <<: *direction_url_test_defaults
     url: *jp_benchmark_url
     filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)JP(?:\s|-)).*'
-
-  - name: "✈️ 良心云 亚太 · JP"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: JP
-        types: [vless]
-    <<: *direction_url_test_defaults
-    url: *jp_benchmark_url
-    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ VikingLinks 亚太"
     x-substore:

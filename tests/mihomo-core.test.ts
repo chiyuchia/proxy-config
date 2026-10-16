@@ -88,12 +88,13 @@ test('native config test resolves oixCloud without a token or an existing provid
   }
   const nativeGroups = config['proxy-groups'].filter(({ name }) => nativeGroupNames.has(name));
   for (const direction of ['SG', 'JP']) {
-    const expectedRegions =
-      direction === 'SG' ? ['香港', '狮城', '亚太'] : ['香港', '日本', '亚太'];
+    const expectedRegions = direction === 'SG' ? ['香港', '狮城'] : ['香港', '日本'];
     for (const region of expectedRegions) {
       assert.ok(nativeGroupNames.has(`✈️ oixCloud Optimized ${region} · ${direction}`));
     }
   }
+  assert.ok(nativeGroupNames.has(optimizedAsia.name));
+  assert.ok(config['proxy-groups'].every(({ name }) => !/亚太 · (SG|JP)$/.test(name)));
   assert.deepEqual(config['proxy-providers'], {
     oixCloud: { type: 'file', path: './proxy_provider/oixCloud' },
   });
