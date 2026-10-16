@@ -74,17 +74,12 @@ proxy-groups:
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
-  - name: "🛡️ 美西中转"
+  - name: "🏝️ 精品节点"
     x-substore:
       members:
         mode: append
-        exclude-dialer: true
     type: select
-    proxies:
-      - "✈️ VikingLinks 亚太"
-      - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
-      - "✈️ 良心云"
+    filter: "(自建|合租)"
 
   - name: "🛡️ 狮城中转"
     x-substore:
@@ -176,12 +171,17 @@ proxy-groups:
       - "✈️ VikingLinks 亚太"
       - "✈️ 良心云 亚太"
 
-  - name: "🏝️ 精品节点"
+  - name: "🛡️ 美西中转"
     x-substore:
       members:
         mode: append
+        exclude-dialer: true
     type: select
-    filter: "(自建|合租)"
+    proxies:
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 良心云 亚太"
+      - "✈️ VikingLinks"
+      - "✈️ 良心云"
 
   - name: "♊ Gemini"
     x-substore:
