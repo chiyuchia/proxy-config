@@ -235,24 +235,13 @@ proxy-groups:
     use:
       - oixCloud
 
-  - name: "✈️ oixCloud Optimized 亚太"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-    $before: "✈️ oixCloud Edge"
-    <<: *oix_url_test_defaults
-    # 保留 IXP/CIA 线路，仅筛选 HK、SG、JP、TW，兼容 provider 的中英文地区名和旗帜。
-    filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\b(?:HK|SG|JP|TW)\b|香港|新加坡|日本|台湾|台灣|Hong\s*Kong|Singapore|Japan|Taiwan|🇭🇰|🇸🇬|🇯🇵|🇹🇼)).*'
-    use: *oix_provider
-
   - name: "✈️ oixCloud Optimized 香港 · SG"
     x-substore:
       members:
         mode: replace
         exclude-dialer: true
         benchmark: SG
-    $before: "✈️ oixCloud Edge"
+    $before: "✈️ 良心云 狮城 · SG"
     <<: &oix_direction_url_test_defaults
       type: url-test
       interval: 300
@@ -271,7 +260,7 @@ proxy-groups:
         mode: replace
         exclude-dialer: true
         benchmark: SG
-    $before: "✈️ oixCloud Edge"
+    $before: "✈️ 良心云 狮城 · SG"
     <<: *oix_direction_url_test_defaults
     url: "https://sgp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bSG\b|新加坡|Singapore|🇸🇬)).*'
@@ -283,7 +272,7 @@ proxy-groups:
         mode: replace
         exclude-dialer: true
         benchmark: SG
-    $before: "✈️ oixCloud Edge"
+    $before: "✈️ 良心云 狮城 · SG"
     <<: *oix_direction_url_test_defaults
     url: "https://sgp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\b(?:HK|SG|JP|TW)\b|香港|新加坡|日本|台湾|台灣|Hong\s*Kong|Singapore|Japan|Taiwan|🇭🇰|🇸🇬|🇯🇵|🇹🇼)).*'
@@ -295,7 +284,7 @@ proxy-groups:
         mode: replace
         exclude-dialer: true
         benchmark: JP
-    $before: "✈️ oixCloud Edge"
+    $before: "✈️ 良心云 日本 · JP"
     <<: *oix_direction_url_test_defaults
     url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bHK\b|香港|Hong\s*Kong|🇭🇰)).*'
@@ -307,7 +296,7 @@ proxy-groups:
         mode: replace
         exclude-dialer: true
         benchmark: JP
-    $before: "✈️ oixCloud Edge"
+    $before: "✈️ 良心云 日本 · JP"
     <<: *oix_direction_url_test_defaults
     url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bJP\b|日本|Japan|🇯🇵)).*'
@@ -319,8 +308,19 @@ proxy-groups:
         mode: replace
         exclude-dialer: true
         benchmark: JP
-    $before: "✈️ oixCloud Edge"
+    $before: "✈️ 良心云 日本 · JP"
     <<: *oix_direction_url_test_defaults
     url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
+    filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\b(?:HK|SG|JP|TW)\b|香港|新加坡|日本|台湾|台灣|Hong\s*Kong|Singapore|Japan|Taiwan|🇭🇰|🇸🇬|🇯🇵|🇹🇼)).*'
+    use: *oix_provider
+
+  - name: "✈️ oixCloud Optimized 亚太"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+    $before: "✈️ 良心云 亚太"
+    <<: *oix_url_test_defaults
+    # 保留 IXP/CIA 线路，仅筛选 HK、SG、JP、TW，兼容 provider 的中英文地区名和旗帜。
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\b(?:HK|SG|JP|TW)\b|香港|新加坡|日本|台湾|台灣|Hong\s*Kong|Singapore|Japan|Taiwan|🇭🇰|🇸🇬|🇯🇵|🇹🇼)).*'
     use: *oix_provider

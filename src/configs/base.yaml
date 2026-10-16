@@ -74,19 +74,6 @@ proxy-groups:
       - "✈️ 良心云"
       - "✈️ 一元机场"
 
-  - name: "🛡️ 亚太中转"
-    x-substore:
-      members:
-        mode: append
-        exclude-dialer: true
-    type: select
-    proxies:
-      - "🛡️ 亚太 Fallback"
-      - "✈️ VikingLinks 亚太"
-      - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
-      - "✈️ 良心云"
-
   - name: "🛡️ 美西中转"
     x-substore:
       members:
@@ -98,22 +85,6 @@ proxy-groups:
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ 良心云"
-
-  - name: "🛡️ 亚太 Fallback"
-    x-substore:
-      members:
-        mode: manual
-    type: fallback
-    url: "https://cp.cloudflare.com/generate_204"
-    interval: 60
-    timeout: 5000
-    lazy: false
-    max-failed-times: 3
-    expected-status: 204
-    # 仅按固定子组顺序回退，不追加注入节点；Mihomo 补入 oixCloud Optimized 亚太。
-    proxies:
-      - "✈️ VikingLinks 亚太"
-      - "✈️ 良心云 亚太"
 
   - name: "🛡️ 狮城中转"
     x-substore:
@@ -175,6 +146,35 @@ proxy-groups:
       - "✈️ 良心云 日本 · JP"
       - "✈️ VikingLinks 亚太 · JP"
       - "✈️ 良心云 亚太 · JP"
+
+  - name: "🛡️ 亚太中转"
+    x-substore:
+      members:
+        mode: append
+        exclude-dialer: true
+    type: select
+    proxies:
+      - "🛡️ 亚太 Fallback"
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 良心云 亚太"
+      - "✈️ VikingLinks"
+      - "✈️ 良心云"
+
+  - name: "🛡️ 亚太 Fallback"
+    x-substore:
+      members:
+        mode: manual
+    type: fallback
+    url: "https://cp.cloudflare.com/generate_204"
+    interval: 60
+    timeout: 5000
+    lazy: false
+    max-failed-times: 3
+    expected-status: 204
+    # 仅按固定子组顺序回退，不追加注入节点；Mihomo 补入 oixCloud Optimized 亚太。
+    proxies:
+      - "✈️ VikingLinks 亚太"
+      - "✈️ 良心云 亚太"
 
   - name: "🏝️ 精品节点"
     x-substore:
@@ -561,25 +561,6 @@ proxy-groups:
     type: select
     filter: "(VikingLinks)"
 
-  - name: "✈️ VikingLinks 亚太"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-    # 公共测速参数在此定义，后续测速组通过 YAML 合并键复用。
-    <<: &url_test_defaults
-      type: url-test
-      url: "https://cp.cloudflare.com/generate_204"
-      interval: 60
-      timeout: 5000
-      lazy: false
-      tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
-      max-failed-times: 3
-      expected-status: 204
-    # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
-    # x-substore.members 声明重建成员，并排除带 dialer-proxy 的节点。
-    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
-
   - name: "✈️ oixCloud Edge"
     x-substore:
       members:
@@ -593,17 +574,6 @@ proxy-groups:
         mode: append
     type: select
     filter: "(良心云)"
-
-  - name: "✈️ 良心云 亚太"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        types: [vless]
-    <<: *url_test_defaults
-    # 仅筛选 HK、SG、JP、TW 地区且名称包含 CT 的节点，兼容 CTCU、CTCUCM 标签。
-    # x-substore.members 声明仅纳入实际 VLESS 协议，并排除带 dialer-proxy 的节点。
-    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 一元机场"
     x-substore:
@@ -722,6 +692,36 @@ proxy-groups:
         types: [vless]
     <<: *direction_url_test_defaults
     url: *jp_benchmark_url
+    filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
+
+  - name: "✈️ VikingLinks 亚太"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+    # 公共测速参数在此定义，后续测速组通过 YAML 合并键复用。
+    <<: &url_test_defaults
+      type: url-test
+      url: "https://cp.cloudflare.com/generate_204"
+      interval: 60
+      timeout: 5000
+      lazy: false
+      tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
+      max-failed-times: 3
+      expected-status: 204
+    # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
+    # x-substore.members 声明重建成员，并排除带 dialer-proxy 的节点。
+    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+
+  - name: "✈️ 良心云 亚太"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        types: [vless]
+    <<: *url_test_defaults
+    # 仅筛选 HK、SG、JP、TW 地区且名称包含 CT 的节点，兼容 CTCU、CTCUCM 标签。
+    # x-substore.members 声明仅纳入实际 VLESS 协议，并排除带 dialer-proxy 的节点。
     filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "🎯 全球直连"
