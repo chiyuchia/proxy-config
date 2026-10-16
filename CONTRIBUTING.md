@@ -192,17 +192,16 @@ rules:
 
 各组的成员生成方式由模板中的 `x-substore.members` 声明，覆写脚本不根据组名或其中的关键词推断行为。共同组的声明只在 `src/configs/base.yaml` 维护；Mihomo 的共同组补丁继承声明，仅新增的 oixCloud Optimized 组在差异文件中声明。字段和处理边界见[成员生成声明](#成员生成声明)。
 
-当前普通组使用 `append`，全球直连、狮城与日本中转入口及各 Fallback 组使用 `manual` 保留手工配置；Fallback 只引用固定子组，不追加注入节点，使用方式与候选顺序见 [README 的节点中转说明](README.md#节点中转)。亚太和美西两个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；两个公共机场亚太组、Mihomo 的 oixCloud Optimized 亚太组和良心云 Hy2 组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
+当前普通组使用 `append`，全球直连、狮城与日本中转入口及各 Fallback 组使用 `manual` 保留手工配置；Fallback 只引用固定子组，不追加注入节点，使用方式与候选顺序见 [README 的节点中转说明](README.md#节点中转)。亚太和美西两个中转组使用 `append` 并排除带 `dialer-proxy` 的注入节点；两个公共机场亚太组和 Mihomo 的 oixCloud Optimized 亚太组使用 `replace` 并排除带 `dialer-proxy` 的注入节点。机场亚太组统一命名为“机场名 亚太”，只筛选 HK、SG、JP、TW，每次覆写重建成员，避免旧地区或已改为链式代理的节点残留。
 
 | 代理组 | 额外限制 |
 | --- | --- |
 | `✈️ VikingLinks 亚太` | 名称含 VikingLinks，线路为 Go、IEPL 或 SH |
 | `✈️ 良心云 亚太` | 名称含良心云及 `CT`（包括 `CTCU`、`CTCUCM`），实际协议仅限 VLESS |
-| `✈️ 良心云 Hy2` | 名称含良心云，实际协议仅限 `hysteria2` / `hy2`，排除带 `dialer-proxy` 的节点，每次覆写重建成员 |
 
 Mihomo 的 `✈️ oixCloud Optimized 亚太` 保留 `IXP` / `CIA` 线路筛选，并按地区代码、中英文地区名或旗帜限定 HK、SG、JP、TW。其 `filter` 同时供覆写脚本筛选注入节点和 Mihomo 筛选 `oixCloud` provider 成员；provider 内部节点仍由客户端运行时处理。
 
-新加坡、日本方向子组沿用对应机场的线路和协议限制，分别筛选香港、目标地区、亚太兜底池，并通过 `members.benchmark` 生成独立测速副本。两个方向的亚太范围都维持 HK、SG、JP、TW，不额外纳入韩国；香港同时参与两个方向。方向入口与 Fallback 的机场顺序、最后亚太兜底顺序只在基础配置中维护，Mihomo 补入对应 Optimized 引用。
+新加坡、日本方向子组沿用对应机场的线路和协议限制，并通过 `members.benchmark` 生成独立测速副本。VikingLinks 和 oixCloud Optimized 分别设置香港、目标地区和亚太兜底池，良心云只设置目标地区和亚太兜底池。两个方向的亚太范围都维持 HK、SG、JP、TW，不额外纳入韩国。方向入口与 Fallback 的机场顺序、最后亚太兜底顺序只在基础配置中维护，Mihomo 补入对应 Optimized 引用。
 
 协议筛选依据节点实际 `type`，不依据名称中的协议字样。修改重命名脚本的名称格式、关键词提取规则或订阅名后，检查最终名称仍能满足机场名、地区代码和线路关键词的筛选要求。
 

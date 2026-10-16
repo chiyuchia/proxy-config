@@ -111,7 +111,7 @@ test('directional selectors preserve airport priority before the ordered Asia-Pa
     for (const { code, region, url } of directions) {
       const expected = [
         ...airports.flatMap((airport) => [
-          `✈️ ${airport} 香港 · ${code}`,
+          ...(airport === '良心云' ? [] : [`✈️ ${airport} 香港 · ${code}`]),
           `✈️ ${airport} ${region} · ${code}`,
         ]),
         ...airports.map((airport) => `✈️ ${airport} 亚太 · ${code}`),
@@ -168,7 +168,7 @@ test('directional pools filter original relays and share only same-direction ben
     for (const { code, region, url } of directions) {
       for (const airport of airportsFor(client)) {
         for (const [poolRegion, codes] of [
-          ['香港', ['HK']],
+          ...(airport === '良心云' ? [] : [['香港', ['HK']]]),
           [region, [code]],
           ['亚太', ['HK', 'SG', 'JP', 'TW']],
         ] as [string, string[]][]) {
@@ -245,7 +245,7 @@ test('empty directional pools reject rather than silently adding direct transit'
     assert.deepEqual(result.proxies ?? [], []);
     for (const { code, region } of directions) {
       for (const airport of airportsFor(client)) {
-        for (const poolRegion of ['香港', region, '亚太']) {
+        for (const poolRegion of [...(airport === '良心云' ? [] : ['香港']), region, '亚太']) {
           const pool = group(result, `✈️ ${airport} ${poolRegion} · ${code}`);
           assert.deepEqual(pool.proxies, ['REJECT'], `${client}: ${pool.name}`);
           if (airport === 'oixCloud Optimized') assert.deepEqual(pool.use, ['oixCloud']);

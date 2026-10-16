@@ -503,13 +503,7 @@ test('live profiles share group definitions and menu order except for the Mihomo
 
   const groups = new Map(sharedGroups(stash).map((group) => [group.name, group]));
   const airportMenu = ['✈️ VikingLinks', '✈️ oixCloud Edge', '✈️ 良心云', '✈️ 一元机场'];
-  const asiaRelays = [
-    '✈️ VikingLinks 亚太',
-    '✈️ 良心云 亚太',
-    '✈️ VikingLinks',
-    '✈️ 良心云',
-    '✈️ 良心云 Hy2',
-  ];
+  const asiaRelays = ['✈️ VikingLinks 亚太', '✈️ 良心云 亚太', '✈️ VikingLinks', '✈️ 良心云'];
   assert.ok(!groups.has('🛡️ Edge 中转'));
   assert.deepEqual(groups.get('🛡️ 亚太中转')!.proxies, ['🛡️ 亚太 Fallback', ...asiaRelays]);
   assert.deepEqual(groups.get('🛡️ 美西中转')!.proxies, asiaRelays);
@@ -524,9 +518,7 @@ test('live profiles share group definitions and menu order except for the Mihomo
     '🌍 其他节点',
     '✈️ VikingLinks 亚太',
     '✈️ 良心云 亚太',
-    ...airportMenu.slice(0, -1),
-    '✈️ 良心云 Hy2',
-    '✈️ 一元机场',
+    ...airportMenu,
   ]);
   assert.equal(groups.get('🚀 节点选择')!.url, 'https://cp.cloudflare.com/generate_204');
   assert.equal(groups.get('🏝️ 精品节点')!.filter, '(自建|合租)');
@@ -1001,7 +993,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   const namesFor = (...servers: string[]): string[] =>
     proxies.filter(({ server }) => servers.includes(server!)).map(({ name }) => name);
   const relayGroups = ['🛡️ 亚太中转', '🛡️ 美西中转'];
-  const dedicatedGroups = ['✈️ VikingLinks 亚太', '✈️ 良心云 亚太', '✈️ 良心云 Hy2'];
+  const dedicatedGroups = ['✈️ VikingLinks 亚太', '✈️ 良心云 亚太'];
   const configs = liveConfigs(proxies);
   for (const [client, config] of Object.entries(configs)) {
     const overwrite = loadScript('dist/config-overwrite.js', {
@@ -1046,7 +1038,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
       ['✈️ 一元机场', ['yiyuan.example.com']],
       ['✈️ VikingLinks 亚太', ['viking.example.com']],
       ['✈️ 良心云 亚太', ['liangxin.example.com']],
-      ['✈️ 良心云 Hy2', ['hy2.example.com']],
+      ['✈️ 良心云', ['liangxin.example.com', 'hy2.example.com']],
     ] as [string, string[]][]) {
       assert.deepEqual(
         plain(groups.get(name)!.proxies),

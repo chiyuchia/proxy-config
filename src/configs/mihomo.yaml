@@ -68,7 +68,7 @@ proxy-groups:
   - name: "🛡️ 狮城中转"
     proxies:
       $insert-before:
-        "✈️ 良心云 香港 · SG":
+        "✈️ 良心云 狮城 · SG":
           - "✈️ oixCloud Optimized 香港 · SG"
           - "✈️ oixCloud Optimized 狮城 · SG"
         "✈️ 良心云 亚太 · SG": ["✈️ oixCloud Optimized 亚太 · SG"]
@@ -76,7 +76,7 @@ proxy-groups:
   - name: "🛡️ 狮城 Fallback"
     proxies:
       $insert-before:
-        "✈️ 良心云 香港 · SG":
+        "✈️ 良心云 狮城 · SG":
           - "✈️ oixCloud Optimized 香港 · SG"
           - "✈️ oixCloud Optimized 狮城 · SG"
         "✈️ 良心云 亚太 · SG": ["✈️ oixCloud Optimized 亚太 · SG"]
@@ -84,7 +84,7 @@ proxy-groups:
   - name: "🛡️ 日本中转"
     proxies:
       $insert-before:
-        "✈️ 良心云 香港 · JP":
+        "✈️ 良心云 日本 · JP":
           - "✈️ oixCloud Optimized 香港 · JP"
           - "✈️ oixCloud Optimized 日本 · JP"
         "✈️ 良心云 亚太 · JP": ["✈️ oixCloud Optimized 亚太 · JP"]
@@ -92,7 +92,7 @@ proxy-groups:
   - name: "🛡️ 日本 Fallback"
     proxies:
       $insert-before:
-        "✈️ 良心云 香港 · JP":
+        "✈️ 良心云 日本 · JP":
           - "✈️ oixCloud Optimized 香港 · JP"
           - "✈️ oixCloud Optimized 日本 · JP"
         "✈️ 良心云 亚太 · JP": ["✈️ oixCloud Optimized 亚太 · JP"]

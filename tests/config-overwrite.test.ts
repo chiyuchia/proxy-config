@@ -215,7 +215,7 @@ test('renaming a group cannot change its declared member behavior', () => {
     { name: '直接节点', type: 'vless' },
     { name: '链式节点', type: 'hysteria2', 'dialer-proxy': '上游组' },
   ];
-  const names = ['新建组', '中转', '🎯 全球直连', '✈️ 良心云 亚太', '✈️ 良心云 Hy2'];
+  const names = ['新建组', '中转', '🎯 全球直连', '✈️ 良心云 亚太', '任意 Hy2 名单'];
   for (const mode of ['append', 'replace', 'manual'] as const) {
     const groups = names.map((name) => ({
       name,
