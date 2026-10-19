@@ -46,6 +46,7 @@ proxy-groups:
     use: &oix_provider [oixCloud]
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": &oix_optimized ["✈️ oixCloud Optimized"]
 
   - name: "🛡️ 亚太中转"
@@ -101,102 +102,119 @@ proxy-groups:
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "💬 Ai平台"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🍎 Apple Push"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🎥 奈飞视频"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📹 油管视频"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📼 EMBY"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📲 电报消息"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🐙 Github"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🍎 Apple"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "Ⓜ️ Microsoft"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📢 Google"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📺 国内媒体"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🌍 国外媒体"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🎮 游戏平台"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "👛 Paypal"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "💰 加密货币"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🐟 漏网之鱼"
     use: *oix_provider
     proxies:
       $insert-before:
+        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🇭🇰 香港节点"

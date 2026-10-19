@@ -502,7 +502,14 @@ test('live profiles share group definitions and menu order except for the Mihomo
   );
 
   const groups = new Map(sharedGroups(stash).map((group) => [group.name, group]));
-  const airportMenu = ['✈️ VikingLinks', '✈️ oixCloud Edge', '✈️ 良心云', '✈️ 一元机场'];
+  const airportMenu = [
+    '✈️ VikingLinks 亚太',
+    '✈️ 良心云 亚太',
+    '✈️ VikingLinks',
+    '✈️ oixCloud Edge',
+    '✈️ 良心云',
+    '✈️ 一元机场',
+  ];
   const asiaRelays = ['✈️ VikingLinks 亚太', '✈️ 良心云 亚太', '✈️ VikingLinks', '✈️ 良心云'];
   assert.ok(!groups.has('🛡️ Edge 中转'));
   assert.deepEqual(groups.get('🛡️ 亚太中转')!.proxies, ['🛡️ 亚太 Fallback', ...asiaRelays]);
@@ -516,8 +523,6 @@ test('live profiles share group definitions and menu order except for the Mihomo
     '🇯🇵 日本节点',
     '🇼🇸 台湾节点',
     '🌍 其他节点',
-    '✈️ VikingLinks 亚太',
-    '✈️ 良心云 亚太',
     ...airportMenu,
   ]);
   assert.equal(groups.get('🚀 节点选择')!.url, 'https://cp.cloudflare.com/generate_204');
