@@ -25,7 +25,7 @@
 | YAML 模板生成与单文件脚本构建 | `tools/build.ts` |
 | 自定义规则集内容 | `rules/` |
 
-共同代理组沿用 Mihomo 的分组和候选顺序，只在 `src/configs/base.yaml` 维护，包括 oixCloud Edge 和一元机场组。`src/configs/stash.yaml` 不维护代理组；Mihomo 的代理组补丁仅用于 oixCloud provider 相关差异。
+共同代理组沿用 Mihomo 的分组和候选顺序，只在 `src/configs/base.yaml` 维护，包括 oixCloud Edge 组。`src/configs/stash.yaml` 不维护代理组；Mihomo 的代理组补丁仅用于 oixCloud provider 相关差异。
 
 除 Mihomo 的 oixCloud provider、Optimized 组及相应 `use` 和菜单引用外，两种客户端合并后的 `proxy-groups` 必须一致。共同候选顺序、筛选和测速设置不能分别在客户端差异文件中维护。
 
@@ -79,7 +79,7 @@ tsconfig.json        源码、构建工具和测试的严格类型检查配置
 - `tools/build.ts` 复用 `tools/merge-config/` 的纯合并与校验逻辑，核对客户端来源标记、静态引用和成员声明，分别生成 Mihomo、Stash 模板；公共候选顺序、客户端补丁和规则优先级保持不变。
 - 生成模板保留组内 `x-substore.members` 和顶层运行时 provider 声明，供 Sub-Store 运行期使用；构建不能执行覆写来生成发布模板，也不能注入真实订阅节点。
 - Sub-Store 先读取远程模板，再注入节点，最后通过 `dist/config-overwrite.js` 覆写并校验。额外的配置修改应放在模板加载之后、最终覆写之前；接入及旧流程迁移见 [README](README.md#接入-sub-store)。
-- `dist/dialer-proxy.js` 在需要中转的来源订阅中通过 `operator(proxies, targetPlatform, context)` 按地区设置中转，无需模式参数。自建仅为 SS 节点设置中转并保留原名，直接供文件注入和覆写使用；oixCloud Edge 和一元机场设置中转后可按需重命名。自建识别、协议限制及地区分配规则见 [README.md 的节点中转说明](README.md#节点中转)。
+- `dist/dialer-proxy.js` 在需要中转的来源订阅中通过 `operator(proxies, targetPlatform, context)` 按地区设置中转，无需模式参数。自建仅为 SS 节点设置中转并保留原名，直接供文件注入和覆写使用；oixCloud Edge 设置中转后可按需重命名。自建识别、协议限制及地区分配规则见 [README.md 的节点中转说明](README.md#节点中转)。
 - `dist/rename.js` 在订阅或组合订阅中通过 `async operator(proxies, targetPlatform, context)` 按固定规则处理节点数组，无需参数，再供文件注入和覆写使用；接入及命名规则见 [README.md 的节点重命名说明](README.md#节点重命名)。
 
 ### 测速参数复用

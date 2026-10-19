@@ -72,7 +72,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🏝️ 精品节点"
     x-substore:
@@ -202,7 +201,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "💬 Ai平台"
     x-substore:
@@ -223,7 +221,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🍎 Apple Push"
     x-substore:
@@ -244,7 +241,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
       - DIRECT
 
   - name: "🎥 奈飞视频"
@@ -266,7 +262,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📹 油管视频"
     x-substore:
@@ -287,7 +282,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📼 EMBY"
     x-substore:
@@ -308,7 +302,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📲 电报消息"
     x-substore:
@@ -329,7 +322,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🐙 Github"
     x-substore:
@@ -350,7 +342,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🍎 Apple"
     x-substore:
@@ -372,7 +363,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "Ⓜ️ Microsoft"
     x-substore:
@@ -393,7 +383,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📢 Google"
     x-substore:
@@ -414,7 +403,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "📺 国内媒体"
     x-substore:
@@ -436,7 +424,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🌍 国外媒体"
     x-substore:
@@ -457,7 +444,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
       - DIRECT
 
   - name: "🎮 游戏平台"
@@ -480,7 +466,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "👛 Paypal"
     x-substore:
@@ -501,7 +486,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "💰 加密货币"
     x-substore:
@@ -522,7 +506,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🐟 漏网之鱼"
     x-substore:
@@ -544,7 +527,6 @@ proxy-groups:
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 良心云"
-      - "✈️ 一元机场"
 
   - name: "🇭🇰 香港节点"
     x-substore:
@@ -608,13 +590,6 @@ proxy-groups:
         mode: append
     type: select
     filter: "(良心云)"
-
-  - name: "✈️ 一元机场"
-    x-substore:
-      members:
-        mode: append
-    type: select
-    filter: "(一元机场)"
 
   # 方向测速使用独立中转副本，香港可同时参与 SG、JP，台湾保留在不区分方向的亚太兜底。
   - name: "✈️ VikingLinks 香港 · SG"

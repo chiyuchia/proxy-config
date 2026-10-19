@@ -39,8 +39,8 @@ test('eligible nodes use regional dialers while retaining names, fields and orde
     { name: '自建 SG 直连' },
     { name: '自建 US 直连', 'dialer-proxy': '手动中转' },
     { name: 'SG 01', _subName: 'oixCloud Edge', type: 'ss', password: 'test-only' },
-    { name: 'JP 01', _subName: '一元机场', 'dialer-proxy': '旧中转' },
-    { name: 'US 01', _subName: '一元机场', 'dialer-proxy': '旧中转' },
+    { name: 'JP 01', _subName: 'oixCloud Edge', 'dialer-proxy': '旧中转' },
+    { name: 'US 01', _subName: 'oixCloud Edge', 'dialer-proxy': '旧中转' },
     { name: '德国 01', _subName: '美国订阅', server: 'us.example.com' },
     { name: '' },
   ];
@@ -99,7 +99,6 @@ test('self-hosted protocol restrictions use the exact subscription name, not nod
     '精品节点',
     '🏝️ 精品节点',
     'oixCloud Edge',
-    '一元机场',
   ]) {
     const proxies: ProxyNode[] = [{ name: '自建 US 落地', type: 'vless', _subName: subName }];
     const [result] = assignDialerProxy(proxies);
@@ -181,8 +180,8 @@ test('published operator runs standalone without arguments and ignores legacy mo
       { name: '狮城 SS', type: 'ss', _subName: '自建节点', 'dialer-proxy': '旧中转' },
       { name: 'Tokyo SS', type: 'SS', _subName: '自建节点', 'dialer-proxy': '旧中转' },
       { name: 'HK 01', _subName: 'oixCloud Edge' },
-      { name: 'KR 01', _subName: '一元机场' },
-      { name: 'TW 01', _subName: '一元机场' },
+      { name: 'KR 01', _subName: 'VikingLinks' },
+      { name: 'TW 01', _subName: 'VikingLinks' },
       { name: 'US VLESS', type: 'vless', _subName: '自建节点' },
       { name: 'SG Hy2', type: 'hy2', _subName: '自建节点', 'dialer-proxy': 'DIRECT' },
       { name: 'JP VLESS', type: 'vless', _subName: '自建节点', 'dialer-proxy': '手动中转' },

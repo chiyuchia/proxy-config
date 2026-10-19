@@ -508,7 +508,6 @@ test('live profiles share group definitions and menu order except for the Mihomo
     '✈️ VikingLinks',
     '✈️ oixCloud Edge',
     '✈️ 良心云',
-    '✈️ 一元机场',
   ];
   const asiaRelays = ['✈️ VikingLinks 亚太', '✈️ 良心云 亚太', '✈️ VikingLinks', '✈️ 良心云'];
   assert.ok(!groups.has('🛡️ Edge 中转'));
@@ -554,19 +553,14 @@ test('live profiles share group definitions and menu order except for the Mihomo
       `${name}: airport menu order`,
     );
   }
-  for (const [name, filter] of [
-    ['✈️ oixCloud Edge', '(oixCloud Edge)'],
-    ['✈️ 一元机场', '(一元机场)'],
-  ]) {
-    assert.equal(groups.get(name)!.type, 'select');
-    assert.equal(groups.get(name)!.filter, filter);
-  }
+  assert.equal(groups.get('✈️ oixCloud Edge')!.type, 'select');
+  assert.equal(groups.get('✈️ oixCloud Edge')!.filter, '(oixCloud Edge)');
 });
 
 test('the same injected nodes produce matching group members in both live profiles', () => {
   const proxies = [
     { name: 'oixCloud Edge HK', type: 'vless' },
-    { name: '一元机场 JP', type: 'ss' },
+    { name: '良心云 JP CT', type: 'ss' },
     { name: '自建 US', type: 'vless' },
     { name: '合租 HK', type: 'vless' },
     { name: '家宽 US 落地线路', type: 'vless', 'dialer-proxy': '🛡️ 亚太中转' },
@@ -583,7 +577,7 @@ test('the same injected nodes produce matching group members in both live profil
     assertOriginalNodesPreserved(config, proxies);
     for (const [name, expected] of [
       ['✈️ oixCloud Edge', ['oixCloud Edge HK']],
-      ['✈️ 一元机场', ['一元机场 JP']],
+      ['🇯🇵 日本节点', ['良心云 JP CT']],
       ['🏝️ 精品节点', ['自建 US', '合租 HK']],
     ]) {
       assert.deepEqual(
@@ -941,7 +935,6 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
       { name: 'HK', type: 'vless', _subName: 'oixCloud Edge', server: 'oix.example.com' },
       { name: '美国 US', type: 'vless', _subName: 'oixCloud Edge', server: 'oix-us.example.com' },
     ],
-    [{ name: 'JP', type: 'ss', _subName: '一元机场', server: 'yiyuan.example.com' }],
   ];
   const directProxies = [
     { name: 'HK-Go-01-GCP', type: 'ss', _subName: 'VikingLinks', server: 'viking.example.com' },
@@ -968,7 +961,6 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
     ['manual.example.com', 'DIRECT'],
     ['oix.example.com', '🛡️ 亚太中转'],
     ['oix-us.example.com', '🛡️ 美西中转'],
-    ['yiyuan.example.com', '🛡️ 日本中转'],
   ]);
   const { operator: rename } = loadScript('dist/rename.js', {
     console: {
@@ -1040,7 +1032,6 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
         ['sg.example.com', 'us.example.com', 'direct.example.com', 'manual.example.com'],
       ],
       ['✈️ oixCloud Edge', ['oix.example.com', 'oix-us.example.com']],
-      ['✈️ 一元机场', ['yiyuan.example.com']],
       ['✈️ VikingLinks 亚太', ['viking.example.com']],
       ['✈️ 良心云 亚太', ['liangxin.example.com']],
       ['✈️ 良心云', ['liangxin.example.com', 'hy2.example.com']],

@@ -241,8 +241,8 @@ test('built-in filtering uses original node names and does not filter subscripti
   const result = await rename([
     node('remaining', '香港 剩余流量'),
     node('expiry', '日本 Expire'),
-    node('name-match', '一元机场 日本 01'),
-    node('subscription', '日本 01', { _subName: '一元机场' }),
+    node('name-match', '官网 日本 01'),
+    node('subscription', '日本 01', { _subName: '官网' }),
     node('literal', '香港 测试(1)'),
   ]);
 
@@ -250,7 +250,7 @@ test('built-in filtering uses original node names and does not filter subscripti
     result.map(({ id, name }) => [id, name]),
     [
       ['literal', '🇭🇰 HK 01'],
-      ['subscription', '🇯🇵 JP 01 | 一元机场'],
+      ['subscription', '🇯🇵 JP 01 | 官网'],
     ],
   );
 });
@@ -299,7 +299,7 @@ test('global alias patterns do not leak matching state between nodes or calls', 
 
 test('all removed parameters are ignored, including values that previously rejected the operation', async () => {
   const proxies = [
-    node('known', '香港品牌 东京 IPLC', { _subName: '一元机场' }),
+    node('known', '香港品牌 东京 IPLC', { _subName: 'VikingLinks' }),
     node('other-region', '德国'),
     node('filtered', '香港 剩余流量'),
     node('unknown', '未知节点 01'),

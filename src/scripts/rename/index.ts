@@ -9,8 +9,7 @@ import { HOT_REGIONS } from '../shared/regions/regions.ts';
 import type { Logger, ProxyNode } from '../shared/types.ts';
 
 // 只匹配原始节点名中的信息词，不检查稍后追加到名称中的 _subName。
-const INFORMATION_NODE_PATTERN =
-  /过期|剩余|官网|套餐|重置|到期|Traffic|Expire|一元机场|客户端|网站/i;
+const INFORMATION_NODE_PATTERN = /过期|剩余|官网|套餐|重置|到期|Traffic|Expire|客户端|网站/i;
 
 /**
  * 按热门地区、其他已识别地区、未知地区排序，已识别节点再按地区代码和最终名称排序。
