@@ -68,9 +68,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "🏝️ 精品节点"
@@ -89,8 +91,11 @@ proxy-groups:
       - "🛡️ 狮城 Fallback"
       - "✈️ VikingLinks 香港 · SG"
       - "✈️ VikingLinks 狮城 · SG"
+      - "✈️ 吹雪云 香港 · SG"
+      - "✈️ 吹雪云 狮城 · SG"
       - "✈️ 良心云 狮城 · SG"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
   - name: "🛡️ 狮城 Fallback"
@@ -110,8 +115,11 @@ proxy-groups:
     proxies:
       - "✈️ VikingLinks 香港 · SG"
       - "✈️ VikingLinks 狮城 · SG"
+      - "✈️ 吹雪云 香港 · SG"
+      - "✈️ 吹雪云 狮城 · SG"
       - "✈️ 良心云 狮城 · SG"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
   - name: "🛡️ 日本中转"
@@ -123,8 +131,11 @@ proxy-groups:
       - "🛡️ 日本 Fallback"
       - "✈️ VikingLinks 香港 · JP"
       - "✈️ VikingLinks 日本 · JP"
+      - "✈️ 吹雪云 香港 · JP"
+      - "✈️ 吹雪云 日本 · JP"
       - "✈️ 良心云 日本 · JP"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
   - name: "🛡️ 日本 Fallback"
@@ -137,8 +148,11 @@ proxy-groups:
     proxies:
       - "✈️ VikingLinks 香港 · JP"
       - "✈️ VikingLinks 日本 · JP"
+      - "✈️ 吹雪云 香港 · JP"
+      - "✈️ 吹雪云 日本 · JP"
       - "✈️ 良心云 日本 · JP"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
   - name: "🛡️ 亚太中转"
@@ -150,8 +164,10 @@ proxy-groups:
     proxies:
       - "🛡️ 亚太 Fallback"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "🛡️ 亚太 Fallback"
@@ -168,6 +184,7 @@ proxy-groups:
     # 仅按固定子组顺序回退，不追加注入节点；Mihomo 补入 oixCloud Optimized 亚太。
     proxies:
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
   - name: "🛡️ 美西中转"
@@ -178,8 +195,10 @@ proxy-groups:
     type: select
     proxies:
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "♊ Gemini"
@@ -197,9 +216,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "💬 Ai平台"
@@ -217,9 +238,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "🍎 Apple Push"
@@ -237,9 +260,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
       - DIRECT
 
@@ -258,9 +283,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "📹 油管视频"
@@ -278,9 +305,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "📼 EMBY"
@@ -298,9 +327,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "📲 电报消息"
@@ -318,9 +349,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "🐙 Github"
@@ -338,9 +371,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "🍎 Apple"
@@ -359,9 +394,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "Ⓜ️ Microsoft"
@@ -379,9 +416,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "📢 Google"
@@ -399,9 +438,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "📺 国内媒体"
@@ -420,9 +461,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "🌍 国外媒体"
@@ -440,9 +483,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
       - DIRECT
 
@@ -462,9 +507,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "👛 Paypal"
@@ -482,9 +529,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "💰 加密货币"
@@ -502,9 +551,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "🐟 漏网之鱼"
@@ -523,9 +574,11 @@ proxy-groups:
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
       - "✈️ VikingLinks 亚太"
+      - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
       - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
+      - "✈️ 吹雪云"
       - "✈️ 良心云"
 
   - name: "🇭🇰 香港节点"
@@ -584,6 +637,13 @@ proxy-groups:
     type: select
     filter: "(oixCloud Edge)"
 
+  - name: "✈️ 吹雪云"
+    x-substore:
+      members:
+        mode: append
+    type: select
+    filter: "(吹雪云)"
+
   - name: "✈️ 良心云"
     x-substore:
       members:
@@ -619,6 +679,26 @@ proxy-groups:
     url: *sg_benchmark_url
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)SG(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
+  - name: "✈️ 吹雪云 香港 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)HK(?:\s|-)).*'
+
+  - name: "✈️ 吹雪云 狮城 · SG"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: SG
+    <<: *direction_url_test_defaults
+    url: *sg_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)SG(?:\s|-)).*'
+
   - name: "✈️ 良心云 狮城 · SG"
     x-substore:
       members:
@@ -650,6 +730,26 @@ proxy-groups:
     url: *jp_benchmark_url
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)JP(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
+  - name: "✈️ 吹雪云 香港 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)HK(?:\s|-)).*'
+
+  - name: "✈️ 吹雪云 日本 · JP"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+        benchmark: JP
+    <<: *direction_url_test_defaults
+    url: *jp_benchmark_url
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)JP(?:\s|-)).*'
+
   - name: "✈️ 良心云 日本 · JP"
     x-substore:
       members:
@@ -679,6 +779,15 @@ proxy-groups:
     # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
     # x-substore.members 声明重建成员，并排除带 dialer-proxy 的节点。
     filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
+
+  - name: "✈️ 吹雪云 亚太"
+    x-substore:
+      members:
+        mode: replace
+        exclude-dialer: true
+    <<: *url_test_defaults
+    # 仅筛选 HK、SG、JP、TW 地区且名称包含“电信”的节点；不限制协议类型。
+    filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 
   - name: "✈️ 良心云 亚太"
     x-substore:

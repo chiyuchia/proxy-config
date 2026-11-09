@@ -49,6 +49,14 @@ test('native config test resolves oixCloud without a token or an existing provid
         password: 'test-only',
       },
       {
+        name: '吹雪云 HK 电信',
+        type: 'ss',
+        server: '127.0.0.1',
+        port: 443,
+        cipher: 'aes-128-gcm',
+        password: 'test-only',
+      },
+      {
         name: '良心云 TW CT',
         type: 'vless',
         server: '127.0.0.1',

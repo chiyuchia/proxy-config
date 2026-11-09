@@ -46,175 +46,175 @@ proxy-groups:
     use: &oix_provider [oixCloud]
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": &oix_optimized ["✈️ oixCloud Optimized"]
 
   - name: "🛡️ 亚太中转"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": *oix_optimized
+        "✈️ 吹雪云 亚太": *oix_optimized
 
   - name: "🛡️ 美西中转"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云": *oix_optimized
+        "✈️ 吹雪云": *oix_optimized
 
   - name: "🛡️ 亚太 Fallback"
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
 
   - name: "🛡️ 狮城中转"
     proxies:
       $insert-before:
-        "✈️ 良心云 狮城 · SG":
+        "✈️ 吹雪云 香港 · SG":
           - "✈️ oixCloud Optimized 香港 · SG"
           - "✈️ oixCloud Optimized 狮城 · SG"
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
 
   - name: "🛡️ 狮城 Fallback"
     proxies:
       $insert-before:
-        "✈️ 良心云 狮城 · SG":
+        "✈️ 吹雪云 香港 · SG":
           - "✈️ oixCloud Optimized 香港 · SG"
           - "✈️ oixCloud Optimized 狮城 · SG"
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
 
   - name: "🛡️ 日本中转"
     proxies:
       $insert-before:
-        "✈️ 良心云 日本 · JP":
+        "✈️ 吹雪云 香港 · JP":
           - "✈️ oixCloud Optimized 香港 · JP"
           - "✈️ oixCloud Optimized 日本 · JP"
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
 
   - name: "🛡️ 日本 Fallback"
     proxies:
       $insert-before:
-        "✈️ 良心云 日本 · JP":
+        "✈️ 吹雪云 香港 · JP":
           - "✈️ oixCloud Optimized 香港 · JP"
           - "✈️ oixCloud Optimized 日本 · JP"
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
 
   - name: "♊ Gemini"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "💬 Ai平台"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🍎 Apple Push"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🎥 奈飞视频"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📹 油管视频"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📼 EMBY"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📲 电报消息"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🐙 Github"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🍎 Apple"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "Ⓜ️ Microsoft"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📢 Google"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "📺 国内媒体"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🌍 国外媒体"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🎮 游戏平台"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "👛 Paypal"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "💰 加密货币"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🐟 漏网之鱼"
     use: *oix_provider
     proxies:
       $insert-before:
-        "✈️ 良心云 亚太": ["✈️ oixCloud Optimized 亚太"]
+        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
         "✈️ oixCloud Edge": *oix_optimized
 
   - name: "🇭🇰 香港节点"
@@ -259,7 +259,7 @@ proxy-groups:
         mode: replace
         exclude-dialer: true
         benchmark: SG
-    $before: "✈️ 良心云 狮城 · SG"
+    $before: "✈️ 吹雪云 香港 · SG"
     <<: &oix_direction_url_test_defaults
       type: url-test
       interval: 300
@@ -278,7 +278,7 @@ proxy-groups:
         mode: replace
         exclude-dialer: true
         benchmark: SG
-    $before: "✈️ 良心云 狮城 · SG"
+    $before: "✈️ 吹雪云 香港 · SG"
     <<: *oix_direction_url_test_defaults
     url: "https://sgp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bSG\b|新加坡|Singapore|🇸🇬)).*'
@@ -290,7 +290,7 @@ proxy-groups:
         mode: replace
         exclude-dialer: true
         benchmark: JP
-    $before: "✈️ 良心云 日本 · JP"
+    $before: "✈️ 吹雪云 香港 · JP"
     <<: *oix_direction_url_test_defaults
     url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bHK\b|香港|Hong\s*Kong|🇭🇰)).*'
@@ -302,7 +302,7 @@ proxy-groups:
         mode: replace
         exclude-dialer: true
         benchmark: JP
-    $before: "✈️ 良心云 日本 · JP"
+    $before: "✈️ 吹雪云 香港 · JP"
     <<: *oix_direction_url_test_defaults
     url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bJP\b|日本|Japan|🇯🇵)).*'
@@ -313,7 +313,7 @@ proxy-groups:
       members:
         mode: replace
         exclude-dialer: true
-    $before: "✈️ 良心云 亚太"
+    $before: "✈️ 吹雪云 亚太"
     <<: *oix_url_test_defaults
     # 保留 IXP/CIA 线路，仅筛选 HK、SG、JP、TW，兼容 provider 的中英文地区名和旗帜。
     filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\b(?:HK|SG|JP|TW)\b|香港|新加坡|日本|台湾|台灣|Hong\s*Kong|Singapore|Japan|Taiwan|🇭🇰|🇸🇬|🇯🇵|🇹🇼)).*'

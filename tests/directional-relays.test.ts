@@ -23,6 +23,10 @@ const relayFixtures = [
   ['VikingLinks', 'SG', 'VikingLinks SG IEPL', 'ss'],
   ['VikingLinks', 'JP', 'VikingLinks JP SH', 'ss'],
   ['VikingLinks', 'TW', 'VikingLinks TW Go', 'ss'],
+  ['吹雪云', 'HK', '吹雪云 HK 电信', 'ss'],
+  ['吹雪云', 'SG', '吹雪云 SG 电信', 'trojan'],
+  ['吹雪云', 'JP', '吹雪云 JP 电信', 'vless'],
+  ['吹雪云', 'TW', '吹雪云 TW 电信', 'hysteria2'],
   ['良心云', 'HK', '良心云 HK CT', 'vless'],
   ['良心云', 'SG', '良心云 SG CTCU', 'VLESS'],
   ['良心云', 'JP', '良心云 JP CTCUCM', 'vless'],
@@ -56,7 +60,12 @@ function sourceConfig(client: Client, proxies: ProxyNode[] = []): MergedConfig {
  * @returns {string[]} 当前客户端的机场优先级。
  */
 function airportsFor(client: Client): string[] {
-  return ['VikingLinks', ...(client === 'mihomo' ? ['oixCloud Optimized'] : []), '良心云'];
+  return [
+    'VikingLinks',
+    ...(client === 'mihomo' ? ['oixCloud Optimized'] : []),
+    '吹雪云',
+    '良心云',
+  ];
 }
 
 /**
@@ -90,6 +99,13 @@ function injectedNodes(): ProxyNode[] {
     { name: 'VikingLinks KR Go', type: 'ss' },
     { name: 'VikingLinks US Go', type: 'ss' },
     { name: 'VikingLinks HK Go 链式', type: 'ss', 'dialer-proxy': 'DIRECT' },
+    { name: '吹雪云 HK 联通', type: 'ss' },
+    { name: '吹雪云 SG 普通', type: 'ss' },
+    { name: '吹雪云 KR 电信', type: 'ss' },
+    { name: '吹雪云 US 电信', type: 'ss' },
+    { name: '吹雪云 HK 电信 链式', type: 'ss', 'dialer-proxy': 'DIRECT' },
+    { name: '吹雪云 SG 电信 链式', type: 'trojan', 'dialer-proxy': 'DIRECT' },
+    { name: '吹雪云 JP 电信 链式', type: 'vless', 'dialer-proxy': 'DIRECT' },
     { name: '良心云 HK CT Hy2', type: 'hysteria2' },
     { name: '良心云 HK CM', type: 'vless' },
     { name: '良心云 KR CT', type: 'vless' },
@@ -183,7 +199,7 @@ test('directional pools create only regional benchmark copies while Asia-Pacific
     const aliases = result.proxies!.slice(originals.length);
     const aliasNames = new Set(aliases.map(({ name }) => name));
     assert.equal(aliasNames.size, aliases.length, 'benchmark aliases are unique');
-    assert.equal(aliases.length, client === 'mihomo' ? 10 : 6);
+    assert.equal(aliases.length, client === 'mihomo' ? 14 : 10);
 
     for (const { code, region, url } of directions) {
       for (const airport of airportsFor(client)) {
