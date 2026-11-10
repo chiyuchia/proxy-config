@@ -161,18 +161,50 @@ test('nodes sharing an endpoint keep independent recognition and retain all regi
 
 test('renumbers within each subscription and retains providers, lines and built-in keywords', async () => {
   const result = await rename([
-    node('viking-sh', '🇯🇵 JP-SH-12-GCP', { _subName: 'VikingLinks' }),
-    node('viking-go', 'JP-Go-09-Hytron', { _subName: 'VikingLinks' }),
+    node('oix-dmit', '🇯🇵 日本 DMIT 12', { _subName: 'oixCloud Edge' }),
+    node('oix-edge', '日本 Edge 09', { _subName: 'oixCloud Edge' }),
     node('liangxin', '🇯🇵日本高速01|CTCU|0.5x', { _subName: '良心云' }),
     node('built-in-only', '东京 IPLC 99', { _subName: '示例订阅' }),
   ]);
 
   assert.deepEqual(Object.fromEntries(result.map((p) => [p.id, p.name])), {
-    'viking-sh': '🇯🇵 JP 01 | SH GCP VikingLinks',
-    'viking-go': '🇯🇵 JP 02 | Go Hytron VikingLinks',
+    'oix-dmit': '🇯🇵 JP 01 | DMIT oixCloud Edge',
+    'oix-edge': '🇯🇵 JP 02 | Edge oixCloud Edge',
     liangxin: '🇯🇵 JP 01 | 高速 CTCU 0.5x 良心云',
     'built-in-only': '🇯🇵 JP 01 | 东京 示例订阅',
   });
+});
+
+test('current oixCloud Edge names retain complete carrier labels and normalized regions', async () => {
+  // 仅保留用户提供清单中的名称；不记录真实连接地址、密码或订阅凭据。
+  const cases = [
+    ['🇭🇰 香港 DMIT 01', '🇭🇰 HK 01 | DMIT oixCloud Edge'],
+    ['🇭🇰 香港 Edge 01', '🇭🇰 HK 02 | Edge oixCloud Edge'],
+    ['🇭🇰 香港 PCCW-HKT', '🇭🇰 HK 03 | PCCW-HKT oixCloud Edge'],
+    ['🇭🇰 香港 HKBN 01', '🇭🇰 HK 04 | HKBN oixCloud Edge'],
+    ['🇭🇰 香港 HKT 01', '🇭🇰 HK 05 | HKT oixCloud Edge'],
+    ['🇲🇴 澳门 Edge', '🇲🇴 MO 01 | Edge oixCloud Edge'],
+    ['🇨🇳 台湾 CHT 01', '🇼🇸 TW 01 | CHT oixCloud Edge'],
+    ['🇨🇳 台湾 HINET 01', '🇼🇸 TW 02 | HINET oixCloud Edge'],
+    ['🇸🇬 新加坡 Sptel', '🇸🇬 SG 01 | Sptel oixCloud Edge'],
+    ['🇯🇵 日本 Biglobe', '🇯🇵 JP 01 | Biglobe oixCloud Edge'],
+    ['🇯🇵 日本 KDDI', '🇯🇵 JP 02 | KDDI oixCloud Edge'],
+    ['🇯🇵 日本 SoftBank', '🇯🇵 JP 03 | SoftBank oixCloud Edge'],
+    ['🇺🇸 美国 Misaka 01', '🇺🇸 US 01 | Misaka oixCloud Edge'],
+    ['🇺🇸 美国 GTT', '🇺🇸 US 02 | GTT oixCloud Edge'],
+    ['🇺🇸 美国 Verizon', '🇺🇸 US 03 | Verizon oixCloud Edge'],
+    ['🇨🇦 加拿大 Bell', '🇨🇦 CA 01 | Bell oixCloud Edge'],
+    ['🇬🇧 英国 GTT', '🇬🇧 GB 01 | GTT oixCloud Edge'],
+  ];
+  const proxies = cases.map(([name], index) =>
+    node(String(index), name, { type: 'anytls', _subName: 'oixCloud Edge' }),
+  );
+  const result = await rename(proxies);
+  assert.equal(result.length, proxies.length);
+  assert.deepEqual(
+    Object.fromEntries(result.map(({ id, name }) => [id, name])),
+    Object.fromEntries(cases.map(([, name], index) => [String(index), name])),
+  );
 });
 
 test('the source API accepts a logger without Sub-Store globals and preserves input fields', () => {
@@ -223,17 +255,17 @@ test('region matching preserves Chinese, flag, English and code priority', async
   });
 });
 
-test('Taiwan keeps the flag substitution while Viking preserves its flag and UK display code', async () => {
+test('Taiwan uses the flag substitution and UK normalizes to the standard GB code', async () => {
   const result = await rename([
     node('taiwan', '台湾', { _subName: '普通' }),
-    node('viking-tw', '🇹🇼 TW-01-Provider', { _subName: 'VikingLinks' }),
-    node('viking-uk', '🇺🇸 UK-Go-99-Provider', { _subName: 'VikingLinks' }),
+    node('taiwan-flag', '🇹🇼 台湾 Edge 01', { _subName: 'oixCloud Edge' }),
+    node('uk', 'UK Edge 99', { _subName: 'oixCloud Edge' }),
   ]);
 
   assert.deepEqual(Object.fromEntries(result.map((proxy) => [proxy.id, proxy.name])), {
     taiwan: '🇼🇸 TW 01 | 普通',
-    'viking-tw': '🇹🇼 TW 01 | Provider VikingLinks',
-    'viking-uk': '🇺🇸 UK 01 | Go Provider VikingLinks',
+    'taiwan-flag': '🇼🇸 TW 01 | Edge oixCloud Edge',
+    uk: '🇬🇧 GB 01 | Edge oixCloud Edge',
   });
 });
 
@@ -299,7 +331,7 @@ test('global alias patterns do not leak matching state between nodes or calls', 
 
 test('all removed parameters are ignored, including values that previously rejected the operation', async () => {
   const proxies = [
-    node('known', '香港品牌 东京 IPLC', { _subName: 'VikingLinks' }),
+    node('known', '香港品牌 东京 IPLC', { _subName: '示例订阅' }),
     node('other-region', '德国'),
     node('filtered', '香港 剩余流量'),
     node('unknown', '未知节点 01'),

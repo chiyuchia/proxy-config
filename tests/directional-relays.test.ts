@@ -19,10 +19,6 @@ const directions = [
 ] as const;
 
 const relayFixtures = [
-  ['VikingLinks', 'HK', 'VikingLinks HK Go', 'ss'],
-  ['VikingLinks', 'SG', 'VikingLinks SG IEPL', 'ss'],
-  ['VikingLinks', 'JP', 'VikingLinks JP SH', 'ss'],
-  ['VikingLinks', 'TW', 'VikingLinks TW Go', 'ss'],
   ['吹雪云', 'HK', '吹雪云 HK 电信', 'ss'],
   ['吹雪云', 'SG', '吹雪云 SG 电信', 'trojan'],
   ['吹雪云', 'JP', '吹雪云 JP 电信', 'vless'],
@@ -60,12 +56,7 @@ function sourceConfig(client: Client, proxies: ProxyNode[] = []): MergedConfig {
  * @returns {string[]} 当前客户端的机场优先级。
  */
 function airportsFor(client: Client): string[] {
-  return [
-    'VikingLinks',
-    ...(client === 'mihomo' ? ['oixCloud Optimized'] : []),
-    '吹雪云',
-    '良心云',
-  ];
+  return [...(client === 'mihomo' ? ['oixCloud Optimized'] : []), '吹雪云', '良心云'];
 }
 
 /**
@@ -94,11 +85,6 @@ function injectedNodes(): ProxyNode[] {
     udp: true,
   }));
   const excluded: ProxyNode[] = [
-    { name: 'VikingLinks HK Gomami', type: 'ss' },
-    { name: 'VikingLinks SG 普通', type: 'ss' },
-    { name: 'VikingLinks KR Go', type: 'ss' },
-    { name: 'VikingLinks US Go', type: 'ss' },
-    { name: 'VikingLinks HK Go 链式', type: 'ss', 'dialer-proxy': 'DIRECT' },
     { name: '吹雪云 HK 联通', type: 'ss' },
     { name: '吹雪云 SG 普通', type: 'ss' },
     { name: '吹雪云 KR 电信', type: 'ss' },
@@ -199,7 +185,7 @@ test('directional pools create only regional benchmark copies while Asia-Pacific
     const aliases = result.proxies!.slice(originals.length);
     const aliasNames = new Set(aliases.map(({ name }) => name));
     assert.equal(aliasNames.size, aliases.length, 'benchmark aliases are unique');
-    assert.equal(aliases.length, client === 'mihomo' ? 14 : 10);
+    assert.equal(aliases.length, client === 'mihomo' ? 10 : 6);
 
     for (const { code, region, url } of directions) {
       for (const airport of airportsFor(client)) {
@@ -253,7 +239,7 @@ test('directional pools create only regional benchmark copies while Asia-Pacific
 
 test('one physical relay has independent SG and JP benchmark settings while keeping its name', () => {
   const original: ProxyNode = {
-    name: 'VikingLinks HK Go',
+    name: '吹雪云 HK 电信',
     type: 'ss',
     server: 'same-relay.example.com',
     port: 443,
@@ -276,12 +262,12 @@ test('one physical relay has independent SG and JP benchmark settings while keep
       assert.equal(copy['benchmark-url'], url);
       assert.equal(copy['benchmark-timeout'], 5);
       assert.equal(copy['benchmark-disabled'], false);
-      assert.deepEqual(group(result, `✈️ VikingLinks 香港 · ${code}`).proxies, [copy.name]);
+      assert.deepEqual(group(result, `✈️ 吹雪云 香港 · ${code}`).proxies, [copy.name]);
       return copy;
     });
     assert.notEqual(copies[0], copies[1]);
-    assert.deepEqual(group(result, '✈️ VikingLinks').proxies, [original.name]);
-    assert.deepEqual(group(result, '✈️ VikingLinks 亚太').proxies, [original.name]);
+    assert.deepEqual(group(result, '✈️ 吹雪云').proxies, [original.name]);
+    assert.deepEqual(group(result, '✈️ 吹雪云 亚太').proxies, [original.name]);
   }
 });
 

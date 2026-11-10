@@ -127,7 +127,7 @@ test('replace uses declared actual protocols and direct nodes on every fresh gen
   const vless: ProxyNode = { name: '良心云 HK CT Hy2', type: 'VLESS' };
   const hy2: ProxyNode = { name: '良心云 SG CT VLESS', type: 'hy2' };
   const hysteria2: ProxyNode = { name: '良心云 JP CT', type: 'HYSTERIA2' };
-  const viking: ProxyNode = { name: 'VikingLinks HK Go', type: 'trojan' };
+  const chuxue: ProxyNode = { name: '吹雪云 HK 电信', type: 'trojan' };
   const renamedNode: ProxyNode = { name: '测试机场 SG', type: 'ss' };
   const template = [
     {
@@ -143,8 +143,8 @@ test('replace uses declared actual protocols and direct nodes on every fresh gen
       ...policy('replace', { 'exclude-dialer': true, types: ['hysteria2', 'HY2'] }),
     },
     {
-      name: 'Viking 自定义名称',
-      filter: 'VikingLinks',
+      name: '不限协议名单',
+      filter: '吹雪云',
       proxies: ['旧地区节点'],
       ...policy('replace', { 'exclude-dialer': true }),
     },
@@ -163,23 +163,23 @@ test('replace uses declared actual protocols and direct nodes on every fresh gen
    */
   const generate = (proxies: ProxyNode[]) =>
     overwriteConfig({ proxies, 'proxy-groups': structuredClone(template) });
-  const config = generate([vless, hy2, hysteria2, viking, renamedNode]);
+  const config = generate([vless, hy2, hysteria2, chuxue, renamedNode]);
 
   assert.deepEqual(members(config, '任意 VLESS 名单'), [vless.name]);
   assert.deepEqual(members(config, '任意 Hy2 名单'), [hy2.name, hysteria2.name]);
-  assert.deepEqual(members(config, 'Viking 自定义名称'), [viking.name]);
+  assert.deepEqual(members(config, '不限协议名单'), [chuxue.name]);
   assert.deepEqual(members(config, '按名称重建名单'), [renamedNode.name]);
   assert.deepEqual(generate(config.proxies), config);
 
   vless.type = 'hysteria2';
   hy2['dialer-proxy'] = '中转';
-  viking['dialer-proxy'] = '中转';
+  chuxue['dialer-proxy'] = '中转';
   renamedNode.name = '已改名节点';
-  const changed = generate([vless, hy2, viking, renamedNode]);
+  const changed = generate([vless, hy2, chuxue, renamedNode]);
 
   assert.deepEqual(members(changed, '任意 VLESS 名单'), []);
   assert.deepEqual(members(changed, '任意 Hy2 名单'), [vless.name]);
-  assert.deepEqual(members(changed, 'Viking 自定义名称'), []);
+  assert.deepEqual(members(changed, '不限协议名单'), []);
   assert.deepEqual(members(changed, '按名称重建名单'), []);
 });
 

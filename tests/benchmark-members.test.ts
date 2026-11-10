@@ -59,7 +59,7 @@ function assertUnchangedOnFailure(config: ProxyConfig, error: RegExp): void {
 test('direction aliases reuse original fields without mutating nodes or leaking into ordinary groups', () => {
   const transport = Object.freeze({ mode: 'packet' });
   const original: ProxyNode = Object.freeze({
-    name: 'Viking HK Go',
+    name: '吹雪云 HK 电信',
     type: 'trojan',
     server: 'hk.example.com',
     password: 'fixture-only',
@@ -72,7 +72,7 @@ test('direction aliases reuse original fields without mutating nodes or leaking 
   const config: ProxyConfig = {
     proxies,
     'proxy-groups': [
-      benchmarkGroup('SG 香港', { filter: '^Viking HK Go$' }),
+      benchmarkGroup('SG 香港', { filter: '^吹雪云 HK 电信$' }),
       benchmarkGroup('SG 亚太'),
       benchmarkGroup('JP 香港', { url: 'https://jp.example.com/' }, { benchmark: 'JP' }),
       {
@@ -90,10 +90,10 @@ test('direction aliases reuse original fields without mutating nodes or leaking 
   assert.deepEqual(
     config['proxy-groups']!.map((group) => group.proxies),
     [
-      ['Viking HK Go [SG测速]'],
-      ['Viking HK Go [SG测速]'],
-      ['Viking HK Go [JP测速]'],
-      ['Viking HK Go'],
+      ['吹雪云 HK 电信 [SG测速]'],
+      ['吹雪云 HK 电信 [SG测速]'],
+      ['吹雪云 HK 电信 [JP测速]'],
+      ['吹雪云 HK 电信'],
     ],
   );
   assert.equal(config.proxies!.length, 3);
@@ -121,7 +121,7 @@ test('benchmark copies only original members accepted by filter, actual protocol
     { name: '良心云 HK CT VLESS', type: 'hy2' },
     { name: '良心云 HK CT 中转', type: 'vless', 'dialer-proxy': 'DIRECT' },
     { name: '良心云 SG CT', type: 'vless' },
-    { name: 'Viking HK Go', type: 'vless' },
+    { name: '吹雪云 HK 电信', type: 'vless' },
   ];
   const config: ProxyConfig = {
     proxies,

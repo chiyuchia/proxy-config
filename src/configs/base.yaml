@@ -67,10 +67,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -89,12 +87,9 @@ proxy-groups:
     type: select
     proxies:
       - "🛡️ 狮城 Fallback"
-      - "✈️ VikingLinks 香港 · SG"
-      - "✈️ VikingLinks 狮城 · SG"
       - "✈️ 吹雪云 香港 · SG"
       - "✈️ 吹雪云 狮城 · SG"
       - "✈️ 良心云 狮城 · SG"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
@@ -113,12 +108,9 @@ proxy-groups:
     url: &sg_benchmark_url "https://sgp-ping.vultr.com/favicon.ico?v=2"
     # 先按机场顺序尝试香港及目标地区，全部不可用后复用不区分方向的机场亚太组兜底。
     proxies:
-      - "✈️ VikingLinks 香港 · SG"
-      - "✈️ VikingLinks 狮城 · SG"
       - "✈️ 吹雪云 香港 · SG"
       - "✈️ 吹雪云 狮城 · SG"
       - "✈️ 良心云 狮城 · SG"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
@@ -129,12 +121,9 @@ proxy-groups:
     type: select
     proxies:
       - "🛡️ 日本 Fallback"
-      - "✈️ VikingLinks 香港 · JP"
-      - "✈️ VikingLinks 日本 · JP"
       - "✈️ 吹雪云 香港 · JP"
       - "✈️ 吹雪云 日本 · JP"
       - "✈️ 良心云 日本 · JP"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
@@ -146,12 +135,9 @@ proxy-groups:
     url: &jp_benchmark_url "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
     # 先按机场顺序尝试香港及目标地区，全部不可用后复用不区分方向的机场亚太组兜底。
     proxies:
-      - "✈️ VikingLinks 香港 · JP"
-      - "✈️ VikingLinks 日本 · JP"
       - "✈️ 吹雪云 香港 · JP"
       - "✈️ 吹雪云 日本 · JP"
       - "✈️ 良心云 日本 · JP"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
@@ -163,10 +149,8 @@ proxy-groups:
     type: select
     proxies:
       - "🛡️ 亚太 Fallback"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
 
@@ -183,7 +167,6 @@ proxy-groups:
     expected-status: 204
     # 仅按固定子组顺序回退，不追加注入节点；Mihomo 补入 oixCloud Optimized 亚太。
     proxies:
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
 
@@ -194,10 +177,8 @@ proxy-groups:
         exclude-dialer: true
     type: select
     proxies:
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
 
@@ -215,10 +196,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -237,10 +216,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -259,10 +236,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -282,10 +257,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -304,10 +277,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -326,10 +297,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -348,10 +317,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -370,10 +337,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -393,10 +358,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -415,10 +378,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -437,10 +398,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -460,10 +419,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -482,10 +439,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -506,10 +461,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -528,10 +481,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -550,10 +501,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -573,10 +522,8 @@ proxy-groups:
       - "🇯🇵 日本节点"
       - "🇼🇸 台湾节点"
       - "🌍 其他节点"
-      - "✈️ VikingLinks 亚太"
       - "✈️ 吹雪云 亚太"
       - "✈️ 良心云 亚太"
-      - "✈️ VikingLinks"
       - "✈️ oixCloud Edge"
       - "✈️ 吹雪云"
       - "✈️ 良心云"
@@ -623,13 +570,6 @@ proxy-groups:
     type: select
     filter: "^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|🇺🇲|新加坡|坡|狮城|SG|Singapore|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan|台|新北|彰化|TW|Taiwan)).*"
 
-  - name: "✈️ VikingLinks"
-    x-substore:
-      members:
-        mode: append
-    type: select
-    filter: "(VikingLinks)"
-
   - name: "✈️ oixCloud Edge"
     x-substore:
       members:
@@ -652,7 +592,7 @@ proxy-groups:
     filter: "(良心云)"
 
   # 方向测速使用独立中转副本，香港可同时参与 SG、JP，台湾保留在不区分方向的亚太兜底。
-  - name: "✈️ VikingLinks 香港 · SG"
+  - name: "✈️ 吹雪云 香港 · SG"
     x-substore:
       members:
         mode: replace
@@ -666,26 +606,6 @@ proxy-groups:
       tolerance: 100
       max-failed-times: 3
       expected-status: 200
-    url: *sg_benchmark_url
-    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)HK(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
-
-  - name: "✈️ VikingLinks 狮城 · SG"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: SG
-    <<: *direction_url_test_defaults
-    url: *sg_benchmark_url
-    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)SG(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
-
-  - name: "✈️ 吹雪云 香港 · SG"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: SG
-    <<: *direction_url_test_defaults
     url: *sg_benchmark_url
     filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)HK(?:\s|-)).*'
 
@@ -709,26 +629,6 @@ proxy-groups:
     <<: *direction_url_test_defaults
     url: *sg_benchmark_url
     filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)SG(?:\s|-)).*'
-
-  - name: "✈️ VikingLinks 香港 · JP"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: JP
-    <<: *direction_url_test_defaults
-    url: *jp_benchmark_url
-    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)HK(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
-
-  - name: "✈️ VikingLinks 日本 · JP"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: JP
-    <<: *direction_url_test_defaults
-    url: *jp_benchmark_url
-    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)JP(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
 
   - name: "✈️ 吹雪云 香港 · JP"
     x-substore:
@@ -761,7 +661,7 @@ proxy-groups:
     url: *jp_benchmark_url
     filter: '(?i)^(?=.*良心云)(?=.*CT)(?=.*(?:^|\s)JP(?:\s|-)).*'
 
-  - name: "✈️ VikingLinks 亚太"
+  - name: "✈️ 吹雪云 亚太"
     x-substore:
       members:
         mode: replace
@@ -776,16 +676,6 @@ proxy-groups:
       tolerance: 100 # 延迟改善超过 100 ms 再切换，减少小幅波动导致的频繁换点。
       max-failed-times: 3
       expected-status: 204
-    # 仅筛选 HK、SG、JP、TW 地区的 Go、IEPL、SH 线路。
-    # x-substore.members 声明重建成员，并排除带 dialer-proxy 的节点。
-    filter: '(?i)^(?=.*\bVikingLinks\b)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-))(?=.*\b(?:Go|IEPL|SH)\b).*'
-
-  - name: "✈️ 吹雪云 亚太"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-    <<: *url_test_defaults
     # 仅筛选 HK、SG、JP、TW 地区且名称包含“电信”的节点；不限制协议类型。
     filter: '(?i)^(?=.*吹雪云)(?=.*电信)(?=.*(?:^|\s)(?:HK|SG|JP|TW)(?:\s|-)).*'
 

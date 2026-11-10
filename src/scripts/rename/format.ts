@@ -1,11 +1,9 @@
 /**
  * @file 组合节点的地区标签、序号、保留关键词和订阅名。
- * 保留 Viking 原旗帜与展示代码，所有已识别节点固定保留序号。
+ * 所有已识别节点使用统一地区标签并固定保留序号。
  */
 
-import { parseVikingName } from '../shared/regions/identify.ts';
 import { extractRetainKeywords } from './keywords.ts';
-import type { VikingName } from '../shared/regions/identify.ts';
 import type { ProxyNode } from '../shared/types.ts';
 
 /**
@@ -24,27 +22,11 @@ function getFlagEmoji(countryCode?: string | null): string {
 }
 
 /**
- * 组合旗帜与地区代码，优先保留 Viking 名称自带的旗帜和展示代码。
- *
- * @preserve
- * @param {string} countryCode 已识别的标准地区代码。
- * @param {import('./identify.ts').VikingName|null} vikingName Viking 解析结果；null 使用标准地区展示。
- * @returns {string} 用空格连接的地区标签。
- */
-function formatCountryLabel(countryCode: string, vikingName: VikingName | null): string {
-  return [
-    vikingName?.flag || getFlagEmoji(countryCode),
-    vikingName ? vikingName.displayCode : countryCode,
-  ].join(' ');
-}
-
-/**
  * 组合地区标签、至少两位序号、内置保留关键词以及订阅名，不修改节点。
- * Viking 后缀按原名解析，仅在其地区与识别结果一致时采用。
  *
  * @preserve
  * @param {Object} proxy 待命名的节点。
- * @param {string} proxy.name 原节点名，用于提取关键词和解析 Viking 格式。
+ * @param {string} proxy.name 原节点名，用于提取关键词。
  * @param {string} [proxy._subName] 追加到名称末尾的订阅名；假值不追加。
  * @param {string} countryCode 已识别的标准地区代码。
  * @param {number} sequence 当前订阅及地区分组中的序号，从 1 开始。
@@ -52,10 +34,8 @@ function formatCountryLabel(countryCode: string, vikingName: VikingName | null):
  * @throws {SyntaxError} 内置关键词无法编译为正则时抛出。
  */
 export function formatProxyName(proxy: ProxyNode, countryCode: string, sequence: number): string {
-  const parsedName = parseVikingName(proxy.name);
-  const vikingName = parsedName?.countryCode === countryCode ? parsedName : null;
   const subName = proxy._subName || '';
-  const countryLabel = formatCountryLabel(countryCode, vikingName);
+  const countryLabel = [getFlagEmoji(countryCode), countryCode].join(' ');
   const baseName = [countryLabel, String(sequence).padStart(2, '0')].filter(Boolean).join(' ');
   /**
    * 在名称后追加当前节点的订阅名，忽略空片段。
@@ -73,8 +53,6 @@ export function formatProxyName(proxy: ProxyNode, countryCode: string, sequence:
    * @returns {string} 用“ | ”连接且不含空片段的名称。
    */
   const joinNameParts = (...parts: string[]): string => parts.filter(Boolean).join(' | ');
-
-  if (vikingName) return joinNameParts(baseName, appendSubName(vikingName.suffix));
 
   const retained = extractRetainKeywords(proxy.name);
   return joinNameParts(baseName, appendSubName(retained.join(' ')));

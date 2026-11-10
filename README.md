@@ -72,7 +72,7 @@ proxy-providers:
 
 最终校验随覆写脚本直接在 Sub-Store 中运行，无需另加脚本或安装依赖。发现重复名称、无效引用、依赖循环或无效 HTTP provider 地址时，本次脚本报错并停止输出；具体范围和限制见[贡献指南的最终配置校验](CONTRIBUTING.md#最终配置校验)。
 
-首次切换后，在 Sub-Store 预览最终配置，确认原来的订阅节点仍在 `proxies` 中，并检查 VikingLinks、吹雪云、良心云三个公共机场亚太组的成员，再更新客户端订阅。
+首次切换后，在 Sub-Store 预览最终配置，确认原来的订阅节点仍在 `proxies` 中，并检查吹雪云、良心云两个公共机场亚太组的成员，再更新客户端订阅。
 
 ### 固定版本
 
@@ -109,15 +109,14 @@ https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.
 
 中转与重命名脚本共用名称地区识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。符合条件节点的已有 `dialer-proxy` 会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除。
 
-`🛡️ 狮城中转`、`🛡️ 日本中转` 的首个选项分别为对应的 Fallback，也可手动选定下列子组。VikingLinks、oixCloud Optimized 和吹雪云的香港候选同时参与两个方向；方向组名称以 `· SG` / `· JP` 区分。
+`🛡️ 狮城中转`、`🛡️ 日本中转` 的首个选项分别为对应的 Fallback，也可手动选定下列子组。oixCloud Optimized 和吹雪云的香港候选同时参与两个方向；方向组名称以 `· SG` / `· JP` 区分。
 
 | 回退阶段 | 狮城方向 | 日本方向 |
 | --- | --- | --- |
-| VikingLinks 定向候选 | 香港 → 狮城 | 香港 → 日本 |
 | oixCloud Optimized 定向候选 | 香港 → 狮城 | 香港 → 日本 |
 | 吹雪云定向候选 | 香港 → 狮城 | 香港 → 日本 |
 | 良心云定向候选 | 狮城 | 日本 |
-| 最后兜底 | VikingLinks 亚太 → oixCloud Optimized 亚太 → 吹雪云亚太 → 良心云亚太 | 同左 |
+| 最后兜底 | oixCloud Optimized 亚太 → 吹雪云亚太 → 良心云亚太 | 同左 |
 
 按表格从上到下回退；Stash 跳过 oixCloud。只有全部定向候选不可用后，才进入亚太兜底。狮城、日本中转入口及其 Fallback 共用不区分方向的机场亚太组，不再设置 `亚太 · SG` / `亚太 · JP` 子组。亚太包含 HK、SG、JP、TW；台湾暂不单独建方向组。各机场沿用现有线路和协议限制，见[节点与代理组](CONTRIBUTING.md#节点与代理组)。Fallback 按可用性维持优先级，子组在同一机场、同一地区池内自动测速选点。
 
@@ -132,7 +131,7 @@ Mihomo 的 `url-test` 整组测速仍使用组配置中的 URL；关闭面板的
 
 覆写会为香港、目标地区方向子组匹配的注入中转节点追加 `[SG测速]` / `[JP测速]` 副本，同一节点在同一方向只生成一次。副本带对应的 `benchmark-url` 和 5 秒 `benchmark-timeout`，解决 [Stash 同一节点在多个组中共享测速记录](https://stash.wiki/proxy-protocols/proxy-benchmark)的问题；两端保持同一分组结构。原始节点及其名称保留，普通机场组和机场亚太组继续使用原节点，自建落地不复制。没有本地候选的方向子组使用 `REJECT`，避免空组回落为直连；Mihomo 的 oixCloud 组同时保留运行时 provider 候选，其测试由内核处理，provider 的检查参数及内核版本边界见[测速参数复用](CONTRIBUTING.md#测速参数复用)。
 
-其他地区继续使用原来的亚太或美西中转。`🛡️ 亚太中转` 首选的 `🛡️ 亚太 Fallback` 按 VikingLinks 亚太 → oixCloud Optimized 亚太 → 吹雪云亚太 → 良心云亚太回退，每 60 秒检查，Stash 跳过 oixCloud。各入口共用的机场亚太组仍使用 Cloudflare 204 地址及原有测速参数。
+其他地区继续使用原来的亚太或美西中转。`🛡️ 亚太中转` 首选的 `🛡️ 亚太 Fallback` 按 oixCloud Optimized 亚太 → 吹雪云亚太 → 良心云亚太回退，每 60 秒检查，Stash 跳过 oixCloud。各入口共用的机场亚太组仍使用 Cloudflare 204 地址及原有测速参数。
 
 自建节点保留原名，不经过重命名脚本：
 
@@ -171,11 +170,13 @@ https://github.com/chiyuchia/proxy-config/releases/latest/download/rename.js
 
 | 原节点名 | `_subName` | 输出 |
 | --- | --- | --- |
-| `🇯🇵 JP-SH-12-GCP` | `VikingLinks` | `🇯🇵 JP 01 \| SH GCP VikingLinks` |
+| `🇭🇰 香港 PCCW-HKT` | `oixCloud Edge` | `🇭🇰 HK 01 \| PCCW-HKT oixCloud Edge` |
+| `🇨🇳 台湾 CHT 01` | `oixCloud Edge` | `🇼🇸 TW 01 \| CHT oixCloud Edge` |
+| `🇯🇵 日本 SoftBank` | `oixCloud Edge` | `🇯🇵 JP 01 \| SoftBank oixCloud Edge` |
 | `🇯🇵日本高速01\|CTCU\|0.5x` | `良心云` | `🇯🇵 JP 01 \| 高速 CTCU 0.5x 良心云` |
 | `香港 03` | 无 | `🇭🇰 HK 01` |
 
-保留城市、线路、运营商等内置关键词；VikingLinks 格式会保留线路和服务商，良心云格式会保留运营商组合及倍率标签。结果按内置热门地区优先排序，各类内部按地区代码和名称排序，未识别地区的节点放到最后。
+保留城市、线路、运营商等内置关键词；oixCloud Edge 保留 DMIT、Edge、PCCW-HKT、HKBN、HKT、CHT、HINET、Sptel、Biglobe、KDDI、SoftBank、Misaka、GTT、Verizon、Bell 等标签，其中 `PCCW-HKT` 完整保留。良心云格式会保留运营商组合及倍率标签。结果按内置热门地区优先排序，各类内部按地区代码和名称排序，未识别地区的节点放到最后。
 
 内置过滤词为：`过期、剩余、官网、套餐、重置、到期、Traffic、Expire、客户端、网站`。它们只按原始节点名称中的字面子串匹配，不区分大小写，不检查 `_subName`。
 

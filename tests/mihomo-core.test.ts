@@ -33,7 +33,7 @@ test('native config test resolves oixCloud without a token or an existing provid
     ) as MergedConfig),
     proxies: [
       {
-        name: 'VikingLinks HK Go',
+        name: '吹雪云 JP 电信',
         type: 'ss',
         server: '127.0.0.1',
         port: 443,
@@ -41,7 +41,7 @@ test('native config test resolves oixCloud without a token or an existing provid
         password: 'test-only',
       },
       {
-        name: 'VikingLinks SG IEPL',
+        name: '吹雪云 SG 电信',
         type: 'ss',
         server: '127.0.0.1',
         port: 443,
