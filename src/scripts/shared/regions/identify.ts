@@ -5,11 +5,53 @@
 
 import { REGION_ALIASES } from './aliases.ts';
 import { REGIONS } from './regions.ts';
+import type { Region } from './regions.ts';
 import type { ProxyNode } from '../types.ts';
+
+interface RegionMatcher {
+  region: Region;
+  longerChineseNames: string[];
+  englishPattern: RegExp;
+  codePattern: RegExp;
+}
+
+/**
+ * 转义字符串中的正则元字符，使带括号或点号的地区名按字面匹配。
+ *
+ * @preserve
+ * @param {string} value 待转义的原始文本。
+ * @returns {string} 可安全拼接进正则表达式的转义文本。
+ */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * 为英文地区名构建忽略大小写且限制字母边界的正则，兼容空格省略与驼峰分词。
+ *
+ * @preserve
+ * @param {string} englishName 地区表中的标准英文名。
+ * @returns {RegExp} 限制前后非英文字母的不区分大小写正则。
+ */
+function createEnglishNamePattern(englishName: string): RegExp {
+  const flexibleSpacing = escapeRegExp(englishName)
+    .replace(/ /g, '\\s*')
+    .replace(/([a-z])([A-Z])/g, '$1\\s*$2');
+  return new RegExp(`(?<![A-Za-z])${flexibleSpacing}(?![A-Za-z])`, 'i');
+}
+
+const REGION_MATCHERS: RegionMatcher[] = REGIONS.map((region) => ({
+  region,
+  longerChineseNames: REGIONS.filter(
+    (other) => other.code !== region.code && other.chineseName.includes(region.chineseName),
+  ).map((other) => other.chineseName),
+  englishPattern: createEnglishNamePattern(region.englishName),
+  codePattern: new RegExp(`(?<![A-Za-z])${escapeRegExp(region.code)}(?![A-Za-z])`, 'i'),
+}));
 
 /**
  * 先替换地区别名，再依次匹配中文名、国旗、英文全称和地区代码。
- * 各阶段均按地区表顺序返回首个命中；别名替换后的代码匹配忽略大小写并限制字母边界。
+ * 各阶段均按地区表顺序返回首个命中；英文全称和地区代码忽略大小写并限制字母边界。
  *
  * @preserve
  * @param {string} name 待识别的节点名称。
@@ -18,17 +60,25 @@ import type { ProxyNode } from '../types.ts';
 export function matchNameToCode(name: string): string | null {
   let processed = name;
   for (const [target, pattern] of Object.entries(REGION_ALIASES)) {
-    if (pattern.test(processed)) processed = processed.replace(pattern, target);
+    processed = processed.replace(pattern, target);
   }
 
-  for (const field of ['chineseName', 'flag', 'englishName'] as const) {
-    for (const region of REGIONS) {
-      if (processed.includes(region[field])) return region.code;
-    }
+  for (const { region, longerChineseNames } of REGION_MATCHERS) {
+    if (!processed.includes(region.chineseName)) continue;
+    const masked = longerChineseNames.reduce(
+      (text, longer) => text.replaceAll(longer, '\0'),
+      processed,
+    );
+    if (masked.includes(region.chineseName)) return region.code;
   }
-  for (const region of REGIONS) {
-    const pattern = new RegExp(`(?<![A-Za-z])${region.code}(?![A-Za-z])`, 'i');
-    if (pattern.test(processed)) return region.code;
+  for (const { region } of REGION_MATCHERS) {
+    if (processed.includes(region.flag)) return region.code;
+  }
+  for (const { region, englishPattern } of REGION_MATCHERS) {
+    if (englishPattern.test(processed)) return region.code;
+  }
+  for (const { region, codePattern } of REGION_MATCHERS) {
+    if (codePattern.test(processed)) return region.code;
   }
   return null;
 }

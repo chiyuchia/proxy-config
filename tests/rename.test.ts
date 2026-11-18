@@ -357,3 +357,53 @@ test('the published entry never reads the legacy arguments global', async () => 
 
   assert.equal((await run([node('entry', '东京')]))[0].name, '🇯🇵 JP 01 | 东京');
 });
+
+test('airport codes, carrier labels and overlapping region names do not misidentify across countries', async () => {
+  const result = await rename([
+    node('hk-hkt', 'HK HKT 01'),
+    node('pccw-hkt-hk', 'PCCW-HKT HK 01'),
+    node('pccw-only', 'PCCW-HKT 01'),
+    node('osaka', '大阪 01'),
+    node('osaka-variant', '大坂 01'),
+    node('germany-upper', 'GERMANY 01'),
+    node('germany-lower', 'germany 01'),
+    node('sweden', 'SWEDEN 01'),
+    node('vietnam', 'VIETNAM 01'),
+    node('romania', 'ROMANIA 01'),
+    node('ukraine', 'UKRAINE 01'),
+    node('nigeria', 'Nigeria 01'),
+    node('niger', 'Niger 01'),
+    node('north-korea', 'North Korea 01'),
+    node('north-korea-compact', 'NorthKorea 01'),
+    node('south-korea', 'South Korea 01'),
+    node('isle-of-man', 'ISLE OF MAN 01'),
+    node('somalia', '索马里 01'),
+    node('mali', '马里 01'),
+    node('helsinki', 'HELSINKI 01'),
+    node('stream', 'STREAM MEDIA OPENAI'),
+  ]);
+
+  assert.deepEqual(Object.fromEntries(result.map((proxy) => [proxy.id, proxy.name])), {
+    'hk-hkt': '🇭🇰 HK 01 | HKT',
+    'pccw-hkt-hk': '🇭🇰 HK 02 | PCCW-HKT',
+    'pccw-only': 'PCCW-HKT 01',
+    osaka: '🇯🇵 JP 01 | 大阪',
+    'osaka-variant': '🇯🇵 JP 02 | 大坂',
+    'germany-upper': '🇩🇪 DE 01',
+    'germany-lower': '🇩🇪 DE 02',
+    sweden: '🇸🇪 SE 01',
+    vietnam: '🇻🇳 VN 01',
+    romania: '🇷🇴 RO 01',
+    ukraine: '🇺🇦 UA 01',
+    nigeria: '🇳🇬 NG 01',
+    niger: '🇳🇪 NE 01',
+    'north-korea': '🇰🇵 KP 01',
+    'north-korea-compact': '🇰🇵 KP 02',
+    'south-korea': '🇰🇷 KR 01',
+    'isle-of-man': '🇮🇲 IM 01 | MAN',
+    somalia: '🇸🇴 SO 01',
+    mali: '🇲🇱 ML 01',
+    helsinki: 'HELSINKI 01',
+    stream: 'STREAM MEDIA OPENAI',
+  });
+});

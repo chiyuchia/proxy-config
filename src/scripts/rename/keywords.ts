@@ -6,6 +6,7 @@
 const RETAIN_KEYWORDS = [
   // 日本
   '东京',
+  '大阪',
   '大坂',
   'Tokyo',
   'Osaka',
