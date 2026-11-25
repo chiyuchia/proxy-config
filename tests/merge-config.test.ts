@@ -70,31 +70,13 @@ function plain<T>(value: T): T {
 }
 
 /**
- * 验证注入节点完整保留，仅在末尾新增未设置中转的地区测速副本。
+ * 验证注入节点完整保留，覆写不会新增或删改节点。
  * @param {Object} config 已覆写的最终配置。
  * @param {Object[]} originals 覆写前注入的节点。
- * @returns {void} 原始节点和新增副本均满足保留约定时正常返回。
+ * @returns {void} 原始节点满足保留约定时正常返回。
  */
 function assertOriginalNodesPreserved(config: MergedConfig, originals: ProxyNode[]): void {
-  const nodes = plain(config.proxies ?? []);
-  assert.deepEqual(nodes.slice(0, originals.length), originals);
-  for (const alias of nodes.slice(originals.length)) {
-    const match = alias.name.match(/^(.*) \[(SG|JP)测速\]$/);
-    assert.ok(match, `unexpected generated node: ${alias.name}`);
-    const original = originals.find(({ name }) => name === match[1]);
-    assert.ok(original, `benchmark node must retain a known source: ${alias.name}`);
-    assert.ok(!original['dialer-proxy'], 'landing nodes must not gain benchmark copies');
-    assert.deepEqual(alias, {
-      ...original,
-      name: alias.name,
-      'benchmark-url':
-        match[2] === 'SG'
-          ? 'https://sgp-ping.vultr.com/favicon.ico?v=2'
-          : 'https://hnd-jp-ping.vultr.com/favicon.ico?v=2',
-      'benchmark-timeout': 5,
-      'benchmark-disabled': false,
-    });
-  }
+  assert.deepEqual(plain(config.proxies ?? []), originals);
 }
 
 /**
@@ -1015,13 +997,13 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   const prepared = [...selfHosted, ...airports];
   const originalNames = new Map(prepared.map(({ server, name }) => [server, name]));
   const expectedDialers = new Map([
-    ['sg.example.com', '🛡️ 狮城中转'],
+    ['sg.example.com', '🛡️ 亚太中转'],
     ['us.example.com', '🛡️ 美西中转'],
     ['manual.example.com', 'DIRECT'],
     ['oix.example.com', '🛡️ 亚太中转'],
     ['oix-us.example.com', '🛡️ 美西中转'],
-    ['oix-sg.example.com', '🛡️ 狮城中转'],
-    ['oix-jp.example.com', '🛡️ 日本中转'],
+    ['oix-sg.example.com', '🛡️ 亚太中转'],
+    ['oix-jp.example.com', '🛡️ 亚太中转'],
     ['oix-tw.example.com', '🛡️ 亚太中转'],
   ]);
   const { operator: rename } = loadScript('dist/rename.js', {
@@ -1123,18 +1105,6 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
         plain(groups.get(name)!.proxies),
         namesFor(...servers),
         `${client}: ${name}`,
-      );
-    }
-    for (const [name, server, direction] of [
-      ['✈️ 吹雪云 香港 · SG', 'chuxue-hk.example.com', 'SG'],
-      ['✈️ 吹雪云 狮城 · SG', 'chuxue-sg.example.com', 'SG'],
-      ['✈️ 吹雪云 香港 · JP', 'chuxue-hk.example.com', 'JP'],
-      ['✈️ 吹雪云 日本 · JP', 'chuxue-jp.example.com', 'JP'],
-    ] as const) {
-      assert.deepEqual(
-        plain(groups.get(name)!.proxies),
-        namesFor(server).map((nodeName) => `${nodeName} [${direction}测速]`),
-        `${client}: ${name} retains matching renamed 电信 nodes`,
       );
     }
   }

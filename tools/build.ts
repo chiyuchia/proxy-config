@@ -3,7 +3,7 @@
  * 默认写入 dist/；传入 --check 时仅检查源码与产物是否同步。
  */
 
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { parse, stringify } from 'yaml';
@@ -84,8 +84,7 @@ const scripts = [
   },
   {
     name: 'dialer-proxy',
-    description:
-      'Sub-Store 节点中转脚本：新加坡、日本和美国节点使用各自中转，其余节点使用亚太中转。',
+    description: 'Sub-Store 节点中转脚本：美国节点使用美西中转，其余节点使用亚太中转。',
     usage: '无需参数，自建仅处理 SS 节点，其他来源不限协议；设置中转后供配置文件注入使用。',
     signature: 'function operator(proxies, targetPlatform, context)',
     call: 'operator(proxies, targetPlatform, context)',
@@ -154,22 +153,4 @@ for (const [outfile, content] of outputs) {
     await writeFile(outputUrl, content);
     console.log(`已生成 ${outfile}`);
   }
-}
-
-// 只清理已弃用的旧构建文件，不删除 dist/ 中与本构建无关的文件。
-const obsolete = new URL('../dist/merge-config.js', import.meta.url);
-if (checkOnly) {
-  const exists = await readFile(obsolete).then(
-    () => true,
-    (error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT') return false;
-      throw error;
-    },
-  );
-  if (exists) {
-    console.error('dist/merge-config.js 已停用，请运行 npm run build 清理旧产物。');
-    process.exitCode = 1;
-  }
-} else {
-  await rm(obsolete, { force: true });
 }

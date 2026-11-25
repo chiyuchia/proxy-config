@@ -66,38 +66,6 @@ proxy-groups:
       $insert-before:
         "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
 
-  - name: "🛡️ 狮城中转"
-    proxies:
-      $insert-before:
-        "✈️ 吹雪云 香港 · SG":
-          - "✈️ oixCloud Optimized 香港 · SG"
-          - "✈️ oixCloud Optimized 狮城 · SG"
-        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
-
-  - name: "🛡️ 狮城 Fallback"
-    proxies:
-      $insert-before:
-        "✈️ 吹雪云 香港 · SG":
-          - "✈️ oixCloud Optimized 香港 · SG"
-          - "✈️ oixCloud Optimized 狮城 · SG"
-        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
-
-  - name: "🛡️ 日本中转"
-    proxies:
-      $insert-before:
-        "✈️ 吹雪云 香港 · JP":
-          - "✈️ oixCloud Optimized 香港 · JP"
-          - "✈️ oixCloud Optimized 日本 · JP"
-        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
-
-  - name: "🛡️ 日本 Fallback"
-    proxies:
-      $insert-before:
-        "✈️ 吹雪云 香港 · JP":
-          - "✈️ oixCloud Optimized 香港 · JP"
-          - "✈️ oixCloud Optimized 日本 · JP"
-        "✈️ 吹雪云 亚太": ["✈️ oixCloud Optimized 亚太"]
-
   - name: "♊ Gemini"
     use: *oix_provider
     proxies:
@@ -252,61 +220,6 @@ proxy-groups:
     filter: "(IXP|CIA)"
     use:
       - oixCloud
-
-  - name: "✈️ oixCloud Optimized 香港 · SG"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: SG
-    $before: "✈️ 吹雪云 香港 · SG"
-    <<: &oix_direction_url_test_defaults
-      type: url-test
-      interval: 300
-      timeout: 5000
-      lazy: false
-      tolerance: 100
-      max-failed-times: 3
-      expected-status: 200
-    url: "https://sgp-ping.vultr.com/favicon.ico?v=2"
-    filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bHK\b|香港|Hong\s*Kong|🇭🇰)).*'
-    use: *oix_provider
-
-  - name: "✈️ oixCloud Optimized 狮城 · SG"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: SG
-    $before: "✈️ 吹雪云 香港 · SG"
-    <<: *oix_direction_url_test_defaults
-    url: "https://sgp-ping.vultr.com/favicon.ico?v=2"
-    filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bSG\b|新加坡|Singapore|🇸🇬)).*'
-    use: *oix_provider
-
-  - name: "✈️ oixCloud Optimized 香港 · JP"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: JP
-    $before: "✈️ 吹雪云 香港 · JP"
-    <<: *oix_direction_url_test_defaults
-    url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
-    filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bHK\b|香港|Hong\s*Kong|🇭🇰)).*'
-    use: *oix_provider
-
-  - name: "✈️ oixCloud Optimized 日本 · JP"
-    x-substore:
-      members:
-        mode: replace
-        exclude-dialer: true
-        benchmark: JP
-    $before: "✈️ 吹雪云 香港 · JP"
-    <<: *oix_direction_url_test_defaults
-    url: "https://hnd-jp-ping.vultr.com/favicon.ico?v=2"
-    filter: '(?i)^(?=.*(?:IXP|CIA))(?=.*(?:\bJP\b|日本|Japan|🇯🇵)).*'
-    use: *oix_provider
 
   - name: "✈️ oixCloud Optimized 亚太"
     x-substore:

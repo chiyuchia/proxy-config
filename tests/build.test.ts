@@ -1,5 +1,5 @@
 /**
- * @file 在隔离目录运行真实构建，验证模板发布、只读检查、来源错误与旧产物清理。
+ * @file 在隔离目录运行真实构建，验证模板发布、只读检查与来源错误。
  * 不访问网络，不修改仓库中的配置或 dist/。
  */
 
@@ -57,7 +57,7 @@ function contents(directory: string): string[] {
   return assets.map((name) => fs.readFileSync(path.join(directory, 'dist', name), 'utf8'));
 }
 
-test('build creates five reproducible assets and check detects missing, stale and retired files without writing', (t) => {
+test('build creates five reproducible assets and check detects missing and stale files without writing', (t) => {
   const directory = fixture(t);
   const dist = path.join(directory, 'dist');
   const missing = build(directory, true);
@@ -88,18 +88,11 @@ test('build creates five reproducible assets and check detects missing, stale an
   assert.equal(build(directory, true).status, 1);
   assert.equal(fs.existsSync(path.join(dist, 'mihomo.yaml')), false);
 
-  const obsolete = path.join(dist, 'merge-config.js');
   const unrelated = path.join(dist, 'notes.txt');
-  fs.writeFileSync(obsolete, '// old generated script\n');
   fs.writeFileSync(unrelated, 'keep me');
-  const retired = build(directory, true);
-  assert.equal(retired.status, 1, retired.output);
-  assert.match(retired.output, /merge-config.js 已停用/);
-  assert.equal(fs.existsSync(obsolete), true);
   const rebuilt = build(directory);
   assert.equal(rebuilt.status, 0, rebuilt.output);
   assert.deepEqual(contents(directory), original);
-  assert.equal(fs.existsSync(obsolete), false);
   assert.equal(fs.readFileSync(unrelated, 'utf8'), 'keep me');
 });
 
