@@ -1,6 +1,6 @@
 /**
  * @file 从节点名称识别地区。
- * 按既定优先级匹配别名、地区名、旗帜和代码，仅使用名称，不访问网络。
+ * 先规范化原名中的完整国家名，再应用城市/机场代码别名，最后按既定优先级匹配地区表，不访问网络。
  */
 
 import { REGION_ALIASES } from './aliases.ts';
@@ -27,7 +27,7 @@ function escapeRegExp(value: string): string {
 }
 
 /**
- * 为英文地区名构建忽略大小写且限制字母边界的正则，兼容空格省略与驼峰分词。
+ * 为英文地区名构建忽略大小写且限制字母边界的正则，兼容空白、下划线、连字符和省略分词。
  *
  * @preserve
  * @param {string} englishName 地区表中的标准英文名。
@@ -35,8 +35,8 @@ function escapeRegExp(value: string): string {
  */
 function createEnglishNamePattern(englishName: string): RegExp {
   const flexibleSpacing = escapeRegExp(englishName)
-    .replace(/ /g, '\\s*')
-    .replace(/([a-z])([A-Z])/g, '$1\\s*$2');
+    .replace(/ /g, '[\\s_-]*')
+    .replace(/([a-z])([A-Z])/g, '$1[\\s_-]*$2');
   return new RegExp(`(?<![A-Za-z])${flexibleSpacing}(?![A-Za-z])`, 'i');
 }
 
@@ -50,7 +50,7 @@ const REGION_MATCHERS: RegionMatcher[] = REGIONS.map((region) => ({
 }));
 
 /**
- * 先替换地区别名，再依次匹配中文名、国旗、英文全称和地区代码。
+ * 先按有序别名表规范化完整国家名并替换城市/机场代码，再依次匹配中文名、国旗、英文全称和地区代码。
  * 各阶段均按地区表顺序返回首个命中；英文全称和地区代码忽略大小写并限制字母边界。
  *
  * @preserve
@@ -59,7 +59,8 @@ const REGION_MATCHERS: RegionMatcher[] = REGIONS.map((region) => ({
  */
 export function matchNameToCode(name: string): string | null {
   let processed = name;
-  for (const [target, pattern] of Object.entries(REGION_ALIASES)) {
+  for (const { target, pattern, skipIf } of REGION_ALIASES) {
+    if (skipIf?.test(name)) continue;
     processed = processed.replace(pattern, target);
   }
 

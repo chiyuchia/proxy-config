@@ -407,3 +407,72 @@ test('airport codes, carrier labels and overlapping region names do not misident
     stream: 'STREAM MEDIA OPENAI',
   });
 });
+
+test('alias precedence, Costa Rica San Jose, and North/South Korea boundaries stay accurate', async () => {
+  const result = await rename([
+    node('la-de', 'Los Angeles 经德国中转'),
+    node('jp-zrh', '🇯🇵 ZRH 01'),
+    node('jp-gva', '🇯🇵 GVA 01'),
+    node('jp-iom', '🇯🇵 Isle of Man 01'),
+    node('ch-zrh', 'ZRH 01'),
+    node('ch-gva', 'GVA 01'),
+    node('cr-sanjose', '哥斯达黎加 圣何塞 01'),
+    node('kp-underscore', 'NORTH_KOREA 01'),
+    node('kp-hyphen', 'NORTH-KOREA 01'),
+    node('kr-compact', 'SouthKorea 01'),
+    node('kr-north-seoul', 'North Seoul 01'),
+    node('kr-north-chuncheon', 'North Chuncheon 01'),
+  ]);
+
+  assert.deepEqual(Object.fromEntries(result.map((proxy) => [proxy.id, proxy.name])), {
+    'la-de': '🇺🇸 US 01 | Los Angeles',
+    'jp-zrh': '🇯🇵 JP 01 | ZRH',
+    'jp-gva': '🇯🇵 JP 02',
+    'jp-iom': '🇯🇵 JP 03 | Man',
+    'ch-zrh': '🇨🇭 CH 01 | ZRH',
+    'ch-gva': '🇨🇭 CH 02',
+    'cr-sanjose': '🇨🇷 CR 01',
+    'kp-underscore': '🇰🇵 KP 01',
+    'kp-hyphen': '🇰🇵 KP 02',
+    'kr-compact': '🇰🇷 KR 01',
+    'kr-north-seoul': '🇰🇷 KR 02 | Seoul',
+    'kr-north-chuncheon': '🇰🇷 KR 03 | Chuncheon',
+  });
+
+  const variants = await rename([
+    node('iom-underscore', 'ISLE_OF_MAN 01'),
+    node('kr-underscore', 'SOUTH_KOREA 01'),
+    node('kr-hyphen', 'SOUTH-KOREA 01'),
+    node('zurich', '🇯🇵 Zurich 01'),
+  ]);
+  assert.deepEqual(Object.fromEntries(variants.map((proxy) => [proxy.id, proxy.name])), {
+    'iom-underscore': '🇮🇲 IM 01 | MAN',
+    'kr-underscore': '🇰🇷 KR 01',
+    'kr-hyphen': '🇰🇷 KR 02',
+    zurich: '🇯🇵 JP 01 | Zurich',
+  });
+});
+
+test('San Jose disambiguation respects explicit Costa Rica markers and Zurich Chinese alias', async () => {
+  const result = await rename([
+    node('cr-en', '哥斯达黎加 San Jose 01'),
+    node('cr-flag', '🇨🇷 SAN-JOSE 01'),
+    node('cr-english', 'Costa Rica San Jose 01'),
+    node('cr-code', 'CR San Jose 01'),
+    node('us-sanjose', 'San Jose 01'),
+    node('us-la-de', 'Los Angeles 经德国中转'),
+    node('ch-zh', '苏黎世 01'),
+    node('jp-zrh', '🇯🇵 ZRH 01'),
+  ]);
+
+  assert.deepEqual(Object.fromEntries(result.map((proxy) => [proxy.id, proxy.name])), {
+    'cr-en': '🇨🇷 CR 01 | San Jose',
+    'cr-flag': '🇨🇷 CR 02',
+    'cr-english': '🇨🇷 CR 03 | San Jose',
+    'cr-code': '🇨🇷 CR 04 | San Jose',
+    'us-sanjose': '🇺🇸 US 01 | San Jose',
+    'us-la-de': '🇺🇸 US 02 | Los Angeles',
+    'ch-zh': '🇨🇭 CH 01 | 苏黎世',
+    'jp-zrh': '🇯🇵 JP 01 | ZRH',
+  });
+});
