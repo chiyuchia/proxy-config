@@ -40,7 +40,7 @@ for (const client of ['mihomo', 'stash'] as const) {
   }
   const template = mergeConfigDocuments(base, profile);
   for (const group of template['proxy-groups']) readMemberPolicy(group);
-  // 不执行覆写：实际节点尚未注入，成员与运行时 provider 声明必须保留。
+  // 不执行覆写：实际节点尚未注入，成员声明必须保留。
   outputs.set(
     `dist/${client}.yaml`,
     [
@@ -60,7 +60,7 @@ for (const client of ['mihomo', 'stash'] as const) {
  */
 function readEntrypointDocumentation(source: string): string {
   const documentation = source.match(
-    /\/\*\*(?:(?!\*\/)[\s\S])*\*\/(?=\s*export (?:async )?function (?:main|operator)\()/,
+    /\/\*\*(?:(?!\*\/)[\s\S])*\*\/(?=\s*export function (?:main|operator)\()/,
   );
   if (!documentation) throw new Error('Sub-Store 入口缺少 JSDoc 注释');
   return documentation[0];
@@ -79,7 +79,7 @@ const scripts = [
     name: 'rename',
     description: 'Sub-Store 节点重命名脚本：仅按名称识别地区，整理序号、关键词和订阅名。',
     usage: '无需参数，按固定规则处理订阅或组合订阅节点，在配置文件注入节点前执行。',
-    signature: 'async function operator(proxies, targetPlatform, context)',
+    signature: 'function operator(proxies, targetPlatform, context)',
     call: 'operator(proxies, targetPlatform, context)',
   },
   {

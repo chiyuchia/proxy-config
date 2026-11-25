@@ -20,7 +20,6 @@
 | 节点名称整理、格式和关键词提取 | `src/scripts/rename/` |
 | 中转与重命名共用的地区识别、别名和地区数据 | `src/scripts/shared/regions/` |
 | Sub-Store 的 `main` / `operator` 入口 | `src/scripts/entries/` |
-| 运行时 provider 声明的读取与校验 | `src/scripts/shared/runtime-providers.ts` |
 | 共享节点、配置及覆写输出类型 | `src/scripts/shared/types.ts` |
 | YAML 模板生成与单文件脚本构建 | `tools/build.ts` |
 | 自定义规则集内容 | `rules/` |
@@ -47,7 +46,6 @@ src/
       rules.ts          内置策略与规则引用检查
       member-policy.ts  成员生成声明读取与校验
       http-url.ts       HTTP(S) 地址格式校验
-      runtime-providers.ts  运行时 provider 声明读取与校验
       regions/
         identify.ts     名称地区识别
         aliases.ts      地区别名
@@ -77,10 +75,10 @@ tsconfig.json        源码、构建工具和测试的严格类型检查配置
 - `src/configs/base.yaml` 保留 `$base: true`，两份差异文件分别保留 `$profile: mihomo` 和 `$profile: stash`；标记用于检查来源，输出时移除。
 - 三份 YAML 在构建时分别解析，启用 `merge: true` 处理 YAML 合并键，并以 `uniqueKeys: true` 拒绝重复键；锚点只能引用同一文件中的定义。实际节点由 Sub-Store 注入，三份配置源和生成的模板都不定义顶层 `proxies`。
 - `tools/build.ts` 复用 `tools/merge-config/` 的纯合并与校验逻辑，核对客户端来源标记、静态引用和成员声明，分别生成 Mihomo、Stash 模板；公共候选顺序、客户端补丁和规则优先级保持不变。
-- 生成模板保留组内 `x-substore.members` 和顶层运行时 provider 声明，供 Sub-Store 运行期使用；构建不能执行覆写来生成发布模板，也不能注入真实订阅节点。
+- 生成模板保留组内 `x-substore.members` 声明，供 Sub-Store 运行期使用；构建不能执行覆写来生成发布模板，也不能注入真实订阅节点。
 - Sub-Store 先读取远程模板，再注入节点，最后通过 `dist/config-overwrite.js` 覆写并校验。额外的配置修改应放在模板加载之后、最终覆写之前；接入及旧流程迁移见 [README](README.md#接入-sub-store)。
 - `dist/dialer-proxy.js` 在需要中转的来源订阅中通过 `operator(proxies, targetPlatform, context)` 按地区设置中转，无需模式参数。自建仅为 SS 节点设置中转并保留原名，直接供文件注入和覆写使用；oixCloud Edge 设置中转后可按需重命名。自建识别、协议限制及地区分配规则见 [README.md 的节点中转说明](README.md#节点中转)。
-- `dist/rename.js` 在订阅或组合订阅中通过 `async operator(proxies, targetPlatform, context)` 按固定规则处理节点数组，无需参数，再供文件注入和覆写使用；接入及命名规则见 [README.md 的节点重命名说明](README.md#节点重命名)。
+- `dist/rename.js` 在订阅或组合订阅中通过 `operator(proxies, targetPlatform, context)` 按固定规则处理节点数组，无需参数，再供文件注入和覆写使用；接入及命名规则见 [README.md 的节点重命名说明](README.md#节点重命名)。
 
 ### 测速参数复用
 
@@ -142,23 +140,6 @@ proxy-groups:
 
 修改或删除组名、规则集名时，同步更新所有引用。补丁字段只用于构建时合并，不会出现在发布模板和最终客户端配置中。配置源无法解析、来源标记不匹配、补丁无效或静态引用错误时，构建会报错并停止发布。
 
-### 运行时 provider 声明
-
-自定义配置可通过顶层 `x-substore.runtime-proxy-providers` 声明由客户端运行时创建的代理 provider，例如：
-
-```yaml
-x-substore:
-  runtime-proxy-providers: [runtimeSubscription]
-```
-
-顶层 `x-substore` 只接受 `runtime-proxy-providers` 字段。声明可省略，列表允许 `[]`；提供时必须是数组，成员必须是非空字符串，不能重复。未知字段、错误类型，以及同时在 `proxy-providers` 中定义同名 provider 都会报错，避免对同一名称重复声明。
-
-合并与最终校验均允许组内 `use` 引用本地定义的 provider 或已声明的运行时 provider；未声明且没有本地定义的名称仍然报错。运行时 provider 声明不创建 provider，不代表其中的节点已存在，也不能充当规则目标、`dialer-proxy` 目标或 `rule-providers` 引用。Sub-Store 不读取或检查客户端运行时生成的本地文件。
-
-声明在构建后的 YAML 模板及 Sub-Store 节点注入过程中保留，覆写校验成功后移除顶层 `x-substore`，仅保留组内 `use` 供客户端解析。它只允许引用通过构建和 Sub-Store 的校验，不能让内核跳过自己的引用检查；使用前必须确认客户端在所有配置解析阶段都能提供该 provider，包括下载后的独立 `-t` 检查。
-
-本仓库的 Mihomo 模板使用显式 `oixCloud` 文件 provider，不依赖这项豁免；Stash 模板没有 oixCloud 依赖。文件声明及 oix 启用要求见 [README](README.md#接入-sub-store)。
-
 ### 最终配置校验
 
 `dist/config-overwrite.js` 在成员生成之后、返回配置之前执行最终校验，成功后移除内部声明。校验代码随覆写脚本打包为单文件 JavaScript，直接在 Sub-Store 运行；无需新增处理操作或在 Sub-Store 安装开发依赖。构建合并阶段的静态引用检查仍保留，最终校验同时覆盖模板加载后才注入的节点和新增的 provider，不能由构建检查代替。
@@ -166,11 +147,11 @@ x-substore:
 检查范围包括：
 
 - 节点和代理组必须具有非空名称，不允许同名节点、同名组或节点与组重名，也不能占用内置策略名称；`GLOBAL` 允许显式定义为代理组。代理组必须具有非空 `type`。
-- 代理组 `proxies`、`use`、节点 `dialer-proxy`、规则的策略目标及顶层 `RULE-SET` 引用必须存在，引用检查识别合法的内置策略；`use` 也接受[已声明的运行时 provider](#运行时-provider-声明)，不解析逻辑规则条件内部的嵌套规则集引用。
+- 代理组 `proxies`、`use`、节点 `dialer-proxy`、规则的策略目标及顶层 `RULE-SET` 引用必须存在，引用检查识别合法的内置策略；不解析逻辑规则条件内部的嵌套规则集引用。
 - 根据显式组成员和节点中转关系检测依赖循环，包括组引用组、节点中转节点，以及“节点 → 中转组 → 原节点”等混合路径。未显式定义的 `GLOBAL` 按包含全部本地节点和组处理，可捕获“节点 A → GLOBAL → 节点 A”的循环。
 - `proxy-providers` 和 `rule-providers` 中 `type: http` 的 provider 必须配置合法的 HTTP(S) `url`，不按名称提供例外。只检查地址格式，不执行下载或连通性测试。
 
-覆写先构造候选结果，校验成功后才将生成的组写回原配置对象、移除内部声明并返回该对象，保留原 `proxies` 引用及该字段是否存在。失败时抛出包含问题位置的异常，保留输入配置、成员生成声明和运行时 provider 声明，供定位或修正；不会返回这份无效结果。测试应同时验证错误内容和失败时的输入保留。
+覆写先构造候选结果，校验成功后才将生成的组写回原配置对象、移除内部声明并返回该对象，保留原 `proxies` 引用及该字段是否存在。失败时抛出包含问题位置的异常，保留输入配置和成员生成声明，供定位或修正；不会返回这份无效结果。测试应同时验证错误内容和失败时的输入保留。
 
 校验仅检查当前配置对象已经包含的内容，不展开远程 provider 的节点或 `include-all` 等客户端动态生成的成员，也不替代 Mihomo、Stash 对全部配置字段的解析和校验。新增引用字段或动态成员机制时，需要明确其运行阶段和检查范围，不能将远程 provider 名称视为已知节点名称。
 
@@ -219,7 +200,7 @@ proxy-groups:
         types: [vless]
 ```
 
-代理组内的 `x-substore` 只接受 `members` 字段，`members` 只接受下表三个字段；顶层 `x-substore` 使用独立的[运行时 provider 声明](#运行时-provider-声明)。缺少成员声明或 `mode`、未知字段、未知模式、错误的字段类型都会报错，不会回退到按组名判断或全量注入。
+代理组内的 `x-substore` 只接受 `members` 字段，`members` 只接受下表三个字段。缺少成员声明或 `mode`、未知字段、未知模式、错误的字段类型都会报错，不会回退到按组名判断或全量注入。
 
 | 字段 | 要求 | 含义 |
 | --- | --- | --- |
@@ -291,9 +272,8 @@ MIHOMO_BIN=/absolute/path/to/mihomo-oix npm test
 - 两种客户端的配置合并、共同代理组定义和候选顺序一致性，以及相同注入节点下的组成员一致性；仅排除 Mihomo 的 oixCloud provider、Optimized 组及相应 `use` 和菜单引用。
 - 数组与代理组补丁、来源标记、节点保留、重复组名和无效引用等检查。
 - 最终覆写后的名称、引用、中转与组成员混合循环、HTTP provider 地址检查，以及校验失败时输入对象和内部声明不变。
-- 两份构建模板的 YAML 解析、来源标记与补丁移除、成员生成及运行时 provider 声明保留，以及远程模板加载、节点注入和最终覆写流程。
+- 两份构建模板的 YAML 解析、来源标记与补丁移除、成员生成声明保留，以及远程模板加载、节点注入和最终覆写流程。
 - 成员声明的字段校验、模式和默认值、组名变化不改变行为、声明在中间配置中的保留及最终移除，以及实际机场与中转节点筛选、协议限制、节点注入和覆写结果。
-- 运行时 provider 声明的字段与名称校验、与本地定义的冲突、`use` 引用边界、声明在中间配置中的保留及最终移除，以及 Mihomo 文件 provider 与 Stash 无依赖的输出。
 - 中转节点的地区识别、自建 SS 协议限制、符合条件节点的中转字段覆盖及其他节点原字段保留，以及自建保留原名和机场可选重命名后注入、覆写的完整流程。
 - 重命名仅按节点名称识别地区、未知地区保留原名、保留全部地区并按内置热门地区优先排序，以及仅按原始节点名称过滤信息节点的行为。
 - 重命名的固定格式、内置关键词与旗帜保留、按订阅和地区分组编号及单节点序号保留，以及覆写的无效筛选、正则状态、从合并结果重复生成和拒绝直接覆写最终输出。

@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import vm from 'node:vm';
 import { renameProxies } from '../src/scripts/rename/index.ts';
-import type { ProxyNode, ScriptArguments } from '../src/scripts/shared/types.ts';
+import type { ProxyNode } from '../src/scripts/shared/types.ts';
 
 interface TestNode extends ProxyNode {
   id: string;
@@ -19,19 +19,18 @@ interface RenameRuntime {
     proxies: TestNode[],
     targetPlatform: string,
     context: Record<string, unknown>,
-  ) => Promise<TestNode[]>;
+  ) => TestNode[];
 }
-type RenameSession = (proxies: TestNode[]) => Promise<TestNode[]>;
+type RenameSession = (proxies: TestNode[]) => TestNode[];
 
 const scriptPath = fileURLToPath(new URL('../dist/rename.js', import.meta.url));
 
 /**
  * 创建可重复调用的重命名 VM 会话，记录并禁止名称识别期间的联网和计时器调用。
- * @param {Function} [legacyArguments] 旧脚本参数的 getter；省略时不注入 $arguments 全局对象。
- * @returns {Function} 接收节点、返回普通节点数组 Promise 的会话执行函数。
+ * @returns {Function} 接收节点、返回普通节点数组的会话执行函数。
  * @throws {Error} 发布脚本读取或加载失败时抛出。
  */
-function createRenameSession(legacyArguments?: () => ScriptArguments): RenameSession {
+function createRenameSession(): RenameSession {
   const externalCalls: string[] = [];
   const context = vm.createContext({
     console: {
@@ -67,20 +66,17 @@ function createRenameSession(legacyArguments?: () => ScriptArguments): RenameSes
       externalCalls.push('clearTimeout');
     },
   }) as unknown as RenameRuntime;
-  if (legacyArguments) {
-    Object.defineProperty(context, '$arguments', { get: legacyArguments });
-  }
   vm.runInContext(fs.readFileSync(scriptPath, 'utf8'), context, {
     filename: scriptPath,
   });
   /**
    * 在同一 VM 中执行重命名，检查本会话从未调用网络或计时器。
    * @param {Object[]} proxies 待交给发布脚本处理的节点数组。
-   * @returns {Promise<Object[]>} 经过 JSON 转换、可跨 VM 进行断言的结果节点。
+   * @returns {Object[]} 经过 JSON 转换、可跨 VM 进行断言的结果节点。
    * @throws {Error} 重命名失败或发现外部调用时抛出。
    */
-  return async (proxies: TestNode[]): Promise<TestNode[]> => {
-    const result = await context.operator(proxies, 'ClashMeta', {});
+  return (proxies: TestNode[]): TestNode[] => {
+    const result = context.operator(proxies, 'ClashMeta', {});
     // A caught fetch failure alone cannot prove processing stayed offline.
     assert.deepEqual(externalCalls, [], 'renaming must not use network requests or timers');
     return JSON.parse(JSON.stringify(result)) as TestNode[];
@@ -88,12 +84,12 @@ function createRenameSession(legacyArguments?: () => ScriptArguments): RenameSes
 }
 
 /**
- * 在不含脚本参数的新建隔离会话中执行一次重命名，避免不同测试共享正则或运行时状态。
+ * 在新建隔离会话中执行一次重命名，避免不同测试共享正则或运行时状态。
  * @param {Object[]} proxies 待重命名的测试节点。
- * @returns {Promise<Object[]>} 发布脚本返回并转换为普通对象的节点数组。
+ * @returns {Object[]} 发布脚本返回并转换为普通对象的节点数组。
  * @throws {Error} 会话执行失败或触发禁止的外部调用时抛出。
  */
-async function rename(proxies: TestNode[]): Promise<TestNode[]> {
+function rename(proxies: TestNode[]): TestNode[] {
   return createRenameSession()(proxies);
 }
 
@@ -108,7 +104,7 @@ function node(id: string, name: string, extra: Partial<TestNode> = {}): TestNode
   return { id, name, server: '192.0.2.1', port: 443, type: 'vless', ...extra };
 }
 
-test('unknown names keep their original names for IPv4, IPv6 and domain servers', async () => {
+test('unknown names keep their original names for IPv4, IPv6 and domain servers', () => {
   const proxies = [
     node('ipv4', '未知节点 A'),
     node('ipv6', '未知节点 B', { server: '2001:db8::1' }),
@@ -116,11 +112,11 @@ test('unknown names keep their original names for IPv4, IPv6 and domain servers'
     node('no-server', '香港', { server: undefined }),
   ];
 
-  assert.deepEqual(await rename(proxies), JSON.parse(JSON.stringify(proxies)));
+  assert.deepEqual(rename(proxies), JSON.parse(JSON.stringify(proxies)));
 });
 
-test('recognizes country names, flags, city aliases and country codes, then sorts by region', async () => {
-  const result = await rename([
+test('recognizes country names, flags, city aliases and country codes, then sorts by region', () => {
+  const result = rename([
     node('english', 'Germany'),
     node('code', 'US_1'),
     node('flag', '🇸🇬'),
@@ -140,7 +136,7 @@ test('recognizes country names, flags, city aliases and country codes, then sort
   );
 });
 
-test('nodes sharing an endpoint keep independent recognition and retain all regions', async () => {
+test('nodes sharing an endpoint keep independent recognition and retain all regions', () => {
   const proxies = [
     node('unknown', '未知节点'),
     node('hong-kong', '香港'),
@@ -149,7 +145,7 @@ test('nodes sharing an endpoint keep independent recognition and retain all regi
   ];
 
   assert.deepEqual(
-    (await rename(proxies)).map(({ id, name }) => [id, name]),
+    rename(proxies).map(({ id, name }) => [id, name]),
     [
       ['hong-kong', '🇭🇰 HK 01'],
       ['japan', '🇯🇵 JP 01'],
@@ -159,8 +155,8 @@ test('nodes sharing an endpoint keep independent recognition and retain all regi
   );
 });
 
-test('renumbers within each subscription and retains providers, lines and built-in keywords', async () => {
-  const result = await rename([
+test('renumbers within each subscription and retains providers, lines and built-in keywords', () => {
+  const result = rename([
     node('oix-dmit', '🇯🇵 日本 DMIT 12', { _subName: 'oixCloud Edge' }),
     node('oix-edge', '日本 Edge 09', { _subName: 'oixCloud Edge' }),
     node('liangxin', '🇯🇵日本高速01|CTCU|0.5x', { _subName: '良心云' }),
@@ -175,7 +171,7 @@ test('renumbers within each subscription and retains providers, lines and built-
   });
 });
 
-test('current oixCloud Edge names retain complete carrier labels and normalized regions', async () => {
+test('current oixCloud Edge names retain complete carrier labels and normalized regions', () => {
   // 仅保留用户提供清单中的名称；不记录真实连接地址、密码或订阅凭据。
   const cases = [
     ['🇭🇰 香港 DMIT 01', '🇭🇰 HK 01 | DMIT oixCloud Edge'],
@@ -199,7 +195,7 @@ test('current oixCloud Edge names retain complete carrier labels and normalized 
   const proxies = cases.map(([name], index) =>
     node(String(index), name, { type: 'anytls', _subName: 'oixCloud Edge' }),
   );
-  const result = await rename(proxies);
+  const result = rename(proxies);
   assert.equal(result.length, proxies.length);
   assert.deepEqual(
     Object.fromEntries(result.map(({ id, name }) => [id, name])),
@@ -237,8 +233,8 @@ test('the source API accepts a logger without Sub-Store globals and preserves in
   assert.ok(messages.some((message) => message.includes('名称命中 1/2')));
 });
 
-test('region matching preserves Chinese, flag, English and code priority', async () => {
-  const result = await rename([
+test('region matching preserves Chinese, flag, English and code priority', () => {
+  const result = rename([
     node('chinese', '🇺🇸 Germany 日本'),
     node('flag', '🇸🇬 Germany US'),
     node('english', 'Germany US'),
@@ -255,8 +251,8 @@ test('region matching preserves Chinese, flag, English and code priority', async
   });
 });
 
-test('Taiwan uses the flag substitution and UK normalizes to the standard GB code', async () => {
-  const result = await rename([
+test('Taiwan uses the flag substitution and UK normalizes to the standard GB code', () => {
+  const result = rename([
     node('taiwan', '台湾', { _subName: '普通' }),
     node('taiwan-flag', '🇹🇼 台湾 Edge 01', { _subName: 'oixCloud Edge' }),
     node('uk', 'UK Edge 99', { _subName: 'oixCloud Edge' }),
@@ -269,8 +265,8 @@ test('Taiwan uses the flag substitution and UK normalizes to the standard GB cod
   });
 });
 
-test('built-in filtering uses original node names and does not filter subscription names', async () => {
-  const result = await rename([
+test('built-in filtering uses original node names and does not filter subscription names', () => {
+  const result = rename([
     node('remaining', '香港 剩余流量'),
     node('expiry', '日本 Expire'),
     node('name-match', '官网 日本 01'),
@@ -287,8 +283,8 @@ test('built-in filtering uses original node names and does not filter subscripti
   );
 });
 
-test('sequence numbers remain even when a complete name or subscription is unique', async () => {
-  const result = await rename([
+test('sequence numbers remain even when a complete name or subscription is unique', () => {
+  const result = rename([
     node('unique-first', '日本 AWS'),
     node('unique-second', '日本 GIA'),
     node('shared-first', '香港 AWS'),
@@ -305,18 +301,18 @@ test('sequence numbers remain even when a complete name or subscription is uniqu
   });
 });
 
-test('keywords preserve source order and full pipe tags without matching inside ASCII words', async () => {
-  const result = await rename([node('keywords', '日本 Registry 高级专线 东京|CTCUCM|.5x|IPLC')]);
+test('keywords preserve source order and full pipe tags without matching inside ASCII words', () => {
+  const result = rename([node('keywords', '日本 Registry 高级专线 东京|CTCUCM|.5x|IPLC')]);
 
   assert.equal(result[0].name, '🇯🇵 JP 01 | 高级专线 东京 CTCUCM .5x');
 });
 
-test('global alias patterns do not leak matching state between nodes or calls', async () => {
+test('global alias patterns do not leak matching state between nodes or calls', () => {
   const run = createRenameSession();
   const proxies = ['Tokyo', 'Tokyo', 'Paris', 'Paris', 'Hongkong', 'Hongkong'].map((name, index) =>
     node(String(index), `品牌 ${name}`),
   );
-  const first = await run(proxies);
+  const first = run(proxies);
 
   assert.deepEqual(Object.fromEntries(first.map((proxy) => [proxy.id, proxy.name])), {
     0: '🇯🇵 JP 01 | Tokyo',
@@ -326,40 +322,11 @@ test('global alias patterns do not leak matching state between nodes or calls', 
     4: '🇭🇰 HK 01',
     5: '🇭🇰 HK 02',
   });
-  assert.deepEqual(await run(proxies), first);
+  assert.deepEqual(run(proxies), first);
 });
 
-test('all removed parameters are ignored, including values that previously rejected the operation', async () => {
-  const proxies = [
-    node('known', '香港品牌 东京 IPLC', { _subName: '示例订阅' }),
-    node('other-region', '德国'),
-    node('filtered', '香港 剩余流量'),
-    node('unknown', '未知节点 01'),
-  ];
-  const expected = await rename(proxies);
-  const run = createRenameSession(() => ({
-    remove: false,
-    one: true,
-    hot: 'JP',
-    block: '[',
-    retain: 'IPLC',
-    out: 'ZH|QC',
-    filter: '%',
-  }));
-
-  assert.deepEqual(await run(proxies), expected);
-});
-
-test('the published entry never reads the legacy arguments global', async () => {
-  const run = createRenameSession(() => {
-    throw new Error('Reading $arguments is forbidden');
-  });
-
-  assert.equal((await run([node('entry', '东京')]))[0].name, '🇯🇵 JP 01 | 东京');
-});
-
-test('airport codes, carrier labels and overlapping region names do not misidentify across countries', async () => {
-  const result = await rename([
+test('airport codes, carrier labels and overlapping region names do not misidentify across countries', () => {
+  const result = rename([
     node('hk-hkt', 'HK HKT 01'),
     node('pccw-hkt-hk', 'PCCW-HKT HK 01'),
     node('pccw-only', 'PCCW-HKT 01'),
@@ -408,8 +375,8 @@ test('airport codes, carrier labels and overlapping region names do not misident
   });
 });
 
-test('alias precedence, Costa Rica San Jose, and North/South Korea boundaries stay accurate', async () => {
-  const result = await rename([
+test('alias precedence, Costa Rica San Jose, and North/South Korea boundaries stay accurate', () => {
+  const result = rename([
     node('la-de', 'Los Angeles 经德国中转'),
     node('jp-zrh', '🇯🇵 ZRH 01'),
     node('jp-gva', '🇯🇵 GVA 01'),
@@ -439,7 +406,7 @@ test('alias precedence, Costa Rica San Jose, and North/South Korea boundaries st
     'kr-north-chuncheon': '🇰🇷 KR 03 | Chuncheon',
   });
 
-  const variants = await rename([
+  const variants = rename([
     node('iom-underscore', 'ISLE_OF_MAN 01'),
     node('kr-underscore', 'SOUTH_KOREA 01'),
     node('kr-hyphen', 'SOUTH-KOREA 01'),
@@ -453,8 +420,8 @@ test('alias precedence, Costa Rica San Jose, and North/South Korea boundaries st
   });
 });
 
-test('San Jose disambiguation respects explicit Costa Rica markers and Zurich Chinese alias', async () => {
-  const result = await rename([
+test('San Jose disambiguation respects explicit Costa Rica markers and Zurich Chinese alias', () => {
+  const result = rename([
     node('cr-en', '哥斯达黎加 San Jose 01'),
     node('cr-flag', '🇨🇷 SAN-JOSE 01'),
     node('cr-english', 'Costa Rica San Jose 01'),

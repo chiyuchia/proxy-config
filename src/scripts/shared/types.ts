@@ -6,9 +6,6 @@
 /** 尚未经过具体字段校验的配置映射。 */
 export type ConfigMap = Record<string, unknown>;
 
-/** Sub-Store 传入的原始脚本参数，保留字符串及 JSON 值的原有语义。 */
-export type ScriptArguments = Record<string, unknown>;
-
 /** 订阅节点：仅约束本项目使用的字段，其他协议选项原样透传。 */
 export interface ProxyNode {
   name: string;
@@ -40,7 +37,6 @@ export type ProxyProvider = Record<string, unknown>;
 
 /** 配置处理入口使用的字段；允许初始空配置及客户端自定义字段。 */
 export interface ProxyConfig {
-  'x-substore'?: unknown;
   proxies?: ProxyNode[];
   'proxy-groups'?: ProxyGroup[];
   'proxy-providers'?: Record<string, ProxyProvider>;
@@ -54,12 +50,9 @@ export interface MergedConfig extends ProxyConfig {
   rules: string[];
 }
 
-/** 保留输入的其他已知字段，更新组类型并剥离顶层内部声明。 */
-export type OverwrittenConfig<T extends ProxyConfig = ProxyConfig> = Omit<
-  T,
-  'proxy-groups' | 'x-substore'
-> &
-  ProxyConfig & { 'proxy-groups': FinalProxyGroup[]; 'x-substore'?: never };
+/** 保留输入的其他已知字段，更新组类型。 */
+export type OverwrittenConfig<T extends ProxyConfig = ProxyConfig> = Omit<T, 'proxy-groups'> &
+  ProxyConfig & { 'proxy-groups': FinalProxyGroup[] };
 
 /** 核心模块只依赖日志写入能力。 */
 export interface Logger {

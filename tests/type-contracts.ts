@@ -11,7 +11,6 @@ import type { ProxyNode } from '../src/scripts/shared/types.ts';
 type Assert<T extends true> = T;
 
 type Template = {
-  'x-substore': { 'runtime-proxy-providers': ['oixCloud'] };
   'proxy-groups': {
     name: string;
     'x-substore': { members: { mode: 'append' } };
@@ -28,9 +27,6 @@ type TaggedNode = ProxyNode & { sourceId: number };
 
 export type RemovedMemberDeclaration = Assert<
   Output['proxy-groups'][number]['x-substore'] extends undefined ? true : false
->;
-export type RemovedRuntimeProviderDeclaration = Assert<
-  Output['x-substore'] extends undefined ? true : false
 >;
 export type PreservedProviderFields = Assert<
   Output['proxy-providers'] extends Template['proxy-providers'] ? true : false

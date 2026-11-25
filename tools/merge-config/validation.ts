@@ -6,7 +6,6 @@
 import { configError, requireArray } from './value.ts';
 import { isConfigMap } from '../../src/scripts/shared/value.ts';
 import { BUILTIN_TARGETS, validateRuleReferences } from '../../src/scripts/shared/rules.ts';
-import { readRuntimeProxyProviders } from '../../src/scripts/shared/runtime-providers.ts';
 import type { ConfigMap } from '../../src/scripts/shared/types.ts';
 
 /**
@@ -32,7 +31,7 @@ export function checkGroupNames(groups: unknown, label: string): Set<string> {
 }
 
 /**
- * 校验当前配置的名称、组 type、成员、provider 和规则引用，以及运行时 provider 声明。
+ * 校验当前配置的名称、组 type、成员、provider 和规则引用。
  * 只检查已提供的数据，不修改配置，也不校验节点的 dialer-proxy 或覆写阶段的成员声明。
  *
  * @preserve
@@ -41,7 +40,6 @@ export function checkGroupNames(groups: unknown, label: string): Set<string> {
  * @throws {Error} 名称冲突、必需字段或列表类型无效，或引用目标不存在时抛出配置错误。
  */
 export function validateMergedConfig(config: ConfigMap): void {
-  const runtimeProviders = readRuntimeProxyProviders(config, configError);
   const groupNames = checkGroupNames(config['proxy-groups'], '合并结果');
   const targets = new Set([...groupNames, ...BUILTIN_TARGETS]);
   for (const proxy of (config.proxies ?? []) as unknown[]) {
@@ -57,10 +55,7 @@ export function validateMergedConfig(config: ConfigMap): void {
       }
     }
     for (const name of requireArray(group.use ?? [], `${group.name}.use`)) {
-      if (
-        typeof name !== 'string' ||
-        (!Object.hasOwn(config['proxy-providers'] ?? {}, name) && !runtimeProviders.has(name))
-      ) {
+      if (typeof name !== 'string' || !Object.hasOwn(config['proxy-providers'] ?? {}, name)) {
         configError(`${group.name} 引用了不存在的 proxy-provider：${name}`);
       }
     }

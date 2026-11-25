@@ -16,7 +16,7 @@
 - 共同代理组、候选顺序、筛选和测速参数只在 `src/configs/base.yaml` 维护。两端代理组仅允许 oixCloud provider、Optimized 组及相关引用存在差异。
 - 三份 YAML 独立解析，保留 `$base` / `$profile` 标记，不使用跨文件锚点，不在配置源定义顶层 `proxies`。
 - 保留规则的匹配优先级和候选顺序；修改组名、规则集名或文件位置时，同步检查引用。
-- 构建模板保留成员生成和运行时 provider 声明；Sub-Store 按远程模板、节点注入、`config-overwrite.js` 的顺序处理，不再运行合并脚本。`dialer-proxy.js` 与 `rename.js` 在来源订阅中分别通过 `operator` 处理节点，自建节点仅设置中转并保留原名。
+- 构建模板保留成员生成声明；Sub-Store 按远程模板、节点注入、`config-overwrite.js` 的顺序处理，不再运行合并脚本。`dialer-proxy.js` 与 `rename.js` 在来源订阅中分别通过 `operator` 处理节点，自建节点仅设置中转并保留原名。
 - 节点筛选的具体限制以贡献指南为准；验证时检查注入节点并覆写后的最终分组。
 
 ## 验证与交付

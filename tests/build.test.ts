@@ -96,10 +96,8 @@ test('build creates five reproducible assets and check detects missing and stale
   assert.equal(fs.readFileSync(unrelated, 'utf8'), 'keep me');
 });
 
-test('template serialization expands YAML anchors while preserving runtime declarations and node-free inputs', (t) => {
+test('template serialization expands YAML anchors while preserving member declarations and node-free inputs', (t) => {
   const directory = fixture(t);
-  const baseFile = path.join(directory, 'src', 'configs', 'base.yaml');
-  fs.appendFileSync(baseFile, '\nx-substore:\n  runtime-proxy-providers: [fixtureRuntime]\n');
   const result = build(directory);
   assert.equal(result.status, 0, result.output);
   for (const client of ['mihomo', 'stash']) {
@@ -113,7 +111,6 @@ test('template serialization expands YAML anchors while preserving runtime decla
       text,
       /^\s*(?:<<|\$(?:delete|before|after|append|prepend|remove|insert-before)):/m,
     );
-    assert.deepEqual(template['x-substore'], { 'runtime-proxy-providers': ['fixtureRuntime'] });
     const groups = template['proxy-groups'];
     assert.ok(groups.every((group) => group['x-substore']));
     const testGroups = groups.filter((group) => group.type === 'url-test');

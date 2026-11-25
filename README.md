@@ -105,7 +105,7 @@ https://github.com/chiyuchia/proxy-config/releases/latest/download/dialer-proxy.
 | 美国 | `🛡️ 美西中转` |
 | 其他地区或无法识别 | `🛡️ 亚太中转` |
 
-中转与重命名脚本共用名称地区识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。符合条件节点的已有 `dialer-proxy` 会被覆盖，原节点名称、顺序及其他字段保留。旧地址中的 `mode` 参数不再使用，可直接移除。
+中转与重命名脚本共用名称地区识别逻辑，支持地区代码（如 `US`、`us`）、中文名、英文名、国旗和已有城市别名；不根据服务器地址或订阅名推断地区，也不联网查询。符合条件节点的已有 `dialer-proxy` 会被覆盖，原节点名称、顺序及其他字段保留。
 
 `🛡️ 亚太中转` 首选的 `🛡️ 亚太 Fallback` 按 oixCloud Optimized 亚太 → 吹雪云亚太 → 良心云亚太回退，每 60 秒检查，Stash 跳过 oixCloud。亚太包含 HK、SG、JP、TW；各机场沿用现有线路和协议限制，见[节点与代理组](CONTRIBUTING.md#节点与代理组)。机场亚太组使用 Cloudflare 204 地址及原有测速参数。
 
@@ -138,9 +138,9 @@ oixCloud Edge 在来源订阅中设置中转，可按需整理名称：
 https://github.com/chiyuchia/proxy-config/releases/latest/download/rename.js
 ```
 
-该脚本通过 `async operator(proxies, targetPlatform, context)` 处理节点数组。自建节点不使用此脚本；oixCloud Edge 如需重命名，在来源订阅中先完成[节点中转](#节点中转)，再执行此脚本。之后由“Mihomo 配置”文件注入处理后的节点，并运行 `config-overwrite.js`。文件中的覆写脚本使用 `main(config)`，`dialer-proxy.js` 和 `rename.js` 应分别配置为订阅中的独立节点处理操作。
+该脚本通过 `operator(proxies, targetPlatform, context)` 处理节点数组。自建节点不使用此脚本；oixCloud Edge 如需重命名，在来源订阅中先完成[节点中转](#节点中转)，再执行此脚本。之后由“Mihomo 配置”文件注入处理后的节点，并运行 `config-overwrite.js`。文件中的覆写脚本使用 `main(config)`，`dialer-proxy.js` 和 `rename.js` 应分别配置为订阅中的独立节点处理操作。
 
-脚本使用固定的重命名规则，不读取外部脚本参数，旧地址中的参数可直接移除。先按内置词表过滤信息节点，再仅从节点名称识别地区，无需联网解析或查询；不按地区删除节点，无法识别地区时保留原名。
+脚本使用固定的重命名规则，无需参数。先按内置词表过滤信息节点，再仅从节点名称识别地区，无需联网解析或查询；不按地区删除节点，无法识别地区时保留原名。
 
 已识别节点固定输出 `国旗 地区代码 序号 | 保留关键词 订阅名`，序号按 `_subName` 与地区分组，从 `01` 重新生成，至少保留两位，即使只有一个节点也保留序号，空的后缀部分会省略。订阅名来自节点的 `_subName` 字段。以下例子各自作为所属分组的第一个节点：
 

@@ -1,5 +1,5 @@
 /**
- * @file 验证配置覆写的节点筛选、成员更新与运行时 provider 声明处理。
+ * @file 验证配置覆写的节点筛选与成员更新。
  * 覆盖声明式成员策略、严格验证、正则状态、输入保留及已有 provider 设置保留。
  */
 
@@ -355,26 +355,9 @@ test('overwriting preserves all explicitly configured provider objects and setti
   assert.deepEqual(providers, before);
 });
 
-test('overwriting never creates provider definitions for runtime declarations', () => {
+test('overwriting empty config initializes empty proxy-groups without creating providers', () => {
   const config: ProxyConfig = {};
   overwriteConfig(config);
   assert.deepEqual(config, { 'proxy-groups': [] });
-
-  const declared = {
-    'x-substore': { 'runtime-proxy-providers': ['oixCloud', 'another-runtime-provider'] },
-    'proxy-groups': [
-      { name: '运行时来源', use: ['oixCloud', 'another-runtime-provider'], ...policy('manual') },
-    ],
-  };
-  assert.equal(overwriteConfig(declared), declared);
-  assert.deepEqual(declared, {
-    'proxy-groups': [
-      {
-        name: '运行时来源',
-        type: 'select',
-        use: ['oixCloud', 'another-runtime-provider'],
-      },
-    ],
-  });
-  assert.equal(Object.hasOwn(declared, 'proxy-providers'), false);
+  assert.equal(Object.hasOwn(config, 'proxy-providers'), false);
 });

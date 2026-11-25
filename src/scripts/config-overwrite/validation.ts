@@ -6,7 +6,6 @@
 import { BUILTIN_TARGETS, validateRuleReferences } from '../shared/rules.ts';
 import { isConfigMap } from '../shared/value.ts';
 import { isHttpUrl } from '../shared/http-url.ts';
-import { readRuntimeProxyProviders } from '../shared/runtime-providers.ts';
 import type { ConfigMap, ProxyConfig } from '../shared/types.ts';
 
 /**
@@ -136,16 +135,14 @@ function validateAcyclic(graph: Map<string, string[]>): void {
 /**
  * 检查覆写后的名称、组/规则/provider 引用、中转关系、依赖环路和 HTTP provider 地址。
  * GLOBAL 可显式定义为组；缺省 GLOBAL 按包含所有本地节点及组处理，防止中转回到自身。
- * 组的 use 可引用本地 provider 或顶层 x-substore 中明确声明的运行时 provider。
  * 不修改配置，不展开远程 provider 或 include-all 等客户端动态成员，也不验证协议完整语法。
  * @preserve
- * @param {*} config 已完成节点注入和分组计算、仍保留顶层运行时声明的候选配置。
+ * @param {*} config 已完成节点注入和分组计算的候选配置。
  * @returns {void} 所有检查通过时正常返回。
  * @throws {Error} 名称、字段、引用、依赖或 HTTP 地址无效时抛出含定位信息的错误。
  */
 export function validateFinalConfig(config: unknown): void {
   validateOverwriteStructure(config);
-  const runtimeProviders = readRuntimeProxyProviders(config, validationError);
   const proxies = config.proxies ?? [];
   const groups = config['proxy-groups'] ?? [];
   const definitions = new Map<string, string>();
@@ -199,7 +196,7 @@ export function validateFinalConfig(config: unknown): void {
       addReference(group.name, name, `proxy-groups[${group.name}].proxies[${index}]`);
     }
     for (const name of group.use ?? []) {
-      if (!Object.hasOwn(proxyProviders, name) && !runtimeProviders.has(name)) {
+      if (!Object.hasOwn(proxyProviders, name)) {
         validationError(`proxy-groups[${group.name}].use 引用了不存在的 proxy-provider：${name}`);
       }
     }

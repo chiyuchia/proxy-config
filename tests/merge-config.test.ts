@@ -11,12 +11,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { parse, stringify } from 'yaml';
 import { mergeConfigDocuments } from '../tools/merge-config/index.ts';
-import type {
-  MergedConfig,
-  ProxyGroup,
-  ProxyNode,
-  ScriptArguments,
-} from '../src/scripts/shared/types.ts';
+import type { MergedConfig, ProxyGroup, ProxyNode } from '../src/scripts/shared/types.ts';
 
 interface PublishedScripts {
   'dist/config-overwrite.js': typeof import('../src/scripts/entries/config-overwrite.ts');
@@ -25,7 +20,6 @@ interface PublishedScripts {
 }
 interface FileRuntime {
   $content: string;
-  $arguments: ScriptArguments;
   main?: unknown;
   compileGroupFilter?: unknown;
 }
@@ -132,7 +126,6 @@ function fileRuntime(client: string): { context: FileRuntime; outputs: unknown[]
   const context = vm.createContext({
     console,
     $content: fs.readFileSync(path.join(root, 'dist', `${client}.yaml`), 'utf8'),
-    $arguments: {},
     ProxyUtils: {
       yaml: {
         safeLoad: parseYaml,
@@ -348,62 +341,6 @@ test('duplicate group names and unresolved references fail final validation', ()
   }
 });
 
-test('merge accepts explicitly declared runtime providers only as group use references', () => {
-  const profile = {
-    $profile: 'mihomo',
-    'x-substore': { 'runtime-proxy-providers': ['runtime-subscription'] },
-    'proxy-groups': [{ name: 'Main', use: ['subscription', 'runtime-subscription'] }],
-  };
-  const before = plain(profile);
-  const result = merge(fixture(), profile);
-  assert.deepEqual(result['x-substore'], profile['x-substore']);
-  assert.deepEqual(result['proxy-groups'][0].use, ['subscription', 'runtime-subscription']);
-  assert.equal(Object.hasOwn(result['proxy-providers']!, 'runtime-subscription'), false);
-  assert.deepEqual(profile, before);
-
-  for (const patch of [
-    { 'proxy-groups': [{ name: 'Main', proxies: ['runtime-subscription'] }] },
-    { rules: ['MATCH,runtime-subscription'] },
-    { rules: ['RULE-SET,runtime-subscription,Main'] },
-    { 'proxy-groups': [{ name: 'Main', use: ['runtime-subscriptino'] }] },
-  ]) {
-    assert.throws(() => merge(fixture(), { ...profile, ...patch }), /runtime-subscript/);
-  }
-  for (const name of ['oixCloud', 'runtime-subscription']) {
-    assert.throws(
-      () =>
-        merge(fixture(), { $profile: 'mihomo', 'proxy-groups': [{ name: 'Main', use: [name] }] }),
-      new RegExp(name),
-    );
-  }
-});
-
-test('merge validates runtime provider declarations without mutating either source', () => {
-  for (const metadata of [
-    null,
-    [],
-    'oixCloud',
-    { 'runtime-proxy-provider': ['oixCloud'] },
-    { 'runtime-proxy-providers': 'oixCloud' },
-    { 'runtime-proxy-providers': [1] },
-    { 'runtime-proxy-providers': [''] },
-    { 'runtime-proxy-providers': ['  '] },
-    { 'runtime-proxy-providers': ['oixCloud', 'oixCloud'] },
-    { 'runtime-proxy-providers': ['subscription'] },
-  ]) {
-    const base = fixture();
-    const profile = { $profile: 'mihomo', 'x-substore': metadata };
-    const originals = plain({ base, profile });
-    assert.throws(() => merge(base, profile), /x-substore|runtime-proxy-provider|subscription/);
-    assert.deepEqual({ base, profile }, originals);
-  }
-  const result = merge(fixture(), {
-    $profile: 'stash',
-    'x-substore': { 'runtime-proxy-providers': [] },
-  });
-  assert.deepEqual(result['x-substore'], { 'runtime-proxy-providers': [] });
-});
-
 test('source markers are required and source templates cannot carry subscription nodes', () => {
   const base = fixture();
   delete base.$base;
@@ -463,8 +400,6 @@ test('live profiles share group definitions and menu order except for the Mihomo
   assert.deepEqual(mihomo['proxy-providers'], {
     oixCloud: { type: 'file', path: './proxy_provider/oixCloud' },
   });
-  assert.equal(mihomo['x-substore'], undefined);
-  assert.equal(stash['x-substore'], undefined);
   const optimized = mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized')!;
   assert.equal(optimized.type, 'url-test');
   assert.equal(optimized.filter, '(IXP|CIA)');
@@ -567,7 +502,7 @@ test('the same injected nodes produce matching group members in both live profil
   ];
   const { mihomo, stash } = liveConfigs(proxies);
   for (const config of [mihomo, stash]) {
-    loadScript('dist/config-overwrite.js', { $arguments: {} }).main(config);
+    loadScript('dist/config-overwrite.js').main(config);
   }
   assert.deepEqual(sharedGroups(stash), sharedGroups(mihomo));
   for (const config of [mihomo, stash]) {
@@ -589,8 +524,6 @@ test('the same injected nodes produce matching group members in both live profil
   assert.deepEqual(mihomo['proxy-providers'], {
     oixCloud: { type: 'file', path: './proxy_provider/oixCloud' },
   });
-  assert.equal(mihomo['x-substore'], undefined);
-  assert.equal(stash['x-substore'], undefined);
   assert.deepEqual(
     plain(mihomo['proxy-groups'].find(({ name }) => name === '✈️ oixCloud Optimized')!.use),
     ['oixCloud'],
@@ -656,9 +589,7 @@ test('both built templates work with the existing airport and transit node filte
 
   for (const client of clients) {
     const merged = liveConfigs(proxies)[client];
-    const overwrite = loadScript('dist/config-overwrite.js', {
-      $arguments: {},
-    }).main;
+    const overwrite = loadScript('dist/config-overwrite.js').main;
     const result = overwrite(merged);
     for (const [name, members] of Object.entries(expected)) {
       const group = result['proxy-groups'].find((item) => item.name === name);
@@ -727,7 +658,6 @@ test('built templates survive node injection and independently scoped Sub-Store 
         ),
         'member policies must survive the build-time YAML serialization',
       );
-      assert.equal(template['x-substore'], undefined);
       assert.deepEqual(
         template['proxy-providers'],
         client === 'mihomo'
@@ -746,7 +676,6 @@ test('built templates survive node injection and independently scoped Sub-Store 
       assert.equal(outputs.length, 1);
       assertOriginalNodesPreserved(result, proxies ?? []);
       assert.equal(hasDirective(result), false);
-      assert.equal(Object.hasOwn(result, 'x-substore'), false);
       assert.deepEqual(result['proxy-providers'], template['proxy-providers']);
       assert.ok(result['proxy-groups'].every((group) => !Object.hasOwn(group, 'x-substore')));
       assert.deepEqual(result.rules, template.rules);
@@ -809,7 +738,6 @@ test('final validation rejects invalid late-injected nodes before either client 
         });
       }
       context.$content = stringify(merged);
-      context.$arguments = {};
       const before = context.$content;
       await assert.rejects(runWrapped('dist/config-overwrite.js', context), pattern);
       assert.equal(
@@ -843,7 +771,6 @@ test('final validation accepts acyclic node and group dialer chains in both file
       'x-substore': { members: { mode: 'manual' } },
     });
     context.$content = stringify(merged);
-    context.$arguments = {};
     await runWrapped('dist/config-overwrite.js', context);
     const result = parseYaml(context.$content) as MergedConfig;
     assert.deepEqual(result.proxies, proxies);
@@ -864,7 +791,6 @@ test('final validation checks locally declared HTTP provider URLs in both file r
           无效来源: { type: 'http', ...(url === undefined ? {} : { url }) },
         };
         context.$content = stringify(merged);
-        context.$arguments = {};
         const before = context.$content;
         await assert.rejects(
           runWrapped('dist/config-overwrite.js', context),
@@ -886,16 +812,6 @@ test('final validation rejects missing managed providers and invalid late provid
       pattern: /oixCloud/,
     },
     {
-      field: 'x-substore',
-      value: { 'runtime-proxy-providers': ['oixCloud', 'oixCloud'] },
-      pattern: /oixCloud/,
-    },
-    {
-      field: 'x-substore',
-      value: { 'runtime-proxy-providers': ['oixCloud'] },
-      pattern: /oixCloud/,
-    },
-    {
       field: 'proxies',
       value: [{ name: '落地节点', type: 'ss', 'dialer-proxy': 'oixCloud' }],
       pattern: /oixCloud/,
@@ -908,7 +824,6 @@ test('final validation rejects missing managed providers and invalid late provid
     if (value === undefined) delete merged[field];
     else merged[field] = value;
     context.$content = stringify(merged);
-    context.$arguments = {};
     const before = context.$content;
     await assert.rejects(runWrapped('dist/config-overwrite.js', context), pattern);
     assert.equal(context.$content, before);
@@ -927,7 +842,7 @@ test('final validation rejects missing managed providers and invalid late provid
   }
 });
 
-test('self-hosted SS dialers and renamed airport nodes preserve final grouping in both clients', async () => {
+test('self-hosted SS dialers and renamed airport nodes preserve final grouping in both clients', () => {
   const selfHostedSource = [
     { name: '自建 SG 落地', type: 'ss', _subName: '自建节点', server: 'sg.example.com' },
     { name: '自建 US 落地', type: 'SS', _subName: '自建节点', server: 'us.example.com' },
@@ -984,7 +899,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   ];
   const { operator: assignDialer } = loadScript('dist/dialer-proxy.js');
   const originalSelfHosted = structuredClone(selfHostedSource);
-  const selfHosted = await assignDialer(selfHostedSource, 'ClashMeta', {});
+  const selfHosted = assignDialer(selfHostedSource, 'ClashMeta', {});
   assert.deepEqual(
     plain(selfHosted.slice(2)),
     originalSelfHosted.slice(2),
@@ -992,7 +907,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   );
   const airports: ProxyNode[] = [...directProxies];
   for (const proxies of airportSources) {
-    airports.push(...(await assignDialer(proxies, 'ClashMeta', {})));
+    airports.push(...assignDialer(proxies, 'ClashMeta', {}));
   }
   const prepared = [...selfHosted, ...airports];
   const originalNames = new Map(prepared.map(({ server, name }) => [server, name]));
@@ -1015,7 +930,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
       log() {},
     },
   });
-  const proxies = plain([...selfHosted, ...(await rename(airports, 'ClashMeta', {}))]);
+  const proxies = plain([...selfHosted, ...rename(airports, 'ClashMeta', {})]);
   assert.equal(proxies.length, prepared.length);
   for (const proxy of proxies) {
     if (proxy._subName === '自建节点') {
@@ -1037,9 +952,7 @@ test('self-hosted SS dialers and renamed airport nodes preserve final grouping i
   const dedicatedGroups = ['✈️ 吹雪云 亚太', '✈️ 良心云 亚太'];
   const configs = liveConfigs(proxies);
   for (const [client, config] of Object.entries(configs)) {
-    const overwrite = loadScript('dist/config-overwrite.js', {
-      $arguments: {},
-    }).main;
+    const overwrite = loadScript('dist/config-overwrite.js').main;
     const originalRules = plain(config.rules);
     const originalGroups = new Map(
       config['proxy-groups'].map(({ name, proxies = [] }) => [name, plain(proxies)]),

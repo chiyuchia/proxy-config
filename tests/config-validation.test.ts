@@ -228,81 +228,6 @@ test('HTTP provider validation rejects malformed URLs without exposing subscript
   }
 });
 
-test('runtime providers permit explicit use references without defining local providers', () => {
-  const config: ProxyConfig = {
-    'x-substore': { 'runtime-proxy-providers': ['oixCloud', 'custom-runtime'] },
-    'proxy-providers': { subscription: { type: 'http', url: 'https://example.com/nodes' } },
-    'rule-providers': { 'custom-runtime': { type: 'inline', payload: [] } },
-    'proxy-groups': [
-      { ...group('运行时来源', []), use: ['oixCloud', 'custom-runtime', 'subscription'] },
-    ],
-    rules: ['RULE-SET,custom-runtime,运行时来源'],
-  };
-  const before = structuredClone(config);
-  assert.doesNotThrow(() => validateFinalConfig(config));
-  assert.deepEqual(config, before);
-
-  for (const metadata of [undefined, {}, { 'runtime-proxy-providers': [] }]) {
-    assert.doesNotThrow(() => validateFinalConfig({ 'x-substore': metadata }));
-    assert.throws(
-      () => validateFinalConfig({ ...config, 'x-substore': metadata }),
-      /use.*oixCloud/,
-    );
-  }
-});
-
-test('runtime provider declarations are strict and cannot hide local provider definitions', async (t) => {
-  const cases: [string, unknown][] = [
-    ['null metadata', null],
-    ['array metadata', []],
-    ['scalar metadata', true],
-    ['unknown metadata field', { 'runtime-proxy-providers': ['oixCloud'], typo: [] }],
-    ['null provider list', { 'runtime-proxy-providers': null }],
-    ['scalar provider list', { 'runtime-proxy-providers': 'oixCloud' }],
-    ['map provider list', { 'runtime-proxy-providers': {} }],
-    ['empty provider name', { 'runtime-proxy-providers': [''] }],
-    ['blank provider name', { 'runtime-proxy-providers': ['  '] }],
-    ['non-string provider name', { 'runtime-proxy-providers': ['oixCloud', 1] }],
-    ['null provider name', { 'runtime-proxy-providers': [null] }],
-    ['duplicate provider name', { 'runtime-proxy-providers': ['oixCloud', 'oixCloud'] }],
-    ['local provider collision', { 'runtime-proxy-providers': ['subscription'] }],
-  ];
-  for (const [label, declaration] of cases) {
-    await t.test(label, () => {
-      const config = { ...fixture(), 'x-substore': declaration };
-      const before = structuredClone(config);
-      const groups = config['proxy-groups'];
-      const providers = config['proxy-providers'];
-      assert.throws(() => validateFinalConfig(config), /x-substore/);
-      assert.throws(() => overwriteConfig(config), /x-substore/);
-      assert.deepEqual(config, before);
-      assert.equal(config['x-substore'], declaration);
-      assert.equal(config['proxy-groups'], groups);
-      assert.equal(config['proxy-providers'], providers);
-    });
-  }
-});
-
-test('runtime providers are not available as nodes, dialers, rule targets or rule sets', async (t) => {
-  const declaration = { 'runtime-proxy-providers': ['oixCloud'] };
-  const cases: [string, ProxyConfig, RegExp][] = [
-    ['group member', { 'proxy-groups': [group('主组', ['oixCloud'])] }, /proxies.*oixCloud/],
-    ['dialer', { proxies: [{ name: 'A', 'dialer-proxy': 'oixCloud' }] }, /dialer-proxy.*oixCloud/],
-    ['rule target', { rules: ['MATCH,oixCloud'] }, /rules.*oixCloud/],
-    ['rule provider', { rules: ['RULE-SET,oixCloud,DIRECT'] }, /rule-provider.*oixCloud/],
-    [
-      'undeclared runtime provider',
-      { 'proxy-groups': [{ ...group('主组'), use: ['another-runtime'] }] },
-      /use.*another-runtime/,
-    ],
-  ];
-  for (const [label, config, expected] of cases) {
-    await t.test(label, () =>
-      assert.throws(() => validateFinalConfig({ ...config, 'x-substore': declaration }), expected),
-    );
-  }
-});
-
 test('every locally defined HTTP provider still requires a valid URL regardless of its name', () => {
   for (const field of ['proxy-providers', 'rule-providers']) {
     for (const name of ['oixCloud', 'subscription']) {
@@ -319,14 +244,6 @@ test('every locally defined HTTP provider still requires a valid URL regardless 
       );
     }
   }
-  assert.throws(
-    () =>
-      validateFinalConfig({
-        'x-substore': { 'runtime-proxy-providers': ['oixCloud'] },
-        'proxy-providers': { subscription: { type: 'http' } },
-      }),
-    /subscription.*url/,
-  );
 });
 
 test('failed final validation preserves input references, declarations and provider settings', () => {
@@ -339,15 +256,13 @@ test('failed final validation preserves input references, declarations and provi
     { 'proxy-providers': { oixCloud: { type: 'http' } } },
   ];
   for (const invalid of invalidInputs) {
-    const declaration = { 'runtime-proxy-providers': ['custom-runtime'] };
-    const config = { ...fixture(), ...invalid, 'x-substore': declaration };
+    const config = { ...fixture(), ...invalid };
     if (invalid.proxies) config.proxies = [...fixture().proxies!, ...invalid.proxies];
     const groups = config['proxy-groups'];
     const providers = config['proxy-providers'];
     const before = structuredClone(config);
     assert.throws(() => overwriteConfig(config), /config-overwrite/);
     assert.deepEqual(config, before);
-    assert.equal(config['x-substore'], declaration);
     assert.equal(config['proxy-groups'], groups);
     assert.equal(config['proxy-providers'], providers);
   }
@@ -355,19 +270,18 @@ test('failed final validation preserves input references, declarations and provi
 
 test('final checks run after member replacement and strip metadata only after success', () => {
   const config: ProxyConfig = {
-    'x-substore': { 'runtime-proxy-providers': ['oixCloud'] },
     proxies: [{ name: 'A' }],
     'proxy-groups': [
       {
         ...group('主组', ['已经不存在的节点']),
-        use: ['oixCloud'],
+        use: ['subscription'],
         'x-substore': { members: { mode: 'replace' } },
       },
     ],
     'proxy-providers': { subscription: { type: 'http', url: 'invalid' } },
     rules: ['MATCH,主组'],
   };
-  const metadata = config['x-substore'];
+  const groupMetadata = config['proxy-groups']![0]['x-substore'];
   const groups = config['proxy-groups'];
   const providers = config['proxy-providers'];
   const proxies = config.proxies;
@@ -375,14 +289,13 @@ test('final checks run after member replacement and strip metadata only after su
   const before = structuredClone(config);
   assert.throws(() => overwriteConfig(config), /subscription.*url/);
   assert.deepEqual(config, before);
-  assert.equal(config['x-substore'], metadata);
+  assert.equal(config['proxy-groups']![0]['x-substore'], groupMetadata);
   assert.equal(config['proxy-groups'], groups);
 
   config['proxy-providers']!.subscription.url = 'https://example.com/nodes';
   assert.equal(overwriteConfig(config), config);
   assert.deepEqual(config['proxy-groups']![0].proxies, ['A']);
-  assert.deepEqual(config['proxy-groups']![0].use, ['oixCloud']);
-  assert.ok(!Object.hasOwn(config, 'x-substore'));
+  assert.deepEqual(config['proxy-groups']![0].use, ['subscription']);
   assert.ok(!Object.hasOwn(config['proxy-groups']![0], 'x-substore'));
   assert.equal(config['proxy-providers'], providers);
   assert.equal(config.proxies, proxies);
