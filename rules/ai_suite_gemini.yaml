@@ -21,6 +21,8 @@ payload:
   - "DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com"
 
   # Google Gemini
+  # Chrome fetches the country used for Gemini availability from this host.
+  - "DOMAIN,clientservices.googleapis.com"
   - "DOMAIN-SUFFIX,aisandbox-pa.googleapis.com"
   - "DOMAIN-SUFFIX,apis.google.com"
   - "DOMAIN-SUFFIX,bard.google.com"
